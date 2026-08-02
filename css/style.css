@@ -1,0 +1,338 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  --bg: #14161c;
+  --surface: #1d2027;
+  --surface-raised: #262a33;
+  --line: #32363f;
+  --ivory: #f1ede4;
+  --muted: #8b8f99;
+  --brass: #c9a227;
+  --brass-dim: #8a7326;
+  --teal: #4f9c8a;
+  --clay: #c1584b;
+
+  --font-display: 'Fraunces', serif;
+  --font-body: 'Manrope', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--ivory);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+a { color: inherit; }
+
+button {
+  font-family: var(--font-body);
+  cursor: pointer;
+}
+
+button:focus-visible,
+a:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--brass);
+  outline-offset: 2px;
+}
+
+/* ---------- Header / marquee ---------- */
+
+.marquee {
+  position: relative;
+  height: 88px;
+  background: linear-gradient(180deg, #191c23 0%, var(--bg) 100%);
+  border-bottom: 1px solid var(--line);
+  overflow: hidden;
+}
+
+.marquee-lane {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+}
+
+.marquee-note {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  filter: blur(0.2px);
+  animation: drift linear infinite;
+  opacity: 0.55;
+}
+
+@keyframes drift {
+  from { transform: translateX(-20px); }
+  to { transform: translateX(calc(100vw + 20px)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-note { animation: none; display: none; }
+}
+
+.topbar {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+}
+
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.brand-mark {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.brand-sub {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.profile-switch {
+  display: flex;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px;
+  gap: 2px;
+}
+
+.profile-btn {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 7px 16px;
+  border-radius: 999px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.profile-btn.active {
+  background: var(--brass);
+  color: #1a1607;
+}
+
+/* ---------- Layout ---------- */
+
+.page {
+  flex: 1;
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 40px 28px 80px;
+}
+
+.greeting {
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 500;
+  margin: 0 0 4px;
+}
+
+.greeting-sub {
+  color: var(--muted);
+  font-size: 14px;
+  margin: 0 0 36px;
+}
+
+/* ---------- Ledger stats ---------- */
+
+.ledger {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 40px;
+}
+
+.ledger-entry {
+  background: var(--surface);
+  padding: 22px 24px;
+}
+
+.ledger-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 10px;
+}
+
+.ledger-value {
+  font-family: var(--font-mono);
+  font-size: 32px;
+  font-weight: 500;
+  color: var(--brass);
+  line-height: 1;
+}
+
+.ledger-value .unit {
+  font-size: 15px;
+  color: var(--muted);
+  margin-left: 6px;
+}
+
+/* ---------- Two column body ---------- */
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 24px;
+}
+
+@media (max-width: 760px) {
+  .grid-2 { grid-template-columns: 1fr; }
+  .ledger { grid-template-columns: 1fr; }
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 22px;
+}
+
+.panel-title {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 500;
+  margin: 0 0 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.panel-title a {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--brass);
+  text-decoration: none;
+  letter-spacing: 0.02em;
+}
+
+.song-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.song-row:last-child { border-bottom: none; }
+
+.song-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.song-info { flex: 1; min-width: 0; }
+
+.song-name {
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.song-meta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.progress-track {
+  width: 64px;
+  height: 5px;
+  background: var(--surface-raised);
+  border-radius: 999px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--teal);
+}
+
+/* ---------- Action buttons ---------- */
+
+.action-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+  color: var(--ivory);
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  transition: border-color 0.15s ease;
+}
+
+.action-btn:hover { border-color: var(--brass-dim); }
+.action-btn:last-child { margin-bottom: 0; }
+
+.action-btn .arrow {
+  color: var(--brass);
+  font-family: var(--font-mono);
+}
+
+.action-sub {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 400;
+  margin-top: 3px;
+}
+
+.action-text { text-align: left; }
+
+/* ---------- Empty state ---------- */
+
+.empty {
+  color: var(--muted);
+  font-size: 13px;
+  padding: 20px 0;
+  text-align: center;
+}

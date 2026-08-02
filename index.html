@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GPP-101 · Dashboard</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <header class="marquee">
+    <div class="marquee-lane" id="marquee-lane"></div>
+    <div class="topbar">
+      <div class="brand">
+        <span class="brand-mark">GPP-101</span>
+        <span class="brand-sub">Smart Piano</span>
+      </div>
+      <div class="profile-switch">
+        <button class="profile-btn" data-profile="1">Profile 1</button>
+        <button class="profile-btn" data-profile="2">Profile 2</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="page">
+    <h1 class="greeting">Hi there 👋</h1>
+    <p class="greeting-sub">Here's where your practice stands.</p>
+
+    <section class="ledger">
+      <div class="ledger-entry">
+        <div class="ledger-label">Hours practiced</div>
+        <div class="ledger-value"><span id="stat-hours">0</span><span class="unit">h</span></div>
+      </div>
+      <div class="ledger-entry">
+        <div class="ledger-label">Daily average</div>
+        <div class="ledger-value"><span id="stat-avg">0</span><span class="unit">min</span></div>
+      </div>
+      <div class="ledger-entry">
+        <div class="ledger-label">Songs in progress</div>
+        <div class="ledger-value"><span id="stat-songs">0</span></div>
+      </div>
+    </section>
+
+    <section class="grid-2">
+      <div class="panel">
+        <h2 class="panel-title">
+          Recently played
+          <a href="#">See all</a>
+        </h2>
+        <div id="recent-list"></div>
+      </div>
+
+      <div class="panel">
+        <h2 class="panel-title">
+          Library
+          <a href="#">Browse</a>
+        </h2>
+        <div id="library-preview"></div>
+
+        <button class="action-btn" style="margin-top:16px;">
+          <span class="action-text">
+            Import a sound
+            <div class="action-sub">Add a song from a file</div>
+          </span>
+          <span class="arrow">→</span>
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
