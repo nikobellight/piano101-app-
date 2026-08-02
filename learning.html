@@ -1,0 +1,42 @@
+<!-- v1.0 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Piano 101 · Learning Mode</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/learning.css" />
+</head>
+<body>
+
+  <main class="learning-page">
+    <a class="back-link" href="index.html">&larr; Back to dashboard</a>
+
+    <div class="learning-header">
+      <div>
+        <h1 id="song-title">Loading…</h1>
+      </div>
+      <div class="transport">
+        <button id="restart-btn" class="transport-btn secondary">Restart</button>
+        <button id="play-btn" class="transport-btn primary">Play</button>
+      </div>
+    </div>
+
+    <div class="progress-bar"><div id="progress-fill"></div></div>
+
+    <div class="stage">
+      <canvas id="visualizer"></canvas>
+      <div class="keyboard-wrap">
+        <div id="keyboard"></div>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/15.5.27/Tone.js"></script>
+  <script src="js/keyboard-layout.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/visualizer.js"></script>
+  <script src="js/learning.js"></script>
+</body>
+</html>
