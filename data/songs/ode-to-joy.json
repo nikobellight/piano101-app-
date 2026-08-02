@@ -1,0 +1,30 @@
+{
+  "_version": "v1.0",
+  "id": "ode-to-joy",
+  "title": "Ode to Joy",
+  "difficulty": "Beginner",
+  "notesColor": "#4f9c8a",
+  "bpm": 100,
+  "keyboardMode": "solo",
+  "sections": [
+    { "id": "phrase-1", "label": "Phrase 1", "noteIndexStart": 0, "noteIndexEnd": 7 },
+    { "id": "phrase-2", "label": "Phrase 2", "noteIndexStart": 8, "noteIndexEnd": 14 }
+  ],
+  "notes": [
+    { "note": 64, "beat": 0,  "durationBeats": 0.9 },
+    { "note": 64, "beat": 1,  "durationBeats": 0.9 },
+    { "note": 65, "beat": 2,  "durationBeats": 0.9 },
+    { "note": 67, "beat": 3,  "durationBeats": 0.9 },
+    { "note": 67, "beat": 4,  "durationBeats": 0.9 },
+    { "note": 65, "beat": 5,  "durationBeats": 0.9 },
+    { "note": 64, "beat": 6,  "durationBeats": 0.9 },
+    { "note": 62, "beat": 7,  "durationBeats": 0.9 },
+    { "note": 60, "beat": 8,  "durationBeats": 0.9 },
+    { "note": 60, "beat": 9,  "durationBeats": 0.9 },
+    { "note": 62, "beat": 10, "durationBeats": 0.9 },
+    { "note": 64, "beat": 11, "durationBeats": 0.9 },
+    { "note": 64, "beat": 12, "durationBeats": 0.9 },
+    { "note": 62, "beat": 13, "durationBeats": 0.9 },
+    { "note": 62, "beat": 14, "durationBeats": 1.4 }
+  ]
+}
