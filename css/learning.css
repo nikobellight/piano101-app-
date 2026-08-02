@@ -1,0 +1,141 @@
+/* v1.0 */
+/* learning.css — Styles specific to the Learning Mode page. Shares color
+   tokens and fonts with style.css (loaded alongside it). */
+
+.learning-page {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 40px 32px 80px;
+}
+
+.learning-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.back-link {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.back-link:hover { color: var(--text); }
+
+#song-title {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 700;
+  margin: 4px 0 0;
+}
+
+.transport {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.transport-btn {
+  border: none;
+  border-radius: 999px;
+  padding: 12px 26px;
+  font-size: 15px;
+  font-weight: 700;
+  font-family: var(--font-body);
+  transition: transform 0.12s ease, box-shadow 0.15s ease;
+}
+
+.transport-btn.primary {
+  background: linear-gradient(135deg, #ffcf6b, var(--amber));
+  color: #2a1a04;
+  box-shadow: 0 6px 20px rgba(244, 185, 66, 0.3);
+}
+
+.transport-btn.primary:hover { transform: translateY(-1px); }
+
+.transport-btn.secondary {
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  color: var(--text);
+}
+
+.transport-btn.secondary:hover { border-color: var(--amber); }
+
+.progress-bar {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+  margin-bottom: 22px;
+}
+
+#progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--teal), var(--amber));
+  border-radius: 999px;
+  transition: width 0.05s linear;
+}
+
+.stage {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: 0 12px 30px -14px rgba(0, 0, 0, 0.5);
+}
+
+#visualizer {
+  width: 100%;
+  height: 340px;
+  display: block;
+  border-radius: 12px;
+}
+
+.keyboard-wrap {
+  margin-top: 16px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+#keyboard {
+  position: relative;
+  height: 150px;
+  background: #0a0d16;
+  border-radius: 12px;
+}
+
+.key {
+  position: absolute;
+  top: 0;
+  border-radius: 0 0 6px 6px;
+  transition: filter 0.08s ease;
+}
+
+.key-white {
+  height: 100%;
+  background: linear-gradient(180deg, #f1ede4, #d9d4c8);
+  border: 1px solid #12151f;
+  z-index: 1;
+}
+
+.key-black {
+  height: 62%;
+  background: linear-gradient(180deg, #2a2e38, #0d0f16);
+  border: 1px solid #000;
+  z-index: 2;
+}
+
+.key.active.key-white {
+  background: var(--glow, var(--amber));
+  box-shadow: 0 0 22px var(--glow, var(--amber));
+}
+
+.key.active.key-black {
+  background: var(--glow, var(--amber));
+  box-shadow: 0 0 22px var(--glow, var(--amber));
+}
