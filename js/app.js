@@ -1,3 +1,4 @@
+// Piano 101 — app.js — v1.1
 // ---------------------------------------------------------------------------
 // app.js — Dashboard logic
 // NOTE: The data below is static (demo) until Supabase is wired in.
@@ -47,7 +48,7 @@ function renderRecentSongs(profile) {
     const row = document.createElement("div");
     row.className = "song-row";
     row.innerHTML = `
-      <span class="song-dot" style="background:${song.color}"></span>
+      <span class="song-dot" style="background:${song.color}; color:${song.color}"></span>
       <div class="song-info">
         <div class="song-name">${song.name}</div>
         <div class="song-meta">${song.when}</div>
@@ -67,7 +68,7 @@ function renderLibraryPreview(songs) {
     const row = document.createElement("div");
     row.className = "song-row";
     row.innerHTML = `
-      <span class="song-dot" style="background:${song.notesColor}"></span>
+      <span class="song-dot" style="background:${song.notesColor}; color:${song.notesColor}"></span>
       <div class="song-info">
         <div class="song-name">${song.title}</div>
         <div class="song-meta">${song.difficulty}</div>
@@ -95,8 +96,9 @@ function spawnMarqueeNotes() {
   for (let i = 0; i < count; i++) {
     const dot = document.createElement("span");
     dot.className = "marquee-note";
-    dot.style.top = `${10 + Math.random() * 68}px`;
+    dot.style.top = `${20 + Math.random() * 220}px`;
     dot.style.background = colors[i % colors.length];
+    dot.style.color = colors[i % colors.length];
     dot.style.animationDuration = `${9 + Math.random() * 10}s`;
     dot.style.animationDelay = `${-Math.random() * 12}s`;
     lane.appendChild(dot);
