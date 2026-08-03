@@ -1,13 +1,19 @@
-/* v4.4 */
+/* v4.5 */
 /* learning.css — BASE + Sections + Wait Mode + BLE.
-   v4.4 fix: added the missing .key.active.key-black rule — highlighting
-   only worked on white keys before, so black keys never visually reacted
-   to a correct/wrong press. */
+   v4.5: replaced the dedicated .ble-panel with .learning-topbar (shared
+   ble-widget styles now live in style.css, used by every page). */
 
 .learning-page {
   max-width: 1120px;
   margin: 0 auto;
   padding: 40px 32px 80px;
+}
+
+.learning-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
 }
 
 .back-link {
@@ -180,21 +186,4 @@
   font-family: var(--font-mono);
   font-size: 15px;
   font-weight: 700;
-}
-
-/* ---------- BLE panel ---------- */
-
-.ble-panel {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid var(--line);
-}
-
-.ble-status {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--muted);
 }
