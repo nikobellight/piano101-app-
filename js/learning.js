@@ -1,20 +1,17 @@
-// v4.0
-// learning.js — SIMPLIFIED BASE.
-// Rebuilt back to the version that worked, before BLE / Wait Mode /
-// Sections page were layered on top and introduced regressions:
-//
-//  - One song, loaded via ?song= (defaults to "ode-to-joy")
-//  - Auto-playback demo only: Play / Restart
-//  - Virtual keyboard lights up in rhythm, real piano sound (audio.js)
-//  - Falling notes synced to the same timeline (visualizer.js)
-//
-// No BLE, no Wait Mode/Practice, no hand illustration, no measure counter,
-// no Sections page. These come back one at a time on top of this base.
+// v4.1
+// learning.js — BASE + Sections page reconnected.
+// Adds: reading ?section=&hand=&completed= from the URL (set by
+// sections.js), filtering the song notes accordingly, a context subtitle,
+// and a back-link that returns to sections.html. Still no BLE, no Wait
+// Mode/Practice, no hand illustration — those come back in later steps.
 
 const PLAYABLE_RANGE = { start: 60, end: 83 }; // GPP-101 solo mode range
 
 const params = new URLSearchParams(window.location.search);
 const songId = params.get("song") || "ode-to-joy";
+const sectionParam = params.get("section") || "all";
+const handParam = params.get("hand") || "right";
+const completedParam = params.get("completed") || "";
 
 const state = {
   song: null,
@@ -22,12 +19,35 @@ const state = {
   visualizer: null,
   audio: new PianoAudio(),
 
+  selectedHand: handParam,
+  sectionId: sectionParam, // "all" or a section id
+
   playing: false,
   startTimestamp: 0,
   pausedAtMs: 0,
   timers: [],
   rafId: null,
 };
+
+// ---------------------------------------------------------------------
+// Data helpers
+// ---------------------------------------------------------------------
+
+function handFilter(notes) {
+  if (state.selectedHand === "both") return notes;
+  return notes.filter((n) => n.hand === state.selectedHand);
+}
+
+function getActiveNotes() {
+  let notes;
+  if (state.sectionId === "all") {
+    notes = state.song.notes;
+  } else {
+    const sec = state.song.sections.find((s) => s.id === state.sectionId);
+    notes = sec ? state.song.notes.slice(sec.noteIndexStart, sec.noteIndexEnd + 1) : state.song.notes;
+  }
+  return handFilter(notes);
+}
 
 // ---------------------------------------------------------------------
 // Keyboard DOM
@@ -76,9 +96,11 @@ function highlightKey(note, durationMs, color) {
 // ---------------------------------------------------------------------
 
 function toTimeline(notes, msPerBeat) {
+  if (notes.length === 0) return [];
+  const offsetBeat = notes[0].beat;
   return notes.map((n) => ({
     note: n.note,
-    startMs: n.beat * msPerBeat,
+    startMs: (n.beat - offsetBeat) * msPerBeat,
     durationMs: n.durationBeats * msPerBeat,
   }));
 }
@@ -99,7 +121,7 @@ function clearTimers() {
 function schedulePlayback(fromMs) {
   clearTimers();
   const msPerBeat = currentMsPerBeat();
-  const timeline = toTimeline(state.song.notes, msPerBeat);
+  const timeline = toTimeline(getActiveNotes(), msPerBeat);
 
   for (const n of timeline) {
     if (n.startMs < fromMs) continue;
@@ -178,13 +200,23 @@ async function loadSong(id) {
 
   document.getElementById("song-title").textContent = song.title;
 
+  const sectionLabel =
+    state.sectionId === "all"
+      ? "Whole song"
+      : (song.sections.find((s) => s.id === state.sectionId) || {}).label || "Whole song";
+  const handLabel = state.selectedHand === "both" ? "Both hands" : "Right hand";
+  document.getElementById("context-subtitle").textContent = `${handLabel} — ${sectionLabel}`;
+
+  const backQuery = new URLSearchParams({ song: songId, completed: completedParam });
+  document.getElementById("back-link").href = `sections.html?${backQuery.toString()}`;
+
   const keyboardWidth = document.getElementById("keyboard").clientWidth;
   state.layout = buildKeyboardLayout(PLAYABLE_RANGE.start, PLAYABLE_RANGE.end, keyboardWidth);
   buildKeyboardDOM(state.layout);
 
   const canvas = document.getElementById("visualizer");
   state.visualizer = new FallingNotesVisualizer(canvas, state.layout, song.notesColor);
-  state.visualizer.setNotes(toTimeline(song.notes, currentMsPerBeat()), song.notesColor);
+  state.visualizer.setNotes(toTimeline(getActiveNotes(), currentMsPerBeat()), song.notesColor);
   state.visualizer.resize();
   state.visualizer.draw(0);
 }
