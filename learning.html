@@ -1,9 +1,9 @@
-<!-- v4.1 --> 
-<!-- Piano 101 — learning.html — BASE + Sections page reconnected
-     Adds: ?section= and ?hand= URL params (song is filtered/sliced
-     accordingly), a small context subtitle under the title, and a
-     back-link that returns to sections.html instead of the dashboard.
-     Still no BLE, no Wait Mode/Practice, no hand illustration. -->
+<!-- v4.2 -->
+<!-- Piano 101 — learning.html — BASE + Sections + Wait Mode (Practice)
+     Adds a Practice panel: Start/Stop Practice, a simple next-note
+     indicator, and a score display. Practice runs off virtual keyboard
+     clicks only for now — no BLE yet (next step), no hand illustration
+     yet (later step). -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -36,6 +36,14 @@
           <div id="keyboard"></div>
         </div>
       </div>
+    </div>
+
+    <div class="practice-panel">
+      <div class="practice-panel-left">
+        <button id="practice-btn" class="transport-btn primary">Start Practice</button>
+        <span id="next-note-display" class="next-note"></span>
+      </div>
+      <div id="score-display" class="score-display"></div>
     </div>
   </main>
 
