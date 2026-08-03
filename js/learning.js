@@ -1,14 +1,10 @@
-// v5.3
+// v5.4
 // learning.js — BASE + Sections + Wait Mode + BLE + real scoring.
-// v5.3 fixes:
-//  - Free play now sustains real hold: noteAttack on press, noteRelease
-//    on release (audio.js v1.1), instead of a fixed 0.4s pluck that
-//    ignored how long the key was actually held.
-//  - LED now scheduled to light exactly when the note reaches the hit
-//    line (accounting for its fall time), not immediately when the
-//    previous note is validated.
-//  - LED off/on writes are properly awaited in sequence instead of fired
-//    back-to-back, which could make the second BLE write silently fail.
+// v5.4: consumes the shared BLE widget (ble-ui.js/window.bleReady) instead
+// of owning its own dedicated connect button — same connect/status UI now
+// lives on every page, with silent reconnect on load. learning.js just
+// attaches its own onNoteOn/onNoteOff to whatever instance the widget
+// resolved to.
 //
 // v5.0 changes:
 //  - Note press/release is now a real noteOn(note)/noteOff(note) pipeline,
@@ -51,7 +47,7 @@ const state = {
   layout: null,
   visualizer: null,
   audio: new PianoAudio(),
-  ble: new GPP101(),
+  ble: null, // assigned from the shared window.bleReady widget on load
 
   selectedHand: handParam,
   sectionId: sectionParam, // "all" or a section id
@@ -479,45 +475,6 @@ function updateBackLink() {
 }
 
 // ---------------------------------------------------------------------
-// BLE
-// ---------------------------------------------------------------------
-
-function wireBleButton() {
-  const btn = document.getElementById("ble-connect-btn");
-  const status = document.getElementById("ble-status");
-
-  if (!navigator.bluetooth) {
-    status.textContent = "Web Bluetooth not supported in this browser.";
-    btn.disabled = true;
-    return;
-  }
-
-  btn.addEventListener("click", async () => {
-    if (state.ble.connected) {
-      state.ble.disconnect();
-      return;
-    }
-    try {
-      status.textContent = "Connecting…";
-      const name = await state.ble.connect();
-      status.textContent = `Connected: ${name}`;
-      btn.textContent = "Disconnect";
-
-      // The real keyboard now drives the exact same pipeline as the
-      // virtual keyboard — free play and Practice scoring both just work.
-      state.ble.onNoteOn = (note) => noteOn(note);
-      state.ble.onNoteOff = (note) => noteOff(note);
-      state.ble.onDisconnected = () => {
-        status.textContent = "Disconnected";
-        btn.textContent = "Connect Keyboard";
-      };
-    } catch (err) {
-      status.textContent = "Connection cancelled or failed.";
-    }
-  });
-}
-
-// ---------------------------------------------------------------------
 // Song loading
 // ---------------------------------------------------------------------
 
@@ -556,6 +513,13 @@ async function loadSong(id) {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
+  // The shared widget (ble-ui.js) already rendered the connect button /
+  // status pill and tried a silent reconnect — we just attach our own
+  // gameplay callbacks to whatever instance it resolved to.
+  state.ble = (await window.bleReady) || new GPP101();
+  state.ble.onNoteOn = (note) => noteOn(note);
+  state.ble.onNoteOff = (note) => noteOff(note);
+
   await loadSong(songId);
 
   document.getElementById("play-btn").addEventListener("click", togglePlayback);
@@ -567,8 +531,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       startPractice();
     }
   });
-
-  wireBleButton();
 
   window.addEventListener("resize", () => {
     const keyboardWidth = document.getElementById("keyboard").clientWidth;
