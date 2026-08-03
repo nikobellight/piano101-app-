@@ -1,10 +1,10 @@
-<!-- v4.3 -->
+<!-- v4.4 -->
 <!-- Piano 101 — learning.html — BASE + Sections + Wait Mode + BLE
-     Adds the BLE connect panel (real GPP-101 keyboard) and wires it into
-     the same note-on/note-off pipeline as the virtual keyboard — pressing
-     the real keyboard behaves identically to clicking on screen, for
-     both free play and Practice scoring. Still no hand illustration
-     (later step). -->
+     v4.4: replaced the dedicated BLE connect panel with the shared
+     ble-widget (js/ble-ui.js) also used on index.html and sections.html —
+     one consistent connect button + status pill everywhere, with silent
+     reconnect on page load. learning.js now attaches its own
+     onNoteOn/onNoteOff to the shared instance via window.bleReady. -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -17,7 +17,10 @@
 <body>
 
   <main class="learning-page">
-    <a id="back-link" class="back-link" href="index.html">&larr; Back to sections</a>
+    <div class="learning-topbar">
+      <a id="back-link" class="back-link" href="index.html">&larr; Back to sections</a>
+      <div id="ble-widget" class="ble-widget"></div>
+    </div>
 
     <div class="learning-header">
       <div>
@@ -46,11 +49,6 @@
       </div>
       <div id="score-display" class="score-display"></div>
     </div>
-
-    <div class="ble-panel">
-      <button id="ble-connect-btn" class="transport-btn secondary">Connect Keyboard</button>
-      <span id="ble-status" class="ble-status">Not connected</span>
-    </div>
   </main>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/15.5.27/Tone.js"></script>
@@ -58,6 +56,7 @@
   <script src="js/note-colors.js"></script>
   <script src="js/audio.js"></script>
   <script src="js/ble.js"></script>
+  <script src="js/ble-ui.js"></script>
   <script src="js/visualizer.js"></script>
   <script src="js/learning.js"></script>
 </body>
