@@ -1,8 +1,12 @@
-// v5.1
+// v5.2
 // learning.js — BASE + Sections + Wait Mode + BLE + real scoring.
-// v5.1 fix: a wrong-pitch press during Practice now also plays the
-// actually-pressed note's sound (previously silent, only the red
-// highlight showed).
+// v5.2 fixes:
+//  - LED now lights the expected note BEFORE it's pressed (a guide
+//    light), not as a flash after a correct press.
+//  - Pitch scoring is graduated instead of binary: each wrong attempt on
+//    a given note lowers its ceiling (0 wrong = full credit, 3+ wrong =
+//    0), so scattershot random pressing actually tanks the average
+//    instead of only zeroing the exact note it happened on.
 //
 // v5.0 changes:
 //  - Note press/release is now a real noteOn(note)/noteOff(note) pipeline,
@@ -61,9 +65,10 @@ const state = {
   waitQueue: [],
   waitPointer: 0,
   noteScores: [],
-  currentNoteSpoiled: false,
+  currentWrongAttempts: 0,
   currentPressRealTime: null,
   currentTimingScore: 0,
+  currentLedNote: null,
   practiceBaseMs: 0,
   practiceRealStart: 0,
   practiceRafId: null,
@@ -252,7 +257,7 @@ async function startPractice() {
   state.waitQueue = toTimeline(getActiveNotes(), msPerBeat);
   state.waitPointer = 0;
   state.noteScores = [];
-  state.currentNoteSpoiled = false;
+  state.currentWrongAttempts = 0;
   state.currentPressRealTime = null;
   state.practiceActive = state.waitQueue.length > 0;
 
@@ -265,6 +270,7 @@ async function startPractice() {
     state.practiceBaseMs = -state.visualizer.leadTimeMs;
     state.practiceRealStart = performance.now();
     updateNextNoteLabel();
+    updateExpectedNoteLed();
     state.practiceRafId = requestAnimationFrame(practiceAnimationLoop);
   } else {
     document.getElementById("score-display").textContent =
@@ -277,6 +283,7 @@ function stopPractice() {
   cancelAnimationFrame(state.practiceRafId);
   document.getElementById("practice-btn").textContent = "Start Practice";
   document.getElementById("next-note-display").textContent = "";
+  clearExpectedNoteLed();
 }
 
 function practiceAnimationLoop() {
@@ -293,6 +300,32 @@ function practiceAnimationLoop() {
 function updateNextNoteLabel() {
   document.getElementById("next-note-display").textContent =
     `Note ${state.waitPointer + 1} / ${state.waitQueue.length}`;
+}
+
+// ---------------------------------------------------------------------
+// BLE guide light — lights the NEXT note to press, not a flash after
+// pressing it. Turned off as soon as that note is correctly played.
+// ---------------------------------------------------------------------
+
+function updateExpectedNoteLed() {
+  if (!state.ble.connected) return;
+  if (state.currentLedNote != null) {
+    state.ble.sendLedOff(state.currentLedNote);
+  }
+  const expected = state.waitQueue[state.waitPointer];
+  if (expected) {
+    state.ble.sendLedOn(expected.note);
+    state.currentLedNote = expected.note;
+  } else {
+    state.currentLedNote = null;
+  }
+}
+
+function clearExpectedNoteLed() {
+  if (state.ble.connected && state.currentLedNote != null) {
+    state.ble.sendLedOff(state.currentLedNote);
+  }
+  state.currentLedNote = null;
 }
 
 // ---------------------------------------------------------------------
@@ -330,12 +363,20 @@ function durationScoreFromRatio(ratio) {
   return 0.3;
 }
 
+// Pitch accuracy: each wrong attempt on this note lowers its ceiling —
+// 0 wrong = 1.0, 1 wrong = 0.66, 2 wrong = 0.33, 3+ wrong = 0. Unlike a
+// simple pass/fail flag, hammering random keys before finally landing on
+// the right one no longer scores the same as getting it first try.
+function pitchScoreFromAttempts(wrongAttempts) {
+  return Math.max(0, 1 - wrongAttempts / 3);
+}
+
 function practiceNoteOn(note) {
   const expected = state.waitQueue[state.waitPointer];
   if (!expected) return;
 
   if (note !== expected.note) {
-    state.currentNoteSpoiled = true;
+    state.currentWrongAttempts++;
     state.audio.playNote(note, 0.3);
     highlightKey(note, 300, "#ff5555");
     return;
@@ -350,10 +391,6 @@ function practiceNoteOn(note) {
 
   state.audio.playNote(note, expected.durationMs / 1000);
   highlightKey(note, expected.durationMs, colorForNote(note));
-  if (state.ble.connected) {
-    state.ble.sendLedOn(note);
-    setTimeout(() => state.ble.sendLedOff(note), 250);
-  }
 }
 
 function practiceNoteOff(note) {
@@ -362,13 +399,12 @@ function practiceNoteOff(note) {
 
   const heldMs = performance.now() - state.currentPressRealTime;
   const durationScore = durationScoreFromRatio(heldMs / expected.durationMs);
-  const noteScore = state.currentNoteSpoiled
-    ? 0
-    : 0.5 + 0.3 * state.currentTimingScore + 0.2 * durationScore;
+  const pitchScore = pitchScoreFromAttempts(state.currentWrongAttempts);
+  const noteScore = pitchScore * 0.5 + state.currentTimingScore * 0.3 + durationScore * 0.2;
   state.noteScores.push(noteScore);
 
   state.currentPressRealTime = null;
-  state.currentNoteSpoiled = false;
+  state.currentWrongAttempts = 0;
 
   // Resume the fall from exactly where it was held, toward the next note.
   state.practiceBaseMs = expected.startMs;
@@ -379,12 +415,14 @@ function practiceNoteOff(note) {
     finishPractice();
   } else {
     updateNextNoteLabel();
+    updateExpectedNoteLed();
   }
 }
 
 function finishPractice() {
   cancelAnimationFrame(state.practiceRafId);
   state.visualizer.draw(-state.visualizer.leadTimeMs);
+  clearExpectedNoteLed();
 
   const total = state.noteScores.length;
   const sum = state.noteScores.reduce((a, b) => a + b, 0);
