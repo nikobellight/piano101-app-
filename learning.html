@@ -1,4 +1,4 @@
-<!-- v2.1 -->
+<!-- v3.0 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -11,11 +11,12 @@
 <body>
 
   <main class="learning-page">
-    <a class="back-link" href="index.html">&larr; Back to dashboard</a>
+    <a id="back-link" class="back-link" href="index.html">&larr; Back to sections</a>
 
     <div class="learning-header">
       <div>
         <h1 id="song-title">Loading…</h1>
+        <div id="context-subtitle" class="context-subtitle"></div>
       </div>
       <div class="transport">
         <button id="restart-btn" class="transport-btn secondary">Restart</button>
@@ -25,33 +26,19 @@
 
     <div class="progress-bar"><div id="progress-fill"></div></div>
 
-    <div class="controls-row">
-      <div class="control-group">
-        <div class="control-label">Hand</div>
-        <div id="hand-selector" class="chip-group">
-          <button class="chip active" data-hand="right">🫱 Right</button>
-          <button class="chip" data-hand="left">🫲 Left</button>
-          <button class="chip" data-hand="both">🤲 Both</button>
-        </div>
-      </div>
+    <div class="practice-hud">
+      <div id="measure-counter" class="measure-counter">– / –</div>
 
-      <div class="control-group">
-        <div class="control-label">Section</div>
-        <div id="section-selector" class="chip-group"></div>
-      </div>
-
-      <div class="control-group">
-        <div class="control-label">Speed</div>
-        <div id="speed-selector" class="chip-group">
-          <button class="chip" data-speed="0.5">50%</button>
-          <button class="chip" data-speed="0.75">75%</button>
-          <button class="chip active" data-speed="1">100%</button>
-        </div>
-      </div>
-
-      <div class="control-group">
-        <div class="control-label">&nbsp;</div>
-        <button id="loop-toggle" class="chip">Loop</button>
+      <div class="hand-illustration">
+        <svg viewBox="0 0 140 200" xmlns="http://www.w3.org/2000/svg">
+          <rect class="palm" x="30" y="110" width="80" height="80" rx="24" />
+          <rect class="finger" data-finger="1" x="0" y="90" width="26" height="70" rx="13" />
+          <rect class="finger" data-finger="2" x="34" y="40" width="20" height="90" rx="10" />
+          <rect class="finger" data-finger="3" x="58" y="20" width="20" height="110" rx="10" />
+          <rect class="finger" data-finger="4" x="82" y="30" width="20" height="100" rx="10" />
+          <rect class="finger" data-finger="5" x="106" y="55" width="18" height="80" rx="9" />
+        </svg>
+        <div id="hand-caption" class="hand-caption"></div>
       </div>
     </div>
 
