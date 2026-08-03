@@ -1,0 +1,62 @@
+/* v1.0 */
+/* app.css — SPA-only styles: the persistent app shell (brand + BLE widget
+   + profile switch) and the show/hide mechanics for the three views.
+   Everything else still comes from style.css / sections.css / learning.css,
+   which are loaded unchanged. */
+
+/* ---------- View switching ---------- */
+
+.view { display: none; }
+.view.active { display: block; }
+
+/* ---------- Persistent app shell ---------- */
+
+.app-shell {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 24px 32px 8px;
+}
+
+.app-shell .brand {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.app-shell-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+/* The dashboard used to own the marquee inside its own <header>; in the SPA
+   it sits inside the dashboard view, under the shell. Trim its height a
+   little so the shell doesn't push the greeting too far down. */
+#view-dashboard .marquee {
+  height: 240px;
+}
+
+#view-dashboard .page {
+  margin-top: -120px;
+}
+
+@media (max-width: 760px) {
+  #view-dashboard .page { margin-top: -90px; }
+}
+
+/* Sections / Learning views: the shell already provides the top spacing,
+   so their own pages start tighter. */
+#view-sections .sections-page,
+#view-learning .learning-page {
+  padding-top: 16px;
+}
