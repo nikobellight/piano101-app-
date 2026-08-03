@@ -1,5 +1,10 @@
-// v4.4
+// v4.5
 // learning.js — BASE + Sections + Wait Mode (Practice).
+// v4.5 fix: Practice mode now uses a real, continuous fall animation
+// (gated: falls in real time, then holds at the hit line until the
+// correct key is pressed) instead of a static draw() per note, which
+// made notes appear already at the hit line with no fall, and jump
+// between frames on each keypress instead of flowing.
 // Adds: Start/Stop Practice, advancing one note at a time driven by
 // virtual keyboard clicks (BLE comes in the next step — same code path
 // will handle both once wired up), a % score at the end of a section fed
@@ -52,6 +57,9 @@ const state = {
   waitQueue: [],
   waitPointer: 0,
   waitClean: [],
+  practiceBaseMs: 0,
+  practiceRealStart: 0,
+  practiceRafId: null,
 };
 
 // ---------------------------------------------------------------------
@@ -246,7 +254,12 @@ async function startPractice() {
   document.getElementById("score-display").textContent = "";
 
   if (state.practiceActive) {
-    showExpectedNote();
+    // Give the first note the same fall runway as auto-playback, then the
+    // gated loop takes over (falls, then holds at the hit line).
+    state.practiceBaseMs = -state.visualizer.leadTimeMs;
+    state.practiceRealStart = performance.now();
+    updateNextNoteLabel();
+    state.practiceRafId = requestAnimationFrame(practiceAnimationLoop);
   } else {
     document.getElementById("score-display").textContent =
       "No notes for this hand/section yet.";
@@ -255,13 +268,23 @@ async function startPractice() {
 
 function stopPractice() {
   state.practiceActive = false;
+  cancelAnimationFrame(state.practiceRafId);
   document.getElementById("practice-btn").textContent = "Start Practice";
   document.getElementById("next-note-display").textContent = "";
 }
 
-function showExpectedNote() {
+function practiceAnimationLoop() {
+  if (!state.practiceActive) return;
   const expected = state.waitQueue[state.waitPointer];
-  state.visualizer.draw(expected.startMs);
+  const elapsed = performance.now() - state.practiceRealStart;
+  // Falls in real time toward the note's hit time, then holds there —
+  // doesn't advance further until the correct key is pressed.
+  const currentMs = Math.min(state.practiceBaseMs + elapsed, expected.startMs);
+  state.visualizer.draw(currentMs);
+  state.practiceRafId = requestAnimationFrame(practiceAnimationLoop);
+}
+
+function updateNextNoteLabel() {
   document.getElementById("next-note-display").textContent =
     `Note ${state.waitPointer + 1} / ${state.waitQueue.length}`;
 }
@@ -274,11 +297,15 @@ function handleKeyPressed(note) {
     state.audio.playNote(note, expected.durationMs / 1000);
     highlightKey(note, expected.durationMs, colorForNote(note));
 
+    // Resume the fall from exactly where it was held, toward the next note.
+    state.practiceBaseMs = expected.startMs;
+    state.practiceRealStart = performance.now();
+
     state.waitPointer++;
     if (state.waitPointer >= state.waitQueue.length) {
       finishPractice();
     } else {
-      showExpectedNote();
+      updateNextNoteLabel();
     }
   } else {
     state.waitClean[state.waitPointer] = false;
@@ -287,6 +314,7 @@ function handleKeyPressed(note) {
 }
 
 function finishPractice() {
+  cancelAnimationFrame(state.practiceRafId);
   const total = state.waitClean.length;
   const clean = state.waitClean.filter(Boolean).length;
   const pct = Math.round((clean / total) * 100);
