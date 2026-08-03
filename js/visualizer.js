@@ -1,4 +1,4 @@
-// v1.3
+// v1.4
 // visualizer.js — Draws falling notes on a canvas, synced to song time.
 // Uses the same keyboard layout as the on-screen keyboard so each note
 // lines up exactly with its physical key column. Each note is colored by
@@ -144,20 +144,13 @@ class FallingNotesVisualizer {
       }
       ctx.fill();
 
-      // Finger number badge (1 = thumb .. 5 = pinky), POP Piano style.
-      if (n.finger && noteHeight > 20) {
-        const badgeR = 9;
-        const bx = x + w / 2;
-        const by = yTop + badgeR + 4;
-        ctx.beginPath();
-        ctx.arc(bx, by, badgeR, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(11, 15, 28, 0.82)";
-        ctx.fill();
-        ctx.fillStyle = "#ffffff";
-        ctx.font = "700 11px Manrope, sans-serif";
+      // Finger number written large directly on the bar, POP Piano style.
+      if (n.finger && noteHeight > 22) {
+        ctx.fillStyle = "rgba(11, 15, 28, 0.85)";
+        ctx.font = "700 15px Manrope, sans-serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillText(String(n.finger), bx, by + 0.5);
+        ctx.fillText(String(n.finger), x + w / 2, yTop + noteHeight / 2);
       }
     }
   }
