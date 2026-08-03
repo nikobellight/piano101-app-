@@ -1,4 +1,4 @@
-/* v2.0 */
+/* v2.1 */
 /* learning.css — Styles specific to the Learning Mode page. Shares color
    tokens and fonts with style.css (loaded alongside it). */
 
@@ -83,10 +83,27 @@
 
 .stage {
   background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 20px;
-  padding: 20px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: 20px 0;
   box-shadow: 0 12px 30px -14px rgba(0, 0, 0, 0.5);
+
+  /* Break out of the centered max-width container so the keyboard/visualizer
+     spans the full browser width, like a real instrument's key bed. */
+  width: 100vw;
+  position: relative;
+  left: 50%;
+  right: 50%;
+  margin-left: -50vw;
+  margin-right: -50vw;
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+.stage-inner {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 32px;
 }
 
 #visualizer {
