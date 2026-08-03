@@ -1,4 +1,4 @@
-// v1.2
+// v1.3
 // visualizer.js — Draws falling notes on a canvas, synced to song time.
 // Uses the same keyboard layout as the on-screen keyboard so each note
 // lines up exactly with its physical key column. Each note is colored by
@@ -34,6 +34,14 @@ class FallingNotesVisualizer {
       finger: n.finger || null,
     }));
     if (song.notesColor) this.color = song.notesColor;
+  }
+
+  // Notes already converted to a ms timeline (see toTimeline() in
+  // learning.js) — used when hand/section filtering has already happened
+  // upstream, so this class doesn't need to know about beats/bpm at all.
+  setNotes(notes, color) {
+    this.notes = notes;
+    if (color) this.color = color;
   }
 
   resize() {
