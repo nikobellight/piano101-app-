@@ -1,12 +1,14 @@
-// v5.2
+// v5.3
 // learning.js — BASE + Sections + Wait Mode + BLE + real scoring.
-// v5.2 fixes:
-//  - LED now lights the expected note BEFORE it's pressed (a guide
-//    light), not as a flash after a correct press.
-//  - Pitch scoring is graduated instead of binary: each wrong attempt on
-//    a given note lowers its ceiling (0 wrong = full credit, 3+ wrong =
-//    0), so scattershot random pressing actually tanks the average
-//    instead of only zeroing the exact note it happened on.
+// v5.3 fixes:
+//  - Free play now sustains real hold: noteAttack on press, noteRelease
+//    on release (audio.js v1.1), instead of a fixed 0.4s pluck that
+//    ignored how long the key was actually held.
+//  - LED now scheduled to light exactly when the note reaches the hit
+//    line (accounting for its fall time), not immediately when the
+//    previous note is validated.
+//  - LED off/on writes are properly awaited in sequence instead of fired
+//    back-to-back, which could make the second BLE write silently fail.
 //
 // v5.0 changes:
 //  - Note press/release is now a real noteOn(note)/noteOff(note) pipeline,
@@ -69,6 +71,7 @@ const state = {
   currentPressRealTime: null,
   currentTimingScore: 0,
   currentLedNote: null,
+  ledTimerId: null,
   practiceBaseMs: 0,
   practiceRealStart: 0,
   practiceRafId: null,
@@ -270,7 +273,7 @@ async function startPractice() {
     state.practiceBaseMs = -state.visualizer.leadTimeMs;
     state.practiceRealStart = performance.now();
     updateNextNoteLabel();
-    updateExpectedNoteLed();
+    scheduleExpectedNoteLed();
     state.practiceRafId = requestAnimationFrame(practiceAnimationLoop);
   } else {
     document.getElementById("score-display").textContent =
@@ -303,27 +306,40 @@ function updateNextNoteLabel() {
 }
 
 // ---------------------------------------------------------------------
-// BLE guide light — lights the NEXT note to press, not a flash after
-// pressing it. Turned off as soon as that note is correctly played.
+// BLE guide light — lights the NEXT note exactly when it reaches the hit
+// line (not the moment the previous note is validated, which was too
+// early), with off/on writes properly sequenced so the second write
+// doesn't collide with the first still in flight over BLE.
 // ---------------------------------------------------------------------
 
-function updateExpectedNoteLed() {
+function scheduleExpectedNoteLed() {
+  cancelScheduledLed();
   if (!state.ble.connected) return;
-  if (state.currentLedNote != null) {
-    state.ble.sendLedOff(state.currentLedNote);
-  }
+
   const expected = state.waitQueue[state.waitPointer];
-  if (expected) {
-    state.ble.sendLedOn(expected.note);
+  if (!expected) return;
+
+  const fallDurationMs = Math.max(0, expected.startMs - state.practiceBaseMs);
+  state.ledTimerId = setTimeout(async () => {
+    if (state.currentLedNote != null) {
+      await state.ble.sendLedOff(state.currentLedNote);
+    }
+    await state.ble.sendLedOn(expected.note);
     state.currentLedNote = expected.note;
-  } else {
-    state.currentLedNote = null;
+  }, fallDurationMs);
+}
+
+function cancelScheduledLed() {
+  if (state.ledTimerId != null) {
+    clearTimeout(state.ledTimerId);
+    state.ledTimerId = null;
   }
 }
 
-function clearExpectedNoteLed() {
+async function clearExpectedNoteLed() {
+  cancelScheduledLed();
   if (state.ble.connected && state.currentLedNote != null) {
-    state.ble.sendLedOff(state.currentLedNote);
+    await state.ble.sendLedOff(state.currentLedNote);
   }
   state.currentLedNote = null;
 }
@@ -336,13 +352,24 @@ function noteOn(note) {
   if (state.practiceActive) {
     practiceNoteOn(note);
   } else {
-    state.audio.init().then(() => state.audio.playNote(note, 0.4));
+    state.audio.init().then(() => {
+      state.audio.noteAttack(note);
+      const el = document.querySelector(`.key[data-note="${note}"]`);
+      if (el) {
+        el.style.setProperty("--glow", colorForNote(note));
+        el.classList.add("active");
+      }
+    });
   }
 }
 
 function noteOff(note) {
   if (state.practiceActive) {
     practiceNoteOff(note);
+  } else {
+    state.audio.noteRelease(note);
+    const el = document.querySelector(`.key[data-note="${note}"]`);
+    if (el) el.classList.remove("active");
   }
 }
 
@@ -415,7 +442,7 @@ function practiceNoteOff(note) {
     finishPractice();
   } else {
     updateNextNoteLabel();
-    updateExpectedNoteLed();
+    scheduleExpectedNoteLed();
   }
 }
 
