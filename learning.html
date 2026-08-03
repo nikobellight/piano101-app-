@@ -1,9 +1,10 @@
-<!-- v4.2 -->
-<!-- Piano 101 — learning.html — BASE + Sections + Wait Mode (Practice)
-     Adds a Practice panel: Start/Stop Practice, a simple next-note
-     indicator, and a score display. Practice runs off virtual keyboard
-     clicks only for now — no BLE yet (next step), no hand illustration
-     yet (later step). -->
+<!-- v4.3 -->
+<!-- Piano 101 — learning.html — BASE + Sections + Wait Mode + BLE
+     Adds the BLE connect panel (real GPP-101 keyboard) and wires it into
+     the same note-on/note-off pipeline as the virtual keyboard — pressing
+     the real keyboard behaves identically to clicking on screen, for
+     both free play and Practice scoring. Still no hand illustration
+     (later step). -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -45,12 +46,18 @@
       </div>
       <div id="score-display" class="score-display"></div>
     </div>
+
+    <div class="ble-panel">
+      <button id="ble-connect-btn" class="transport-btn secondary">Connect Keyboard</button>
+      <span id="ble-status" class="ble-status">Not connected</span>
+    </div>
   </main>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/15.5.27/Tone.js"></script>
   <script src="js/keyboard-layout.js"></script>
   <script src="js/note-colors.js"></script>
   <script src="js/audio.js"></script>
+  <script src="js/ble.js"></script>
   <script src="js/visualizer.js"></script>
   <script src="js/learning.js"></script>
 </body>
