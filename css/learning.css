@@ -1,8 +1,8 @@
-/* v4.1 */ 
-/* learning.css — BASE + Sections page reconnected. Adds a small context
-   subtitle line under the title (hand + section). Everything else from
-   the v4.0 base (practice HUD, hand illustration, BLE panel, dimmed keys)
-   still intentionally absent — comes back in later steps. */
+/* v4.2 */
+/* learning.css — BASE + Sections + Wait Mode (Practice). Adds the
+   practice panel below the stage (Start/Stop Practice, next-note text,
+   score). Everything else from before (hand illustration, BLE panel,
+   dimmed keys) still intentionally absent — comes back in later steps. */
 
 .learning-page {
   max-width: 1120px;
@@ -146,4 +146,33 @@
 .key.active.key-white {
   background: var(--glow, var(--amber));
   box-shadow: 0 0 22px var(--glow, var(--amber));
+}
+
+/* ---------- Practice panel ---------- */
+
+.practice-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.practice-panel-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.next-note {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.score-display {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-weight: 700;
 }
