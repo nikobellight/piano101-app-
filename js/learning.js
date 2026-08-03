@@ -1,24 +1,36 @@
-// v4.3
-// learning.js — BASE + Sections page reconnected.
-// Adds: reading ?section=&hand=&completed= from the URL (set by
-// sections.js), filtering the song notes accordingly, a context subtitle,
-// and a back-link that returns to sections.html. Still no BLE, no Wait
-// Mode/Practice, no hand illustration — those come back in later steps.
-//
-// v4.3 additions:
-//  - A lead-in pause before the very first note plays, matching the
-//    visualizer's fall time, so notes actually fall from the top instead
-//    of appearing already on the hit line.
-//  - Section start/end boundary lines (visualizer.js already supported
-//    this via setActiveSection(), just wasn't being called).
+// v4.4
+// learning.js — BASE + Sections + Wait Mode (Practice).
+// Adds: Start/Stop Practice, advancing one note at a time driven by
+// virtual keyboard clicks (BLE comes in the next step — same code path
+// will handle both once wired up), a % score at the end of a section fed
+// back to sections.html via the `completed` URL param, and section
+// start/end boundary lines + a lead-in fall (from the previous step).
+// Still no BLE, no hand illustration.
 
 const PLAYABLE_RANGE = { start: 60, end: 83 }; // GPP-101 solo mode range
+const PASS_THRESHOLD = 80;
 
 const params = new URLSearchParams(window.location.search);
 const songId = params.get("song") || "ode-to-joy";
 const sectionParam = params.get("section") || "all";
 const handParam = params.get("hand") || "right";
 const completedParam = params.get("completed") || "";
+
+function parseCompleted(str) {
+  const map = {};
+  if (!str) return map;
+  str.split(",").forEach((entry) => {
+    const [id, pct] = entry.split(":");
+    if (id) map[id] = Number(pct);
+  });
+  return map;
+}
+
+function encodeCompleted(map) {
+  return Object.entries(map)
+    .map(([id, pct]) => `${id}:${pct}`)
+    .join(",");
+}
 
 const state = {
   song: null,
@@ -28,12 +40,18 @@ const state = {
 
   selectedHand: handParam,
   sectionId: sectionParam, // "all" or a section id
+  completed: parseCompleted(completedParam),
 
   playing: false,
   startTimestamp: 0,
   pausedAtMs: 0,
   timers: [],
   rafId: null,
+
+  practiceActive: false,
+  waitQueue: [],
+  waitPointer: 0,
+  waitClean: [],
 };
 
 // ---------------------------------------------------------------------
@@ -89,7 +107,11 @@ function buildKeyboardDOM(layout) {
   container.querySelectorAll(".key").forEach((el) => {
     el.addEventListener("pointerdown", () => {
       const note = Number(el.dataset.note);
-      state.audio.init().then(() => state.audio.playNote(note, 0.4));
+      if (state.practiceActive) {
+        handleKeyPressed(note);
+      } else {
+        state.audio.init().then(() => state.audio.playNote(note, 0.4));
+      }
     });
   });
 }
@@ -159,6 +181,7 @@ function animationLoop() {
 
 async function startPlayback() {
   if (state.playing) return;
+  stopPractice();
   await state.audio.init();
 
   state.playing = true;
@@ -206,6 +229,92 @@ function restartPlayback() {
 }
 
 // ---------------------------------------------------------------------
+// Wait Mode (Practice)
+// ---------------------------------------------------------------------
+
+async function startPractice() {
+  pausePlayback();
+  await state.audio.init();
+
+  const msPerBeat = currentMsPerBeat();
+  state.waitQueue = toTimeline(getActiveNotes(), msPerBeat);
+  state.waitPointer = 0;
+  state.waitClean = state.waitQueue.map(() => true);
+  state.practiceActive = state.waitQueue.length > 0;
+
+  document.getElementById("practice-btn").textContent = "Stop Practice";
+  document.getElementById("score-display").textContent = "";
+
+  if (state.practiceActive) {
+    showExpectedNote();
+  } else {
+    document.getElementById("score-display").textContent =
+      "No notes for this hand/section yet.";
+  }
+}
+
+function stopPractice() {
+  state.practiceActive = false;
+  document.getElementById("practice-btn").textContent = "Start Practice";
+  document.getElementById("next-note-display").textContent = "";
+}
+
+function showExpectedNote() {
+  const expected = state.waitQueue[state.waitPointer];
+  state.visualizer.draw(expected.startMs);
+  document.getElementById("next-note-display").textContent =
+    `Note ${state.waitPointer + 1} / ${state.waitQueue.length}`;
+}
+
+function handleKeyPressed(note) {
+  if (!state.practiceActive) return;
+
+  const expected = state.waitQueue[state.waitPointer];
+  if (note === expected.note) {
+    state.audio.playNote(note, expected.durationMs / 1000);
+    highlightKey(note, expected.durationMs, colorForNote(note));
+
+    state.waitPointer++;
+    if (state.waitPointer >= state.waitQueue.length) {
+      finishPractice();
+    } else {
+      showExpectedNote();
+    }
+  } else {
+    state.waitClean[state.waitPointer] = false;
+    highlightKey(note, 300, "#ff5555");
+  }
+}
+
+function finishPractice() {
+  const total = state.waitClean.length;
+  const clean = state.waitClean.filter(Boolean).length;
+  const pct = Math.round((clean / total) * 100);
+
+  const scoreEl = document.getElementById("score-display");
+  const passed = pct >= PASS_THRESHOLD;
+  scoreEl.textContent = `${pct}% — ${passed ? "Section passed!" : "Try again"}`;
+  scoreEl.style.color = passed ? "#57cbb3" : "#ff7a6e";
+
+  document.getElementById("next-note-display").textContent = "";
+  state.practiceActive = false;
+  document.getElementById("practice-btn").textContent = "Start Practice";
+
+  if (state.sectionId !== "all") {
+    state.completed[state.sectionId] = Math.max(state.completed[state.sectionId] || 0, pct);
+    updateBackLink();
+  }
+}
+
+function updateBackLink() {
+  const backQuery = new URLSearchParams({
+    song: songId,
+    completed: encodeCompleted(state.completed),
+  });
+  document.getElementById("back-link").href = `sections.html?${backQuery.toString()}`;
+}
+
+// ---------------------------------------------------------------------
 // Song loading
 // ---------------------------------------------------------------------
 
@@ -223,8 +332,7 @@ async function loadSong(id) {
   const handLabel = state.selectedHand === "both" ? "Both hands" : "Right hand";
   document.getElementById("context-subtitle").textContent = `${handLabel} — ${sectionLabel}`;
 
-  const backQuery = new URLSearchParams({ song: songId, completed: completedParam });
-  document.getElementById("back-link").href = `sections.html?${backQuery.toString()}`;
+  updateBackLink();
 
   const keyboardWidth = document.getElementById("keyboard").clientWidth;
   state.layout = buildKeyboardLayout(PLAYABLE_RANGE.start, PLAYABLE_RANGE.end, keyboardWidth);
@@ -249,6 +357,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   document.getElementById("play-btn").addEventListener("click", togglePlayback);
   document.getElementById("restart-btn").addEventListener("click", restartPlayback);
+  document.getElementById("practice-btn").addEventListener("click", () => {
+    if (state.practiceActive) {
+      stopPractice();
+    } else {
+      startPractice();
+    }
+  });
 
   window.addEventListener("resize", () => {
     const keyboardWidth = document.getElementById("keyboard").clientWidth;
