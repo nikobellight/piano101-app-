@@ -1,4 +1,4 @@
-// v4.1
+// v4.2
 // learning.js — BASE + Sections page reconnected.
 // Adds: reading ?section=&hand=&completed= from the URL (set by
 // sections.js), filtering the song notes accordingly, a context subtitle,
@@ -33,9 +33,13 @@ const state = {
 // Data helpers
 // ---------------------------------------------------------------------
 
+function normalizeHand(h) {
+  return (h || "").toString().trim().toLowerCase();
+}
+
 function handFilter(notes) {
   if (state.selectedHand === "both") return notes;
-  return notes.filter((n) => n.hand === state.selectedHand);
+  return notes.filter((n) => normalizeHand(n.hand) === state.selectedHand);
 }
 
 function getActiveNotes() {
