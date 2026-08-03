@@ -1,4 +1,4 @@
-<!-- v2.0 -->
+<!-- v2.1 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -29,9 +29,9 @@
       <div class="control-group">
         <div class="control-label">Hand</div>
         <div id="hand-selector" class="chip-group">
-          <button class="chip active" data-hand="right">Right</button>
-          <button class="chip" data-hand="left">Left</button>
-          <button class="chip" data-hand="both">Both</button>
+          <button class="chip active" data-hand="right">🫱 Right</button>
+          <button class="chip" data-hand="left">🫲 Left</button>
+          <button class="chip" data-hand="both">🤲 Both</button>
         </div>
       </div>
 
@@ -56,9 +56,11 @@
     </div>
 
     <div class="stage">
-      <canvas id="visualizer"></canvas>
-      <div class="keyboard-wrap">
-        <div id="keyboard"></div>
+      <div class="stage-inner">
+        <canvas id="visualizer"></canvas>
+        <div class="keyboard-wrap">
+          <div id="keyboard"></div>
+        </div>
       </div>
     </div>
 
