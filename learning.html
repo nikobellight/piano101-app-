@@ -1,9 +1,9 @@
-<!-- v4.0 -->
-<!-- Piano 101 — learning.html — SIMPLIFIED BASE
-     Rebuilt back to the version that worked: one song, auto-playback demo
-     only (Play/Restart). No BLE, no Wait Mode/Practice, no Sections page,
-     no hand illustration, no measure counter. These will be re-added one
-     at a time, on top of this validated base, in later steps. -->
+<!-- v4.1 -->
+<!-- Piano 101 — learning.html — BASE + Sections page reconnected
+     Adds: ?section= and ?hand= URL params (song is filtered/sliced
+     accordingly), a small context subtitle under the title, and a
+     back-link that returns to sections.html instead of the dashboard.
+     Still no BLE, no Wait Mode/Practice, no hand illustration. -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -16,10 +16,13 @@
 <body>
 
   <main class="learning-page">
-    <a class="back-link" href="index.html">&larr; Back to dashboard</a>
+    <a id="back-link" class="back-link" href="index.html">&larr; Back to sections</a>
 
     <div class="learning-header">
-      <h1 id="song-title">Loading…</h1>
+      <div>
+        <h1 id="song-title">Loading…</h1>
+        <div id="context-subtitle" class="context-subtitle"></div>
+      </div>
       <div class="transport">
         <button id="restart-btn" class="transport-btn secondary">Restart</button>
         <button id="play-btn" class="transport-btn primary">Play</button>
