@@ -1,4 +1,4 @@
-// v1.0
+// v1.1
 // sections.js — Builds the section-select grid for a song: one circle per
 // section (with a star rating), a "Revision" circle (whole song), and a
 // "Continue" circle (first section not yet passed).
@@ -74,7 +74,8 @@ async function init() {
   const songId = params.get("song") || "ode-to-joy";
   const completed = parseCompleted(params.get("completed"));
 
-  const res = await fetch(`data/songs/${songId}.json`);
+  // Same cache-busting as learning.js — avoids a stale cached song file.
+  const res = await fetch(`data/songs/${songId}.json?v=${Date.now()}`, { cache: "no-store" });
   const song = await res.json();
 
   document.getElementById("song-title").textContent = song.title;
