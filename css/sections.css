@@ -1,11 +1,19 @@
-/* v1.0 */
+/* v1.1 */
 /* sections.css — Styles for the section-select page (song → sections grid),
-   shares color tokens/fonts with style.css (loaded alongside it). */
+   shares color tokens/fonts with style.css.
+   v1.1: added .sections-topbar (back-link + BLE widget row). */
 
 .sections-page {
   max-width: 1000px;
   margin: 0 auto;
   padding: 40px 32px 80px;
+}
+
+.sections-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
 }
 
 .back-link {
