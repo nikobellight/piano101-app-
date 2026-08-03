@@ -1,5 +1,6 @@
 // Piano 101 — app.js — v1.1
 // ---------------------------------------------------------------------------
+// v1.0
 // app.js — Dashboard logic
 // NOTE: The data below is static (demo) until Supabase is wired in.
 // fetchStats()/fetchRecentSongs() will later be replaced with real queries
@@ -65,8 +66,11 @@ function renderLibraryPreview(songs) {
   const container = document.getElementById("library-preview");
   container.innerHTML = "";
   for (const song of songs.slice(0, 3)) {
-    const row = document.createElement("div");
+    const row = document.createElement("a");
     row.className = "song-row";
+    row.href = `sections.html?song=${encodeURIComponent(song.id)}`;
+    row.style.textDecoration = "none";
+    row.style.color = "inherit";
     row.innerHTML = `
       <span class="song-dot" style="background:${song.notesColor}; color:${song.notesColor}"></span>
       <div class="song-info">
