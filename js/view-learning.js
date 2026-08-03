@@ -1,12 +1,21 @@
-// v1.0
-// view-learning.js — SPA version of learning.js v5.4. The gameplay logic
-// (playback, Wait Mode, scoring, LED guide) is carried over UNCHANGED on
-// purpose: this step is the SPA conversion, not a behaviour change. The
-// two known Wait-Mode fluidity issues are still present and are the next
-// task, deliberately untouched here so any regression is traceable to the
-// SPA move alone.
+// v1.1
+// view-learning.js
+// v1.1: fixes both Wait Mode fluidity issues flagged in the checkpoint.
+//  1. The falling animation used to freeze the instant it reached the hit
+//     line and stay frozen until the exact key was pressed — even when
+//     played roughly on time. It now keeps falling in real time for a
+//     FREEZE_TOLERANCE_MS grace window past the hit line before actually
+//     stopping. Playing within that window advances to the next note
+//     before the freeze point is ever reached, so on-time playing now
+//     looks and feels continuous; only a real late press causes a visible
+//     freeze.
+//  2. The last note of a section used to cut straight to the score the
+//     instant it was played, so it never visually finished falling past
+//     the hit line. finishPractice() now runs a short wind-down animation
+//     (the note's own duration + a small buffer) before showing the score.
 //
-// What did change:
+// v1.0 (SPA conversion) — gameplay logic carried over from learning.js
+// v5.4 unchanged; only the lifecycle/plumbing below changed:
 //  - reads song/section/hand from Store instead of URL query params
 //  - mount()/unmount() lifecycle: entering rebuilds the keyboard, canvas
 //    and visualizer; leaving stops audio, timers, animation frames and
@@ -20,6 +29,15 @@
 window.ViewLearning = (function () {
   const PLAYABLE_RANGE = { start: 60, end: 83 }; // GPP-101 solo mode range
   const PASS_THRESHOLD = 80;
+
+  // How long (ms) the fall is allowed to keep going past a note's hit time
+  // before it actually freezes and waits for the key. Playing within this
+  // window never visually freezes at all — the pointer has already moved
+  // to the next note by then.
+  const FREEZE_TOLERANCE_MS = 550;
+  // Extra real time (ms) the wind-down animation runs after the last note
+  // of a section, so it visibly finishes its fall instead of cutting off.
+  const FINISH_WINDDOWN_BUFFER_MS = 400;
 
   const state = {
     song: null,
@@ -256,7 +274,11 @@ window.ViewLearning = (function () {
     if (!state.practiceActive) return;
     const expected = state.waitQueue[state.waitPointer];
     const elapsed = performance.now() - state.practiceRealStart;
-    const currentMs = Math.min(state.practiceBaseMs + elapsed, expected.startMs);
+    const idealMs = state.practiceBaseMs + elapsed;
+    // Keep falling for a grace window past the hit line before actually
+    // freezing — see FREEZE_TOLERANCE_MS above.
+    const freezeAtMs = expected.startMs + FREEZE_TOLERANCE_MS;
+    const currentMs = Math.min(idealMs, freezeAtMs);
     state.visualizer.draw(currentMs);
     state.practiceRafId = requestAnimationFrame(practiceAnimationLoop);
   }
@@ -392,9 +414,33 @@ window.ViewLearning = (function () {
   }
 
   function finishPractice() {
+    // Let the last note visibly finish its fall (its own duration, plus a
+    // small buffer) instead of cutting straight to the score the instant
+    // it's played. state.practiceBaseMs is already the last note's
+    // startMs at this point (set in practiceNoteOff).
     cancelAnimationFrame(state.practiceRafId);
-    state.visualizer.draw(-state.visualizer.leadTimeMs);
     clearExpectedNoteLed();
+
+    const last = state.waitQueue[state.waitQueue.length - 1];
+    const windDownFromMs = state.practiceBaseMs;
+    const windDownDurationMs = last.durationMs + FINISH_WINDDOWN_BUFFER_MS;
+    const windDownStart = performance.now();
+
+    function windDownLoop() {
+      const elapsed = performance.now() - windDownStart;
+      const currentMs = windDownFromMs + Math.min(elapsed, windDownDurationMs);
+      state.visualizer.draw(currentMs);
+      if (elapsed < windDownDurationMs) {
+        state.practiceRafId = requestAnimationFrame(windDownLoop);
+      } else {
+        showFinalScore();
+      }
+    }
+    windDownLoop();
+  }
+
+  function showFinalScore() {
+    state.visualizer.draw(-state.visualizer.leadTimeMs);
 
     const total = state.noteScores.length;
     const sum = state.noteScores.reduce((a, b) => a + b, 0);
