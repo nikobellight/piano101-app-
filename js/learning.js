@@ -1,4 +1,4 @@
-// v3.0
+// v3.1
 // learning.js — Full learning mode orchestration, now driven by the
 // section-select page (sections.html) via URL params (?song=&section=&hand=&completed=)
 // instead of in-page selectors.
@@ -393,7 +393,11 @@ function wireBleButton() {
 // ---------------------------------------------------------------------
 
 async function loadSong(id) {
-  const res = await fetch(`data/songs/${id}.json`);
+  // cache: "no-store" + a timestamp query param ensures we always get the
+  // latest song JSON from GitHub Pages, not a stale cached copy (this was
+  // the root cause of the "No notes for this hand/section yet." bug: an
+  // older cached file without the `hand` field on each note).
+  const res = await fetch(`data/songs/${id}.json?v=${Date.now()}`, { cache: "no-store" });
   const song = await res.json();
   state.song = song;
 
