@@ -1,4 +1,4 @@
-// v1.0
+// v1.0  
 // keyboard-layout.js — Computes white/black key positions for a contiguous
 // MIDI note range. Shared by the on-screen keyboard (DOM) and the falling
 // notes visualizer (canvas), so both always agree on column positions.
