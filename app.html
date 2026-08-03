@@ -1,0 +1,161 @@
+<!-- Piano 101 — app.html — v1.0 -->
+<!-- v1.0: Single Page Application. Replaces index.html + sections.html +
+     learning.html with one document holding three views, shown/hidden by
+     a small hash router (js/router.js). The point: the page is NEVER
+     reloaded, so the Web Bluetooth GATT connection to the GPP-101 stays
+     alive across Dashboard -> Sections -> Learning navigation.
+     The old 3 pages are left untouched in the repo during migration. -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Piano 101</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/sections.css" />
+  <link rel="stylesheet" href="css/learning.css" />
+  <link rel="stylesheet" href="css/app.css" />
+</head>
+<body>
+
+  <!-- App shell: shared by every view, rendered once, never destroyed.
+       The BLE widget lives here so its GPP101 instance survives navigation. -->
+  <header class="app-shell">
+    <a class="brand" href="#/">
+      <span class="brand-mark">Piano 101</span>
+      <span class="brand-sub">Smart Practice</span>
+    </a>
+    <div class="app-shell-right">
+      <div id="ble-widget" class="ble-widget"></div>
+      <div class="profile-switch">
+        <button class="profile-btn" data-profile="1">Profile 1</button>
+        <button class="profile-btn" data-profile="2">Profile 2</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ============================ DASHBOARD ============================ -->
+  <section id="view-dashboard" class="view">
+    <div class="marquee">
+      <div class="marquee-lane" id="marquee-lane"></div>
+    </div>
+
+    <main class="page">
+      <h1 class="greeting">Hi there 👋</h1>
+      <p class="greeting-sub">Here's where your practice stands.</p>
+
+      <section class="ledger">
+        <div class="ledger-entry">
+          <div class="ledger-label">Hours practiced</div>
+          <div class="ledger-value"><span id="stat-hours">0</span><span class="unit">h</span></div>
+        </div>
+        <div class="ledger-entry">
+          <div class="ledger-label">Daily average</div>
+          <div class="ledger-value"><span id="stat-avg">0</span><span class="unit">min</span></div>
+        </div>
+        <div class="ledger-entry">
+          <div class="ledger-label">Songs in progress</div>
+          <div class="ledger-value"><span id="stat-songs">0</span></div>
+        </div>
+      </section>
+
+      <section class="grid-2">
+        <div class="panel">
+          <h2 class="panel-title">
+            Recently played
+            <a href="#/">See all</a>
+          </h2>
+          <div id="recent-list"></div>
+        </div>
+
+        <div class="panel">
+          <h2 class="panel-title">
+            Library
+            <a href="#/">Browse</a>
+          </h2>
+          <div id="library-preview"></div>
+
+          <button class="action-btn" style="margin-top:16px;">
+            <span class="action-text">
+              Import a sound
+              <div class="action-sub">Add a song from a file</div>
+            </span>
+            <span class="arrow">→</span>
+          </button>
+        </div>
+      </section>
+    </main>
+  </section>
+
+  <!-- ============================ SECTIONS ============================= -->
+  <section id="view-sections" class="view">
+    <main class="sections-page">
+      <div class="sections-topbar">
+        <a class="back-link" href="#/">&larr; Back to dashboard</a>
+      </div>
+      <h1 id="sections-song-title">Loading…</h1>
+
+      <div id="hand-tabs" class="hand-tabs">
+        <button class="hand-tab active" data-hand="right">🫱 Right</button>
+        <button class="hand-tab" data-hand="both">🤲 Both</button>
+      </div>
+
+      <div id="section-grid" class="section-grid"></div>
+    </main>
+  </section>
+
+  <!-- ============================ LEARNING ============================= -->
+  <section id="view-learning" class="view">
+    <main class="learning-page">
+      <div class="learning-topbar">
+        <a id="learning-back-link" class="back-link" href="#/">&larr; Back to sections</a>
+      </div>
+
+      <div class="learning-header">
+        <div>
+          <h1 id="learning-song-title">Loading…</h1>
+          <div id="context-subtitle" class="context-subtitle"></div>
+        </div>
+        <div class="transport">
+          <button id="restart-btn" class="transport-btn secondary">Restart</button>
+          <button id="play-btn" class="transport-btn primary">Play</button>
+        </div>
+      </div>
+
+      <div class="stage">
+        <div class="stage-inner">
+          <canvas id="visualizer"></canvas>
+          <div class="keyboard-wrap">
+            <div id="keyboard"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="practice-panel">
+        <div class="practice-panel-left">
+          <button id="practice-btn" class="transport-btn primary">Start Practice</button>
+          <span id="next-note-display" class="next-note"></span>
+        </div>
+        <div id="score-display" class="score-display"></div>
+      </div>
+    </main>
+  </section>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/15.5.27/Tone.js"></script>
+
+  <!-- Shared engine modules (unchanged from the multi-page version) -->
+  <script src="js/keyboard-layout.js"></script>
+  <script src="js/note-colors.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/ble.js"></script>
+  <script src="js/visualizer.js"></script>
+
+  <!-- SPA plumbing -->
+  <script src="js/store.js"></script>
+  <script src="js/ble-shared.js"></script>
+  <script src="js/view-dashboard.js"></script>
+  <script src="js/view-sections.js"></script>
+  <script src="js/view-learning.js"></script>
+  <script src="js/router.js"></script>
+</body>
+</html>
