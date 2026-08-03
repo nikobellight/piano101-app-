@@ -1,4 +1,6 @@
-/* Piano 101 — style.css — v1.1 */ 
+/* Piano 101 — style.css — v1.2 */
+/* v1.2: added .ble-widget styles (connect button + green/red status pill,
+   shared by index.html, sections.html, learning.html via ble-ui.js). */
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 :root {
@@ -104,6 +106,12 @@ a:focus-visible,
   max-width: 1120px;
   margin: 0 auto;
   padding: 36px 32px 0;
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
 }
 
 .brand {
@@ -371,4 +379,60 @@ a:focus-visible,
   font-size: 14px;
   padding: 24px 0;
   text-align: center;
+}
+
+/* ---------- BLE widget (connect button + status pill) ---------- */
+/* Shared by every page via ble-ui.js — a clear, always-visible signal of
+   whether the real keyboard is currently connected. */
+
+.ble-widget {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ble-widget-btn {
+  border: 1px solid var(--line);
+  background: var(--surface-raised);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+  font-family: var(--font-body);
+  padding: 8px 18px;
+  border-radius: 999px;
+  transition: border-color 0.15s ease;
+}
+
+.ble-widget-btn:hover { border-color: var(--amber); }
+.ble-widget-btn:disabled { opacity: 0.6; cursor: default; }
+
+.ble-widget-pill {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 14px 6px 10px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+}
+
+.ble-widget-pill::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 8px currentColor;
+}
+
+.ble-widget-pill.connected {
+  background: var(--teal-soft);
+  color: var(--teal);
+}
+
+.ble-widget-pill.disconnected {
+  background: var(--coral-soft);
+  color: var(--coral);
 }
