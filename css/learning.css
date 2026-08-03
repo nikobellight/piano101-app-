@@ -1,8 +1,8 @@
-/* v4.2 */
-/* learning.css — BASE + Sections + Wait Mode (Practice). Adds the
-   practice panel below the stage (Start/Stop Practice, next-note text,
-   score). Everything else from before (hand illustration, BLE panel,
-   dimmed keys) still intentionally absent — comes back in later steps. */
+/* v4.4 */
+/* learning.css — BASE + Sections + Wait Mode + BLE.
+   v4.4 fix: added the missing .key.active.key-black rule — highlighting
+   only worked on white keys before, so black keys never visually reacted
+   to a correct/wrong press. */
 
 .learning-page {
   max-width: 1120px;
@@ -148,6 +148,11 @@
   box-shadow: 0 0 22px var(--glow, var(--amber));
 }
 
+.key.active.key-black {
+  background: var(--glow, var(--amber));
+  box-shadow: 0 0 18px var(--glow, var(--amber));
+}
+
 /* ---------- Practice panel ---------- */
 
 .practice-panel {
@@ -175,4 +180,21 @@
   font-family: var(--font-mono);
   font-size: 15px;
   font-weight: 700;
+}
+
+/* ---------- BLE panel ---------- */
+
+.ble-panel {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.ble-status {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted);
 }
