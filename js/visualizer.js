@@ -1,4 +1,4 @@
-// v1.4
+// v1.4 
 // visualizer.js — Draws falling notes on a canvas, synced to song time.
 // Uses the same keyboard layout as the on-screen keyboard so each note
 // lines up exactly with its physical key column. Each note is colored by
