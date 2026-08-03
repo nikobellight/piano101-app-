@@ -1,16 +1,19 @@
-// v4.5
-// learning.js — BASE + Sections + Wait Mode (Practice).
-// v4.5 fix: Practice mode now uses a real, continuous fall animation
-// (gated: falls in real time, then holds at the hit line until the
-// correct key is pressed) instead of a static draw() per note, which
-// made notes appear already at the hit line with no fall, and jump
-// between frames on each keypress instead of flowing.
-// Adds: Start/Stop Practice, advancing one note at a time driven by
-// virtual keyboard clicks (BLE comes in the next step — same code path
-// will handle both once wired up), a % score at the end of a section fed
-// back to sections.html via the `completed` URL param, and section
-// start/end boundary lines + a lead-in fall (from the previous step).
-// Still no BLE, no hand illustration.
+// v5.1
+// learning.js — BASE + Sections + Wait Mode + BLE + real scoring.
+// v5.1 fix: a wrong-pitch press during Practice now also plays the
+// actually-pressed note's sound (previously silent, only the red
+// highlight showed).
+//
+// v5.0 changes:
+//  - Note press/release is now a real noteOn(note)/noteOff(note) pipeline,
+//    shared by the virtual keyboard (pointerdown/pointerup) AND the real
+//    GPP-101 over BLE (ble.onNoteOn/onNoteOff) — pressing the physical
+//    keyboard behaves identically to clicking on screen.
+//  - Practice scoring is no longer just "right note yes/no": each note
+//    blends pitch correctness, timing accuracy (early/late vs. when the
+//    note reaches the hit line), and held-duration accuracy (vs. the
+//    note's written length). Wrong pitch on the first attempt still
+//    zeroes that note out, matching the previous behaviour.
 
 const PLAYABLE_RANGE = { start: 60, end: 83 }; // GPP-101 solo mode range
 const PASS_THRESHOLD = 80;
@@ -42,6 +45,7 @@ const state = {
   layout: null,
   visualizer: null,
   audio: new PianoAudio(),
+  ble: new GPP101(),
 
   selectedHand: handParam,
   sectionId: sectionParam, // "all" or a section id
@@ -56,7 +60,10 @@ const state = {
   practiceActive: false,
   waitQueue: [],
   waitPointer: 0,
-  waitClean: [],
+  noteScores: [],
+  currentNoteSpoiled: false,
+  currentPressRealTime: null,
+  currentTimingScore: 0,
   practiceBaseMs: 0,
   practiceRealStart: 0,
   practiceRafId: null,
@@ -113,14 +120,11 @@ function buildKeyboardDOM(layout) {
   }
 
   container.querySelectorAll(".key").forEach((el) => {
-    el.addEventListener("pointerdown", () => {
-      const note = Number(el.dataset.note);
-      if (state.practiceActive) {
-        handleKeyPressed(note);
-      } else {
-        state.audio.init().then(() => state.audio.playNote(note, 0.4));
-      }
-    });
+    const note = Number(el.dataset.note);
+    el.addEventListener("pointerdown", () => noteOn(note));
+    el.addEventListener("pointerup", () => noteOff(note));
+    el.addEventListener("pointerleave", () => noteOff(note));
+    el.addEventListener("pointercancel", () => noteOff(note));
   });
 }
 
@@ -247,7 +251,9 @@ async function startPractice() {
   const msPerBeat = currentMsPerBeat();
   state.waitQueue = toTimeline(getActiveNotes(), msPerBeat);
   state.waitPointer = 0;
-  state.waitClean = state.waitQueue.map(() => true);
+  state.noteScores = [];
+  state.currentNoteSpoiled = false;
+  state.currentPressRealTime = null;
   state.practiceActive = state.waitQueue.length > 0;
 
   document.getElementById("practice-btn").textContent = "Stop Practice";
@@ -289,35 +295,100 @@ function updateNextNoteLabel() {
     `Note ${state.waitPointer + 1} / ${state.waitQueue.length}`;
 }
 
-function handleKeyPressed(note) {
-  if (!state.practiceActive) return;
+// ---------------------------------------------------------------------
+// Note press/release pipeline — shared by the virtual keyboard and BLE
+// ---------------------------------------------------------------------
 
-  const expected = state.waitQueue[state.waitPointer];
-  if (note === expected.note) {
-    state.audio.playNote(note, expected.durationMs / 1000);
-    highlightKey(note, expected.durationMs, colorForNote(note));
-
-    // Resume the fall from exactly where it was held, toward the next note.
-    state.practiceBaseMs = expected.startMs;
-    state.practiceRealStart = performance.now();
-
-    state.waitPointer++;
-    if (state.waitPointer >= state.waitQueue.length) {
-      finishPractice();
-    } else {
-      updateNextNoteLabel();
-    }
+function noteOn(note) {
+  if (state.practiceActive) {
+    practiceNoteOn(note);
   } else {
-    state.waitClean[state.waitPointer] = false;
+    state.audio.init().then(() => state.audio.playNote(note, 0.4));
+  }
+}
+
+function noteOff(note) {
+  if (state.practiceActive) {
+    practiceNoteOff(note);
+  }
+}
+
+// Timing accuracy: how close the press was to the moment the note
+// actually reached the hit line (0 = late/early beyond recognition, 1 = spot on).
+function timingScoreFromDelta(deltaMs) {
+  const abs = Math.abs(deltaMs);
+  if (abs <= 120) return 1;
+  if (abs <= 250) return 0.7;
+  if (abs <= 450) return 0.4;
+  return 0.1;
+}
+
+// Duration accuracy: how close the held time was to the note's written length.
+function durationScoreFromRatio(ratio) {
+  if (ratio >= 0.7 && ratio <= 1.3) return 1;
+  if (ratio >= 0.5 && ratio <= 1.6) return 0.6;
+  return 0.3;
+}
+
+function practiceNoteOn(note) {
+  const expected = state.waitQueue[state.waitPointer];
+  if (!expected) return;
+
+  if (note !== expected.note) {
+    state.currentNoteSpoiled = true;
+    state.audio.playNote(note, 0.3);
     highlightKey(note, 300, "#ff5555");
+    return;
+  }
+
+  // Correct pitch: record the press time and how early/late it was
+  // relative to the moment the note reached the hit line.
+  state.currentPressRealTime = performance.now();
+  const fallDurationMs = Math.max(0, expected.startMs - state.practiceBaseMs);
+  const freezeRealTime = state.practiceRealStart + fallDurationMs;
+  state.currentTimingScore = timingScoreFromDelta(state.currentPressRealTime - freezeRealTime);
+
+  state.audio.playNote(note, expected.durationMs / 1000);
+  highlightKey(note, expected.durationMs, colorForNote(note));
+  if (state.ble.connected) {
+    state.ble.sendLedOn(note);
+    setTimeout(() => state.ble.sendLedOff(note), 250);
+  }
+}
+
+function practiceNoteOff(note) {
+  const expected = state.waitQueue[state.waitPointer];
+  if (!expected || note !== expected.note || state.currentPressRealTime == null) return;
+
+  const heldMs = performance.now() - state.currentPressRealTime;
+  const durationScore = durationScoreFromRatio(heldMs / expected.durationMs);
+  const noteScore = state.currentNoteSpoiled
+    ? 0
+    : 0.5 + 0.3 * state.currentTimingScore + 0.2 * durationScore;
+  state.noteScores.push(noteScore);
+
+  state.currentPressRealTime = null;
+  state.currentNoteSpoiled = false;
+
+  // Resume the fall from exactly where it was held, toward the next note.
+  state.practiceBaseMs = expected.startMs;
+  state.practiceRealStart = performance.now();
+
+  state.waitPointer++;
+  if (state.waitPointer >= state.waitQueue.length) {
+    finishPractice();
+  } else {
+    updateNextNoteLabel();
   }
 }
 
 function finishPractice() {
   cancelAnimationFrame(state.practiceRafId);
-  const total = state.waitClean.length;
-  const clean = state.waitClean.filter(Boolean).length;
-  const pct = Math.round((clean / total) * 100);
+  state.visualizer.draw(-state.visualizer.leadTimeMs);
+
+  const total = state.noteScores.length;
+  const sum = state.noteScores.reduce((a, b) => a + b, 0);
+  const pct = Math.round((sum / total) * 100);
 
   const scoreEl = document.getElementById("score-display");
   const passed = pct >= PASS_THRESHOLD;
@@ -340,6 +411,45 @@ function updateBackLink() {
     completed: encodeCompleted(state.completed),
   });
   document.getElementById("back-link").href = `sections.html?${backQuery.toString()}`;
+}
+
+// ---------------------------------------------------------------------
+// BLE
+// ---------------------------------------------------------------------
+
+function wireBleButton() {
+  const btn = document.getElementById("ble-connect-btn");
+  const status = document.getElementById("ble-status");
+
+  if (!navigator.bluetooth) {
+    status.textContent = "Web Bluetooth not supported in this browser.";
+    btn.disabled = true;
+    return;
+  }
+
+  btn.addEventListener("click", async () => {
+    if (state.ble.connected) {
+      state.ble.disconnect();
+      return;
+    }
+    try {
+      status.textContent = "Connecting…";
+      const name = await state.ble.connect();
+      status.textContent = `Connected: ${name}`;
+      btn.textContent = "Disconnect";
+
+      // The real keyboard now drives the exact same pipeline as the
+      // virtual keyboard — free play and Practice scoring both just work.
+      state.ble.onNoteOn = (note) => noteOn(note);
+      state.ble.onNoteOff = (note) => noteOff(note);
+      state.ble.onDisconnected = () => {
+        status.textContent = "Disconnected";
+        btn.textContent = "Connect Keyboard";
+      };
+    } catch (err) {
+      status.textContent = "Connection cancelled or failed.";
+    }
+  });
 }
 
 // ---------------------------------------------------------------------
@@ -392,6 +502,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       startPractice();
     }
   });
+
+  wireBleButton();
 
   window.addEventListener("resize", () => {
     const keyboardWidth = document.getElementById("keyboard").clientWidth;
