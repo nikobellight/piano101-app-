@@ -1,4 +1,4 @@
-/* v2.1 */
+/* v3.0 */
 /* learning.css — Styles specific to the Learning Mode page. Shares color
    tokens and fonts with style.css (loaded alongside it). */
 
@@ -152,50 +152,6 @@
   box-shadow: 0 0 22px var(--glow, var(--amber));
 }
 
-/* ---------- Controls row (hand / section / speed / loop) ---------- */
-
-.controls-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 24px;
-  margin-bottom: 20px;
-  align-items: flex-end;
-}
-
-.control-label {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  margin-bottom: 8px;
-}
-
-.chip-group {
-  display: flex;
-  gap: 6px;
-}
-
-.chip {
-  border: 1px solid var(--line);
-  background: var(--surface-raised);
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 700;
-  font-family: var(--font-body);
-  padding: 8px 16px;
-  border-radius: 999px;
-  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
-}
-
-.chip:hover { color: var(--text); border-color: var(--brass-dim, var(--amber)); }
-
-.chip.active {
-  background: linear-gradient(135deg, #ffcf6b, var(--amber));
-  color: #2a1a04;
-  border-color: transparent;
-}
-
 /* ---------- Practice panel ---------- */
 
 .practice-panel {
@@ -240,4 +196,71 @@
   font-family: var(--font-mono);
   font-size: 12px;
   color: var(--muted);
+}
+
+/* ---------- Context subtitle (hand + section, under the title) ---------- */
+
+.context-subtitle {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+/* ---------- Practice HUD (measure counter + hand illustration) ---------- */
+
+.practice-hud {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.measure-counter {
+  font-family: var(--font-mono);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--amber);
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 8px 20px;
+}
+
+.hand-illustration {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.hand-illustration svg {
+  width: 56px;
+  height: 80px;
+}
+
+.hand-illustration .palm,
+.hand-illustration .finger {
+  fill: var(--surface-raised);
+  stroke: var(--line);
+  stroke-width: 1;
+  transition: fill 0.15s ease, filter 0.15s ease;
+}
+
+.hand-illustration .finger.active {
+  fill: var(--finger-color, var(--amber));
+  filter: drop-shadow(0 0 8px var(--finger-color, var(--amber)));
+}
+
+.hand-caption {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+  min-height: 14px;
+}
+
+/* ---------- Dimmed keys (outside the currently playable BLE range) ---------- */
+
+.key.dimmed {
+  opacity: 0.35;
 }
