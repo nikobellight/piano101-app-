@@ -1,4 +1,4 @@
-// v1.0
+// v1.1
 // ble-ui.js — Shared BLE connect button + status pill, dropped into any
 // page that has a <div id="ble-widget"></div>. Renders the button, tries
 // a SILENT reconnect on load (Chrome/Edge only, via
@@ -7,10 +7,16 @@
 // window.bleReady (a Promise resolving to the GPP101 instance) so
 // learning.js can attach its own onNoteOn/onNoteOff for gameplay.
 //
+// v1.1: the auto-reconnect attempt is no longer silent when it fails —
+// it now shows "Checking for keyboard…" while trying, then a specific
+// reason if it doesn't succeed (unsupported browser, no remembered
+// device, or found-but-unreachable), instead of just sitting on
+// "Disconnected" with no explanation.
+//
 // Note: Web Bluetooth has no real "stay connected across pages" — each
 // page load is a fresh GATT connection. This is the closest practical
-// equivalent: reconnect automatically and silently, so the person doesn't
-// have to pick the device from the browser dialog again on every page.
+// equivalent: reconnect automatically, so the person doesn't have to pick
+// the device from the browser dialog again on every page.
 
 function renderBleWidget(container, ble) {
   container.innerHTML = `
@@ -27,11 +33,16 @@ function renderBleWidget(container, ble) {
     btn.disabled = false;
   }
 
-  function setDisconnected() {
-    pill.textContent = "Disconnected";
+  function setDisconnected(reason) {
+    pill.textContent = reason || "Disconnected";
     pill.className = "ble-widget-pill disconnected";
     btn.textContent = "Connect Keyboard";
     btn.disabled = false;
+  }
+
+  function setPending(message) {
+    pill.textContent = message;
+    pill.className = "ble-widget-pill pending";
   }
 
   // Own listener on the device itself (separate from ble.onDisconnected,
@@ -39,7 +50,7 @@ function renderBleWidget(container, ble) {
   // reality regardless of what else is listening.
   function watchDevice() {
     if (ble.device) {
-      ble.device.addEventListener("gattserverdisconnected", setDisconnected);
+      ble.device.addEventListener("gattserverdisconnected", () => setDisconnected());
     }
   }
 
@@ -51,7 +62,7 @@ function renderBleWidget(container, ble) {
     }
     try {
       btn.disabled = true;
-      pill.textContent = "Connecting…";
+      setPending("Connecting…");
       const name = await ble.connect();
       watchDevice();
       setConnected(name);
@@ -60,7 +71,7 @@ function renderBleWidget(container, ble) {
     }
   });
 
-  return { setConnected, setDisconnected, watchDevice };
+  return { setConnected, setDisconnected, setPending, watchDevice };
 }
 
 window.bleReady = (async function initBleWidget() {
@@ -76,25 +87,40 @@ window.bleReady = (async function initBleWidget() {
 
   const ui = renderBleWidget(container, ble);
 
-  // Silent auto-reconnect to a previously authorized device, if the
-  // browser remembers one and it's currently reachable.
-  if (navigator.bluetooth.getDevices) {
+  if (!navigator.bluetooth.getDevices) {
+    // This Chrome/Edge build doesn't expose persistent-permission lookup —
+    // auto-reconnect simply isn't possible here, so say so plainly instead
+    // of quietly doing nothing.
+    ui.setDisconnected("Auto-reconnect unsupported — click Connect");
+    return ble;
+  }
+
+  ui.setPending("Checking for keyboard…");
+
+  let known = [];
+  try {
+    known = await navigator.bluetooth.getDevices();
+  } catch (err) {
+    ui.setDisconnected("Couldn't check for a keyboard — click Connect");
+    return ble;
+  }
+
+  if (known.length === 0) {
+    ui.setDisconnected("No remembered keyboard — click Connect");
+    return ble;
+  }
+
+  for (const device of known) {
     try {
-      const known = await navigator.bluetooth.getDevices();
-      for (const device of known) {
-        try {
-          const name = await ble.reconnect(device);
-          ui.watchDevice();
-          ui.setConnected(name);
-          break;
-        } catch (err) {
-          // Not the right device, or it's off/out of range — try the next one.
-        }
-      }
+      const name = await ble.reconnect(device);
+      ui.watchDevice();
+      ui.setConnected(name);
+      return ble;
     } catch (err) {
-      // getDevices() itself failed — stays disconnected, Connect button still works.
+      // Not the right device, or it's off/asleep/out of range — try the next one.
     }
   }
 
+  ui.setDisconnected("Keyboard not reachable — click Connect");
   return ble;
 })();
