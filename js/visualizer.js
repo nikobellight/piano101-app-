@@ -1,7 +1,10 @@
-// v1.0
+// v1.2
 // visualizer.js — Draws falling notes on a canvas, synced to song time.
 // Uses the same keyboard layout as the on-screen keyboard so each note
-// lines up exactly with its physical key column.
+// lines up exactly with its physical key column. Each note is colored by
+// pitch class (see note-colors.js) and tagged with its finger number.
+// Also draws two boundary lines (section start/end) that scroll down
+// together with the notes, so the practiced section is visually framed.
 
 class FallingNotesVisualizer {
   constructor(canvas, layout, color) {
@@ -13,7 +16,13 @@ class FallingNotesVisualizer {
     this.notes = [];
     this.keyByNote = {};
     for (const k of layout.keys) this.keyByNote[k.note] = k;
+    this.sectionBoundsMs = null; // { startMs, endMs } — set via setActiveSection()
     this.resize();
+  }
+
+  // Marks the section currently being practiced. Pass null to hide.
+  setActiveSection(startMs, endMs) {
+    this.sectionBoundsMs = startMs == null ? null : { startMs, endMs };
   }
 
   setSong(song) {
@@ -22,6 +31,7 @@ class FallingNotesVisualizer {
       note: n.note,
       startMs: n.beat * msPerBeat,
       durationMs: n.durationBeats * msPerBeat,
+      finger: n.finger || null,
     }));
     if (song.notesColor) this.color = song.notesColor;
   }
@@ -61,6 +71,34 @@ class FallingNotesVisualizer {
     ctx.lineTo(this.width, hitY);
     ctx.stroke();
 
+    // Section boundary lines (start/end), scrolling down with the notes
+    // exactly like a note would, so they frame the section being drilled.
+    if (this.sectionBoundsMs) {
+      const drawBoundary = (boundaryMs, label) => {
+        const fraction = (currentMs - (boundaryMs - this.leadTimeMs)) / this.leadTimeMs;
+        const y = fraction * hitY;
+        if (y < -20 || y > this.height + 20) return;
+
+        ctx.strokeStyle = "rgba(255,255,255,0.55)";
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6, 5]);
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(this.width, y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.fillStyle = "rgba(255,255,255,0.75)";
+        ctx.font = "700 10px Manrope, sans-serif";
+        ctx.textAlign = "left";
+        ctx.textBaseline = "bottom";
+        ctx.fillText(label, 6, y - 4);
+      };
+
+      drawBoundary(this.sectionBoundsMs.startMs, "SECTION START");
+      drawBoundary(this.sectionBoundsMs.endMs, "SECTION END");
+    }
+
     for (const n of this.notes) {
       const key = this.keyByNote[n.note];
       if (!key) continue;
@@ -79,7 +117,17 @@ class FallingNotesVisualizer {
       const w = key.width - pad * 2;
 
       const hit = currentMs >= n.startMs && currentMs <= endMs;
-      ctx.fillStyle = hit ? "#ffffff" : this.color;
+      const baseColor = colorForNote(n.note);
+
+      if (hit) {
+        ctx.fillStyle = "#ffffff";
+      } else {
+        const gradient = ctx.createLinearGradient(x, yTop, x, yBottom);
+        gradient.addColorStop(0, lightenColor(baseColor, 0.4));
+        gradient.addColorStop(1, baseColor);
+        ctx.fillStyle = gradient;
+      }
+
       ctx.beginPath();
       if (ctx.roundRect) {
         ctx.roundRect(x, yTop, w, noteHeight, 6);
@@ -87,6 +135,22 @@ class FallingNotesVisualizer {
         ctx.rect(x, yTop, w, noteHeight);
       }
       ctx.fill();
+
+      // Finger number badge (1 = thumb .. 5 = pinky), POP Piano style.
+      if (n.finger && noteHeight > 20) {
+        const badgeR = 9;
+        const bx = x + w / 2;
+        const by = yTop + badgeR + 4;
+        ctx.beginPath();
+        ctx.arc(bx, by, badgeR, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(11, 15, 28, 0.82)";
+        ctx.fill();
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "700 11px Manrope, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(String(n.finger), bx, by + 0.5);
+      }
     }
   }
 }
