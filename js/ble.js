@@ -1,11 +1,16 @@
-// v1.0
+// v1.1
 // ble.js — Web Bluetooth wrapper for the GPP-101, using the protocol we
 // reverse-engineered and validated earlier (service/characteristic UUIDs,
 // frame format, LED command). Reused as-is, not re-derived.
 //
-// Exposes: connect(), sendNoteOn/Off(), sendLedOn/Off(), and callbacks
-// (onNoteOn / onNoteOff) fired when a REAL physical key is pressed —
-// this is what powers Wait Mode.
+// Exposes: connect(), reconnect(device), sendNoteOn/Off(), sendLedOn/Off(),
+// and callbacks (onNoteOn / onNoteOff) fired when a REAL physical key is
+// pressed — this is what powers Wait Mode.
+//
+// v1.1: added reconnect(device) — binds to a device the browser already
+// granted access to (via navigator.bluetooth.getDevices()) without
+// showing the picker again. Used by ble-ui.js for silent reconnection on
+// every page load.
 
 const GPP101_SERVICE_UUID = "03b80e5a-ede8-4b33-a751-6ce34ec4c700";
 const GPP101_CHARACTERISTIC_UUID = "7772e5db-3868-4112-a1a9-f2669d106bf3";
@@ -24,10 +29,22 @@ class GPP101 {
     return new Uint8Array([0x80, 0x80, ...bytes, 0xf7]);
   }
 
+  // Opens the browser's device picker — first-time pairing.
   async connect() {
-    this.device = await navigator.bluetooth.requestDevice({
+    const device = await navigator.bluetooth.requestDevice({
       filters: [{ services: [GPP101_SERVICE_UUID] }],
     });
+    return this.bindDevice(device);
+  }
+
+  // Binds directly to a device object already granted to this origin
+  // (e.g. from navigator.bluetooth.getDevices()) — no picker shown.
+  async reconnect(device) {
+    return this.bindDevice(device);
+  }
+
+  async bindDevice(device) {
+    this.device = device;
 
     this.device.addEventListener("gattserverdisconnected", () => {
       this.connected = false;
