@@ -1,7 +1,12 @@
-// v1.0  
+// v1.1
 // audio.js — Piano sound engine, using real sampled piano notes (Salamander
 // Grand Piano via Tone.js) instead of a raw synth, so it actually sounds
 // like a piano rather than a beep.
+//
+// v1.1: added noteAttack/noteRelease for real sustain-while-held (free
+// play with a real or virtual key press). playNote() is kept as-is for
+// scheduled playback where the exact duration is already known in advance
+// (auto-playback demo, Practice mode).
 
 class PianoAudio {
   constructor() {
@@ -45,6 +50,18 @@ class PianoAudio {
   playNote(midi, durationSeconds = 0.6) {
     if (!this.ready) return;
     this.sampler.triggerAttackRelease(this.noteName(midi), durationSeconds);
+  }
+
+  // Starts a note and holds it until noteRelease() is called — for real
+  // press-and-hold behaviour (free play with a real or virtual key).
+  noteAttack(midi) {
+    if (!this.ready) return;
+    this.sampler.triggerAttack(this.noteName(midi));
+  }
+
+  noteRelease(midi) {
+    if (!this.ready) return;
+    this.sampler.triggerRelease(this.noteName(midi));
   }
 }
 
