@@ -1,19 +1,47 @@
-// v2.0
-// learning.js — Full learning mode orchestration:
-//  - Normal playback (auto demo, unchanged core from earlier versions)
-//  - Wait Mode (Practice): advances one note at a time, driven entirely by
-//    real key presses — either from the physical GPP-101 over BLE, or from
-//    clicking the on-screen keyboard (same code path either way)
-//  - Section selection with start/end boundary lines on the visualizer
-//  - Hand selection (Right/Left/Both) — filters which notes are active
-//  - Loop + speed control (normal playback)
-//  - Percentage score per section, gating progression to the next one
+// v3.0
+// learning.js — Full learning mode orchestration, now driven by the
+// section-select page (sections.html) via URL params (?song=&section=&hand=&completed=)
+// instead of in-page selectors.
 //
-// NOTE: the test song only has right-hand notes for now, so selecting
-// "Left" will show an empty section until a two-hand song exists.
+//  - Normal playback (auto demo)
+//  - Wait Mode (Practice): advances one note at a time, driven by real key
+//    presses — either from the physical GPP-101 over BLE, or from clicking
+//    the on-screen keyboard (same code path either way)
+//  - Full multi-octave keyboard, with the currently playable range at full
+//    opacity and the rest dimmed (matches the physical GPP-101 range)
+//  - Hand illustration showing which finger to use next
+//  - Measure (note) counter for the current section
+//  - Percentage score, passed back to sections.html via the `completed` param
+//
+// NOTE: the test song only has right-hand notes for now, so "Both" behaves
+// the same as "Right" until a two-hand song exists. The 1/2-keyboard BLE
+// mode selector is not wired in yet — PLAYABLE_RANGE is hardcoded to solo.
 
-const SOLO_RANGE = { start: 60, end: 83 };
-const PASS_THRESHOLD = 80; // % required to unlock the next section
+const FULL_RANGE = { start: 36, end: 96 };   // C2–C7, for the full keyboard visual
+const PLAYABLE_RANGE = { start: 60, end: 83 }; // GPP-101 solo mode range
+const PASS_THRESHOLD = 80;
+
+const params = new URLSearchParams(window.location.search);
+const songId = params.get("song") || "ode-to-joy";
+const sectionParam = params.get("section") || "all";
+const handParam = params.get("hand") || "right";
+const completedParam = params.get("completed") || "";
+
+function parseCompleted(str) {
+  const map = {};
+  if (!str) return map;
+  str.split(",").forEach((entry) => {
+    const [id, pct] = entry.split(":");
+    if (id) map[id] = Number(pct);
+  });
+  return map;
+}
+
+function encodeCompleted(map) {
+  return Object.entries(map)
+    .map(([id, pct]) => `${id}:${pct}`)
+    .join(",");
+}
 
 const state = {
   song: null,
@@ -22,19 +50,16 @@ const state = {
   audio: new PianoAudio(),
   ble: new GPP101(),
 
-  selectedHand: "right",
-  selectedSectionIndex: null, // null = whole song
-  speedMultiplier: 1,
-  loopEnabled: false,
+  selectedHand: handParam,
+  sectionId: sectionParam, // "all" or a section id
+  completed: parseCompleted(completedParam),
 
-  // Normal (auto) playback
   playing: false,
   startTimestamp: 0,
   pausedAtMs: 0,
   timers: [],
   rafId: null,
 
-  // Wait Mode (Practice)
   practiceActive: false,
   waitQueue: [],
   waitPointer: 0,
@@ -52,17 +77,15 @@ function handFilter(notes) {
 
 function getActiveNotes() {
   let notes;
-  if (state.selectedSectionIndex == null) {
+  if (state.sectionId === "all") {
     notes = state.song.notes;
   } else {
-    const sec = state.song.sections[state.selectedSectionIndex];
-    notes = state.song.notes.slice(sec.noteIndexStart, sec.noteIndexEnd + 1);
+    const sec = state.song.sections.find((s) => s.id === state.sectionId);
+    notes = sec ? state.song.notes.slice(sec.noteIndexStart, sec.noteIndexEnd + 1) : state.song.notes;
   }
   return handFilter(notes);
 }
 
-// Converts beat-based notes into a millisecond timeline starting at 0,
-// regardless of which section was selected.
 function toTimeline(notes, msPerBeat) {
   if (notes.length === 0) return [];
   const offsetBeat = notes[0].beat;
@@ -74,8 +97,12 @@ function toTimeline(notes, msPerBeat) {
   }));
 }
 
+function currentMsPerBeat() {
+  return 60000 / state.song.bpm;
+}
+
 // ---------------------------------------------------------------------
-// Keyboard DOM
+// Keyboard DOM (full range, dimmed outside the currently playable range)
 // ---------------------------------------------------------------------
 
 function buildKeyboardDOM(layout) {
@@ -83,9 +110,11 @@ function buildKeyboardDOM(layout) {
   container.innerHTML = "";
   container.style.position = "relative";
 
+  const isPlayable = (note) => note >= PLAYABLE_RANGE.start && note <= PLAYABLE_RANGE.end;
+
   for (const key of layout.keys.filter((k) => !k.isBlack)) {
     const el = document.createElement("div");
-    el.className = "key key-white";
+    el.className = "key key-white" + (isPlayable(key.note) ? "" : " dimmed");
     el.style.left = `${key.x}px`;
     el.style.width = `${key.width}px`;
     el.dataset.note = key.note;
@@ -93,15 +122,13 @@ function buildKeyboardDOM(layout) {
   }
   for (const key of layout.keys.filter((k) => k.isBlack)) {
     const el = document.createElement("div");
-    el.className = "key key-black";
+    el.className = "key key-black" + (isPlayable(key.note) ? "" : " dimmed");
     el.style.left = `${key.x}px`;
     el.style.width = `${key.width}px`;
     el.dataset.note = key.note;
     container.appendChild(el);
   }
 
-  // Clicking/tapping the virtual keyboard behaves exactly like a real key
-  // press — same code path as a BLE note-on from the physical GPP-101.
   container.querySelectorAll(".key").forEach((el) => {
     el.addEventListener("pointerdown", () => {
       const note = Number(el.dataset.note);
@@ -123,16 +150,33 @@ function highlightKey(note, durationMs, color) {
 }
 
 // ---------------------------------------------------------------------
+// Hand illustration
+// ---------------------------------------------------------------------
+
+function updateHandIllustration(finger, color) {
+  document.querySelectorAll(".finger").forEach((el) => {
+    el.classList.remove("active");
+    el.style.removeProperty("--finger-color");
+  });
+  if (!finger) {
+    document.getElementById("hand-caption").textContent = "";
+    return;
+  }
+  const el = document.querySelector(`.finger[data-finger="${finger}"]`);
+  if (el) {
+    el.classList.add("active");
+    el.style.setProperty("--finger-color", color || "var(--amber)");
+  }
+  document.getElementById("hand-caption").textContent = `Finger ${finger}`;
+}
+
+// ---------------------------------------------------------------------
 // Normal (auto) playback
 // ---------------------------------------------------------------------
 
 function clearTimers() {
   state.timers.forEach((t) => clearTimeout(t));
   state.timers = [];
-}
-
-function currentMsPerBeat() {
-  return 60000 / state.song.bpm / state.speedMultiplier;
 }
 
 function schedulePlayback(fromMs) {
@@ -146,6 +190,7 @@ function schedulePlayback(fromMs) {
     const timer = setTimeout(() => {
       state.audio.playNote(n.note, n.durationMs / 1000);
       highlightKey(n.note, n.durationMs, colorForNote(n.note));
+      updateHandIllustration(n.finger, colorForNote(n.note));
     }, delay);
     state.timers.push(timer);
   }
@@ -153,13 +198,7 @@ function schedulePlayback(fromMs) {
   if (timeline.length === 0) return;
   const last = timeline[timeline.length - 1];
   const totalMs = last.startMs + last.durationMs;
-  const stopTimer = setTimeout(() => {
-    if (state.loopEnabled) {
-      restartPlayback();
-    } else {
-      stopPlayback();
-    }
-  }, totalMs - fromMs + 400);
+  const stopTimer = setTimeout(() => stopPlayback(), totalMs - fromMs + 400);
   state.timers.push(stopTimer);
 }
 
@@ -198,6 +237,7 @@ function stopPlayback() {
   cancelAnimationFrame(state.rafId);
   document.getElementById("play-btn").textContent = "Play";
   state.visualizer.draw(0);
+  updateHandIllustration(null);
 }
 
 function togglePlayback() {
@@ -214,8 +254,12 @@ function restartPlayback() {
 }
 
 // ---------------------------------------------------------------------
-// Wait Mode (Practice) — driven entirely by real key presses
+// Wait Mode (Practice)
 // ---------------------------------------------------------------------
+
+function updateMeasureCounter(current, total) {
+  document.getElementById("measure-counter").textContent = `${current} / ${total}`;
+}
 
 async function startPractice() {
   pausePlayback();
@@ -242,15 +286,17 @@ function stopPractice() {
   state.practiceActive = false;
   document.getElementById("practice-btn").textContent = "Start Practice";
   document.getElementById("next-note-display").textContent = "";
+  updateHandIllustration(null);
 }
 
 function showExpectedNote() {
   const expected = state.waitQueue[state.waitPointer];
   state.visualizer.draw(expected.startMs);
+  updateMeasureCounter(state.waitPointer + 1, state.waitQueue.length);
+  updateHandIllustration(expected.finger, colorForNote(expected.note));
+
   const label = document.getElementById("next-note-display");
-  label.textContent = expected.finger
-    ? `Next: finger ${expected.finger}`
-    : "Next note";
+  label.textContent = expected.finger ? `Next: finger ${expected.finger}` : "Next note";
 }
 
 function handleKeyPressed(note) {
@@ -290,89 +336,25 @@ function finishPractice() {
   document.getElementById("next-note-display").textContent = "";
   state.practiceActive = false;
   document.getElementById("practice-btn").textContent = "Start Practice";
+  updateHandIllustration(null);
 
-  if (state.loopEnabled) {
-    setTimeout(() => startPractice(), 900);
+  if (state.sectionId !== "all") {
+    state.completed[state.sectionId] = Math.max(state.completed[state.sectionId] || 0, pct);
+    updateBackLink();
   }
+}
+
+function updateBackLink() {
+  const query = new URLSearchParams({
+    song: songId,
+    completed: encodeCompleted(state.completed),
+  });
+  document.getElementById("back-link").href = `sections.html?${query.toString()}`;
 }
 
 // ---------------------------------------------------------------------
-// Controls: hand / section / speed / loop / BLE
+// BLE
 // ---------------------------------------------------------------------
-
-function setActiveButton(groupSelector, activeEl) {
-  document.querySelectorAll(groupSelector).forEach((el) => el.classList.remove("active"));
-  activeEl.classList.add("active");
-}
-
-function refreshSectionBoundaries() {
-  if (state.selectedSectionIndex == null) {
-    state.visualizer.setActiveSection(null, null);
-    return;
-  }
-  const msPerBeat = currentMsPerBeat();
-  const timeline = toTimeline(getActiveNotes(), msPerBeat);
-  if (timeline.length === 0) {
-    state.visualizer.setActiveSection(null, null);
-    return;
-  }
-  const last = timeline[timeline.length - 1];
-  state.visualizer.setActiveSection(0, last.startMs + last.durationMs);
-}
-
-function buildSectionSelector() {
-  const container = document.getElementById("section-selector");
-  container.innerHTML = "";
-
-  const wholeBtn = document.createElement("button");
-  wholeBtn.className = "chip active";
-  wholeBtn.textContent = "Whole song";
-  wholeBtn.addEventListener("click", () => {
-    state.selectedSectionIndex = null;
-    setActiveButton("#section-selector .chip", wholeBtn);
-    refreshSectionBoundaries();
-  });
-  container.appendChild(wholeBtn);
-
-  state.song.sections.forEach((sec, idx) => {
-    const btn = document.createElement("button");
-    btn.className = "chip";
-    btn.textContent = sec.label;
-    btn.addEventListener("click", () => {
-      state.selectedSectionIndex = idx;
-      setActiveButton("#section-selector .chip", btn);
-      refreshSectionBoundaries();
-    });
-    container.appendChild(btn);
-  });
-}
-
-function wireHandSelector() {
-  document.querySelectorAll("#hand-selector .chip").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      state.selectedHand = btn.dataset.hand;
-      setActiveButton("#hand-selector .chip", btn);
-    });
-  });
-}
-
-function wireSpeedSelector() {
-  document.querySelectorAll("#speed-selector .chip").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      state.speedMultiplier = Number(btn.dataset.speed);
-      setActiveButton("#speed-selector .chip", btn);
-      refreshSectionBoundaries();
-    });
-  });
-}
-
-function wireLoopToggle() {
-  const btn = document.getElementById("loop-toggle");
-  btn.addEventListener("click", () => {
-    state.loopEnabled = !state.loopEnabled;
-    btn.classList.toggle("active", state.loopEnabled);
-  });
-}
 
 function wireBleButton() {
   const btn = document.getElementById("ble-connect-btn");
@@ -385,6 +367,10 @@ function wireBleButton() {
   }
 
   btn.addEventListener("click", async () => {
+    if (state.ble.connected) {
+      state.ble.disconnect();
+      return;
+    }
     try {
       status.textContent = "Connecting…";
       const name = await state.ble.connect();
@@ -406,17 +392,24 @@ function wireBleButton() {
 // Song loading
 // ---------------------------------------------------------------------
 
-async function loadSong(songId) {
-  const res = await fetch(`data/songs/${songId}.json`);
+async function loadSong(id) {
+  const res = await fetch(`data/songs/${id}.json`);
   const song = await res.json();
   state.song = song;
 
   document.getElementById("song-title").textContent = song.title;
 
+  const sectionLabel =
+    state.sectionId === "all"
+      ? "Whole song"
+      : (song.sections.find((s) => s.id === state.sectionId) || {}).label || "Whole song";
+  const handLabel = state.selectedHand === "both" ? "Both hands" : "Right hand";
+  document.getElementById("context-subtitle").textContent = `${handLabel} — ${sectionLabel}`;
+
   const canvas = document.getElementById("visualizer");
   const keyboardWidth = document.getElementById("keyboard").clientWidth;
 
-  state.layout = buildKeyboardLayout(SOLO_RANGE.start, SOLO_RANGE.end, keyboardWidth);
+  state.layout = buildKeyboardLayout(FULL_RANGE.start, FULL_RANGE.end, keyboardWidth);
   buildKeyboardDOM(state.layout);
 
   state.visualizer = new FallingNotesVisualizer(canvas, state.layout, song.notesColor);
@@ -424,11 +417,12 @@ async function loadSong(songId) {
   state.visualizer.resize();
   state.visualizer.draw(0);
 
-  buildSectionSelector();
+  updateMeasureCounter("–", getActiveNotes().length);
+  updateBackLink();
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
-  await loadSong("ode-to-joy");
+  await loadSong(songId);
 
   document.getElementById("play-btn").addEventListener("click", togglePlayback);
   document.getElementById("restart-btn").addEventListener("click", restartPlayback);
@@ -440,14 +434,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  wireHandSelector();
-  wireSpeedSelector();
-  wireLoopToggle();
   wireBleButton();
 
   window.addEventListener("resize", () => {
     const keyboardWidth = document.getElementById("keyboard").clientWidth;
-    state.layout = buildKeyboardLayout(SOLO_RANGE.start, SOLO_RANGE.end, keyboardWidth);
+    state.layout = buildKeyboardLayout(FULL_RANGE.start, FULL_RANGE.end, keyboardWidth);
     buildKeyboardDOM(state.layout);
     state.visualizer.layout = state.layout;
     state.visualizer.keyByNote = {};
