@@ -1,9 +1,16 @@
-// v4.2
+// v4.3
 // learning.js — BASE + Sections page reconnected.
 // Adds: reading ?section=&hand=&completed= from the URL (set by
 // sections.js), filtering the song notes accordingly, a context subtitle,
 // and a back-link that returns to sections.html. Still no BLE, no Wait
 // Mode/Practice, no hand illustration — those come back in later steps.
+//
+// v4.3 additions:
+//  - A lead-in pause before the very first note plays, matching the
+//    visualizer's fall time, so notes actually fall from the top instead
+//    of appearing already on the hit line.
+//  - Section start/end boundary lines (visualizer.js already supported
+//    this via setActiveSection(), just wasn't being called).
 
 const PLAYABLE_RANGE = { start: 60, end: 83 }; // GPP-101 solo mode range
 
@@ -122,14 +129,14 @@ function clearTimers() {
   state.timers = [];
 }
 
-function schedulePlayback(fromMs) {
+function schedulePlayback(fromMs, leadIn = 0) {
   clearTimers();
   const msPerBeat = currentMsPerBeat();
   const timeline = toTimeline(getActiveNotes(), msPerBeat);
 
   for (const n of timeline) {
     if (n.startMs < fromMs) continue;
-    const delay = n.startMs - fromMs;
+    const delay = leadIn + (n.startMs - fromMs);
     const timer = setTimeout(() => {
       state.audio.playNote(n.note, n.durationMs / 1000);
       highlightKey(n.note, n.durationMs, colorForNote(n.note));
@@ -140,7 +147,7 @@ function schedulePlayback(fromMs) {
   if (timeline.length === 0) return;
   const last = timeline[timeline.length - 1];
   const totalMs = last.startMs + last.durationMs;
-  const stopTimer = setTimeout(() => stopPlayback(), totalMs - fromMs + 400);
+  const stopTimer = setTimeout(() => stopPlayback(), leadIn + totalMs - fromMs + 400);
   state.timers.push(stopTimer);
 }
 
@@ -157,8 +164,13 @@ async function startPlayback() {
   state.playing = true;
   document.getElementById("play-btn").textContent = "Pause";
 
-  state.startTimestamp = performance.now() - state.pausedAtMs;
-  schedulePlayback(state.pausedAtMs);
+  // Only give a fall runway on a true cold start (position 0). Resuming
+  // from a mid-song pause should stay continuous with what was already
+  // on screen, not jump.
+  const leadIn = state.pausedAtMs === 0 ? state.visualizer.leadTimeMs : 0;
+
+  state.startTimestamp = performance.now() - state.pausedAtMs + leadIn;
+  schedulePlayback(state.pausedAtMs, leadIn);
   state.rafId = requestAnimationFrame(animationLoop);
 }
 
@@ -177,7 +189,7 @@ function stopPlayback() {
   clearTimers();
   cancelAnimationFrame(state.rafId);
   document.getElementById("play-btn").textContent = "Play";
-  state.visualizer.draw(0);
+  state.visualizer.draw(-state.visualizer.leadTimeMs);
 }
 
 function togglePlayback() {
@@ -220,9 +232,16 @@ async function loadSong(id) {
 
   const canvas = document.getElementById("visualizer");
   state.visualizer = new FallingNotesVisualizer(canvas, state.layout, song.notesColor);
-  state.visualizer.setNotes(toTimeline(getActiveNotes(), currentMsPerBeat()), song.notesColor);
+  const activeTimeline = toTimeline(getActiveNotes(), currentMsPerBeat());
+  state.visualizer.setNotes(activeTimeline, song.notesColor);
+
+  if (activeTimeline.length > 0) {
+    const last = activeTimeline[activeTimeline.length - 1];
+    state.visualizer.setActiveSection(activeTimeline[0].startMs, last.startMs + last.durationMs);
+  }
+
   state.visualizer.resize();
-  state.visualizer.draw(0);
+  state.visualizer.draw(-state.visualizer.leadTimeMs);
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
