@@ -1,4 +1,4 @@
-<!-- v1.0 -->
+<!-- v2.0 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -25,17 +25,62 @@
 
     <div class="progress-bar"><div id="progress-fill"></div></div>
 
+    <div class="controls-row">
+      <div class="control-group">
+        <div class="control-label">Hand</div>
+        <div id="hand-selector" class="chip-group">
+          <button class="chip active" data-hand="right">Right</button>
+          <button class="chip" data-hand="left">Left</button>
+          <button class="chip" data-hand="both">Both</button>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <div class="control-label">Section</div>
+        <div id="section-selector" class="chip-group"></div>
+      </div>
+
+      <div class="control-group">
+        <div class="control-label">Speed</div>
+        <div id="speed-selector" class="chip-group">
+          <button class="chip" data-speed="0.5">50%</button>
+          <button class="chip" data-speed="0.75">75%</button>
+          <button class="chip active" data-speed="1">100%</button>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <div class="control-label">&nbsp;</div>
+        <button id="loop-toggle" class="chip">Loop</button>
+      </div>
+    </div>
+
     <div class="stage">
       <canvas id="visualizer"></canvas>
       <div class="keyboard-wrap">
         <div id="keyboard"></div>
       </div>
     </div>
+
+    <div class="practice-panel">
+      <div class="practice-panel-left">
+        <button id="practice-btn" class="transport-btn primary">Start Practice</button>
+        <span id="next-note-display" class="next-note"></span>
+      </div>
+      <div id="score-display" class="score-display"></div>
+    </div>
+
+    <div class="ble-panel">
+      <button id="ble-connect-btn" class="transport-btn secondary">Connect Keyboard</button>
+      <span id="ble-status" class="ble-status">Not connected</span>
+    </div>
   </main>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/15.5.27/Tone.js"></script>
   <script src="js/keyboard-layout.js"></script>
+  <script src="js/note-colors.js"></script>
   <script src="js/audio.js"></script>
+  <script src="js/ble.js"></script>
   <script src="js/visualizer.js"></script>
   <script src="js/learning.js"></script>
 </body>
