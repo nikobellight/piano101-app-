@@ -1,4 +1,9 @@
-<!-- v3.0 -->
+<!-- v4.0 -->
+<!-- Piano 101 — learning.html — SIMPLIFIED BASE
+     Rebuilt back to the version that worked: one song, auto-playback demo
+     only (Play/Restart). No BLE, no Wait Mode/Practice, no Sections page,
+     no hand illustration, no measure counter. These will be re-added one
+     at a time, on top of this validated base, in later steps. -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -11,34 +16,13 @@
 <body>
 
   <main class="learning-page">
-    <a id="back-link" class="back-link" href="index.html">&larr; Back to sections</a>
+    <a class="back-link" href="index.html">&larr; Back to dashboard</a>
 
     <div class="learning-header">
-      <div>
-        <h1 id="song-title">Loading…</h1>
-        <div id="context-subtitle" class="context-subtitle"></div>
-      </div>
+      <h1 id="song-title">Loading…</h1>
       <div class="transport">
         <button id="restart-btn" class="transport-btn secondary">Restart</button>
         <button id="play-btn" class="transport-btn primary">Play</button>
-      </div>
-    </div>
-
-    <div class="progress-bar"><div id="progress-fill"></div></div>
-
-    <div class="practice-hud">
-      <div id="measure-counter" class="measure-counter">– / –</div>
-
-      <div class="hand-illustration">
-        <svg viewBox="0 0 140 200" xmlns="http://www.w3.org/2000/svg">
-          <rect class="palm" x="30" y="110" width="80" height="80" rx="24" />
-          <rect class="finger" data-finger="1" x="0" y="90" width="26" height="70" rx="13" />
-          <rect class="finger" data-finger="2" x="34" y="40" width="20" height="90" rx="10" />
-          <rect class="finger" data-finger="3" x="58" y="20" width="20" height="110" rx="10" />
-          <rect class="finger" data-finger="4" x="82" y="30" width="20" height="100" rx="10" />
-          <rect class="finger" data-finger="5" x="106" y="55" width="18" height="80" rx="9" />
-        </svg>
-        <div id="hand-caption" class="hand-caption"></div>
       </div>
     </div>
 
@@ -50,26 +34,12 @@
         </div>
       </div>
     </div>
-
-    <div class="practice-panel">
-      <div class="practice-panel-left">
-        <button id="practice-btn" class="transport-btn primary">Start Practice</button>
-        <span id="next-note-display" class="next-note"></span>
-      </div>
-      <div id="score-display" class="score-display"></div>
-    </div>
-
-    <div class="ble-panel">
-      <button id="ble-connect-btn" class="transport-btn secondary">Connect Keyboard</button>
-      <span id="ble-status" class="ble-status">Not connected</span>
-    </div>
   </main>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/15.5.27/Tone.js"></script>
   <script src="js/keyboard-layout.js"></script>
   <script src="js/note-colors.js"></script>
   <script src="js/audio.js"></script>
-  <script src="js/ble.js"></script>
   <script src="js/visualizer.js"></script>
   <script src="js/learning.js"></script>
 </body>
