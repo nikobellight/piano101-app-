@@ -1,3 +1,17 @@
+// v1.7
+// view-learning.js
+// v1.7: adds a tempo control (0.5x-1.25x). Below 1x is for learning a
+// passage: the section still plays through Wait Mode normally, but the
+// score modal shows "Practice run" instead of pass/fail and nothing is
+// written to Store.completed. Requires store.js v1.3+ and app.html v1.5+.
+//
+// v1.6: hand guide now targets the redesigned single-silhouette hands
+// (docked beside the keyboard, see app.html v1.4) instead of the old
+// dot-row panels. And the end-of-section score is now a celebration
+// modal (vertical red-to-green gauge filling to the score, big
+// percentage, Practice again / Back to sections) instead of small inline
+// text. Requires app.html v1.4+ and css/app.css v1.4+.
+//
 // v1.5
 // view-learning.js
 // v1.5: CHORDS. Notes landing on the same beat are now one event, not a
@@ -204,8 +218,12 @@ window.ViewLearning = (function () {
     }));
   }
 
+  // Tempo multiplies the song's own bpm: 0.5x plays at half speed (bigger
+  // msPerBeat), 1.25x at 125% (smaller msPerBeat). Every timeline in the
+  // view (melody, accompaniment, Wait Mode's freeze points) is built from
+  // this single function, so a tempo change affects all of them together.
   function currentMsPerBeat() {
-    return 60000 / state.song.bpm;
+    return 60000 / (state.song.bpm * Store.tempo);
   }
 
   // -------------------------------------------------------------------
@@ -475,19 +493,16 @@ window.ViewLearning = (function () {
   // Practice HUD — finger guide + measure counter
   // -------------------------------------------------------------------
 
-  // Lights the finger(s) to use next, each in its note's own colour, so
-  // the dots match the falling bars and the key glows. Takes a single
-  // timeline entry or a whole chord.
+  // Lights the finger(s) to use next on each hand's SILHOUETTE (one shadow
+  // hand per side, docked beside the keyboard) — the number is written
+  // directly on the fingertip, coloured to match the note, rather than a
+  // separate row of dots. Takes a single timeline entry or a whole chord.
   function updateFingerGuide(entryOrGroup) {
     const entries = entryOrGroup == null
       ? []
       : (Array.isArray(entryOrGroup) ? entryOrGroup : [entryOrGroup]);
 
-    document.querySelectorAll(".hand-panel .finger-dot").forEach((d) => {
-      d.classList.remove("active");
-      d.style.removeProperty("--finger-color");
-    });
-    document.querySelectorAll(".hand-shape .finger").forEach((f) => {
+    document.querySelectorAll(".hand-silhouette .finger").forEach((f) => {
       f.classList.remove("active");
       f.style.removeProperty("--finger-color");
     });
@@ -503,20 +518,12 @@ window.ViewLearning = (function () {
     for (const e of withFinger) {
       const hand = e.hand === "left" ? "left" : "right";
       const color = colorForNote(e.note);
-
-      const dot = document.querySelector(
-        `.hand-panel[data-hand="${hand}"] .finger-dot[data-finger="${e.finger}"]`
+      const finger = document.querySelector(
+        `.hand-silhouette[data-hand="${hand}"] .finger[data-finger="${e.finger}"]`
       );
-      if (dot) {
-        dot.classList.add("active");
-        dot.style.setProperty("--finger-color", color);
-      }
-      const shape = document.querySelector(
-        `.hand-panel[data-hand="${hand}"] .hand-shape .finger[data-finger="${e.finger}"]`
-      );
-      if (shape) {
-        shape.classList.add("active");
-        shape.style.setProperty("--finger-color", color);
+      if (finger) {
+        finger.classList.add("active");
+        finger.style.setProperty("--finger-color", color);
       }
     }
 
@@ -773,24 +780,89 @@ window.ViewLearning = (function () {
     state.visualizer.draw(-state.visualizer.leadTimeMs);
 
     const pct = finalPercent();
-    const scoreEl = document.getElementById("score-display");
     const passed = pct >= PASS_THRESHOLD;
     const mistakes = state.totalWrongAttempts;
-    const mistakeNote = mistakes === 0
-      ? "clean run"
-      : `${mistakes} mistake${mistakes > 1 ? "s" : ""}`;
-
-    scoreEl.textContent = `${pct}% — ${mistakeNote} — ${passed ? "Section passed!" : "Try again"}`;
-    scoreEl.style.color = passed ? "#57cbb3" : "#ff7a6e";
+    const counts = tempoCounts();
 
     document.getElementById("next-note-display").textContent = "";
     state.practiceActive = false;
     document.getElementById("practice-btn").textContent = "Start Practice";
     updateFingerGuide(null);
 
-    // Straight into shared state — the Sections view re-reads it on entry,
-    // no URL round-trip needed any more.
-    Store.recordScore(Store.sectionId, pct);
+    // Below 1x is for learning the passage, not for passing it — nothing
+    // is written to progress, and the Sections view's stars won't move.
+    if (counts) {
+      Store.recordScore(Store.sectionId, pct);
+    }
+
+    openScoreModal(pct, passed, mistakes, counts);
+  }
+
+  // -------------------------------------------------------------------
+  // Score celebration modal
+  // -------------------------------------------------------------------
+
+  function openScoreModal(pct, passed, mistakes, counts) {
+    const card = document.querySelector("#score-modal .score-modal-card");
+    const mask = document.getElementById("score-gauge-mask");
+    const kicker = document.getElementById("score-modal-kicker");
+    const pctEl = document.getElementById("score-modal-pct");
+    const detailEl = document.getElementById("score-modal-detail");
+    const primaryBtn = document.getElementById("score-modal-primary");
+    const secondaryBtn = document.getElementById("score-modal-secondary");
+
+    const celebrate = counts && passed;
+    card.classList.toggle("passed", celebrate);
+    card.classList.toggle("failed", counts && !passed);
+    card.classList.toggle("practice-run", !counts);
+
+    if (!counts) {
+      kicker.textContent = "Practice run";
+    } else {
+      kicker.textContent = passed ? "Section passed!" : "Almost there";
+    }
+    pctEl.textContent = `${pct}%`;
+
+    const mistakeText = mistakes === 0
+      ? "Clean run — no wrong keys"
+      : `${mistakes} wrong key${mistakes > 1 ? "s" : ""}`;
+    detailEl.textContent = counts
+      ? mistakeText
+      : `${mistakeText} — played at ${Store.tempo}x, doesn't count`;
+
+    primaryBtn.textContent = counts ? (passed ? "Continue" : "Try again") : "Try again";
+    secondaryBtn.textContent = counts ? (passed ? "Practice again" : "Back to sections") : "Back to sections";
+
+    primaryBtn.onclick = () => {
+      closeScoreModal();
+      if (celebrate) Router.go(`#/song/${encodeURIComponent(Store.songId)}`);
+      else startPractice();
+    };
+    secondaryBtn.onclick = () => {
+      closeScoreModal();
+      if (celebrate) startPractice();
+      else Router.go(`#/song/${encodeURIComponent(Store.songId)}`);
+    };
+
+    // Gauge starts fully masked, then animates down to reveal `pct`'s
+    // worth of the red-to-green track — the "filling up" effect. The
+    // reflow forces the browser to apply the starting state before the
+    // transition to the real height, or it would just snap with no
+    // animation at all.
+    mask.style.transition = "none";
+    mask.style.height = "100%";
+    // eslint-disable-next-line no-unused-expressions
+    mask.offsetHeight;
+    mask.style.transition = "";
+    requestAnimationFrame(() => {
+      mask.style.height = `${100 - pct}%`;
+    });
+
+    document.getElementById("score-modal").classList.remove("hidden");
+  }
+
+  function closeScoreModal() {
+    document.getElementById("score-modal").classList.add("hidden");
   }
 
   // -------------------------------------------------------------------
@@ -834,6 +906,34 @@ window.ViewLearning = (function () {
     });
   }
 
+  // Scoring only counts at normal speed or faster — below 1x is for
+  // learning a passage, not for passing it. See finalizeScoreCounting().
+  function tempoCounts() {
+    return Store.tempo >= 1;
+  }
+
+  function applyTempo(value) {
+    if (value === Store.tempo) return;
+    Store.tempo = value;
+    syncTempoButtons();
+
+    // Every timeline (fall speed, freeze points, accompaniment) is
+    // derived from currentMsPerBeat(), which just changed — stop cleanly
+    // rather than let a running practice/playback jump mid-note.
+    stopPractice();
+    stopPlayback();
+  }
+
+  function syncTempoButtons() {
+    document.querySelectorAll(".tempo-btn").forEach((btn) => {
+      btn.classList.toggle("active", Number(btn.dataset.tempo) === Store.tempo);
+    });
+    const note = document.getElementById("tempo-note");
+    note.textContent = tempoCounts()
+      ? ""
+      : "Practice speed — this run won't count toward the section's score.";
+  }
+
   function wireControls() {
     if (wiredControls) return;
     wiredControls = true;
@@ -845,6 +945,9 @@ window.ViewLearning = (function () {
     });
     document.querySelectorAll(".kbmode-btn").forEach((btn) => {
       btn.addEventListener("click", () => applyKeyboardMode(btn.dataset.mode));
+    });
+    document.querySelectorAll(".tempo-btn").forEach((btn) => {
+      btn.addEventListener("click", () => applyTempo(Number(btn.dataset.tempo)));
     });
     document.getElementById("accompaniment-btn").addEventListener("click", () => {
       Store.accompaniment = !Store.accompaniment;
@@ -864,9 +967,10 @@ window.ViewLearning = (function () {
   // Dims the hand that isn't being practised, so the eye goes straight to
   // the one that matters.
   function syncHandPanels() {
-    document.querySelectorAll(".hand-panel").forEach((panel) => {
-      const inPlay = Store.hand === "both" || panel.dataset.hand === Store.hand;
-      panel.classList.toggle("idle", !inPlay);
+    document.querySelectorAll(".hand-dock").forEach((dock) => {
+      const hand = dock.classList.contains("hand-dock-left") ? "left" : "right";
+      const inPlay = Store.hand === "both" || hand === Store.hand;
+      dock.classList.toggle("idle", !inPlay);
     });
   }
 
@@ -881,6 +985,7 @@ window.ViewLearning = (function () {
   async function mount() {
     wireControls();
     syncKeyboardModeButtons();
+    syncTempoButtons();
     syncAccompanimentButton();
     syncHandPanels();
 
@@ -940,6 +1045,7 @@ window.ViewLearning = (function () {
     stopPractice();
     stopPlayback();
     clearExpectedNoteLed();
+    closeScoreModal();
 
     // Detach gameplay only — the BLE connection itself stays up. This is
     // the behaviour the whole SPA conversion was for.
