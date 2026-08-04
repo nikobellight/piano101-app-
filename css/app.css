@@ -1,10 +1,13 @@
-/* v1.3 */
+/* v1.5 */
 /* app.css — SPA-only styles: the persistent app shell (brand + BLE widget
    + profile switch), the show/hide mechanics for the three views, and the
    1-keyboard / 2-linked selector in the Learning view.
    Everything else still comes from style.css / sections.css / learning.css,
    which are loaded unchanged.
-   v1.3: hands are now an overlay on the stage (.hands-overlay) rather
+   v1.4: hand redesign — single shadow-hand silhouette per side, docked
+   outside stage-inner in the stage's own margins so it can never overlap
+   the falling notes, with the finger number written on the fingertip
+   itself. Also adds the score celebration modal and gauge.
    than a dot row in the HUD; a chord can light several fingers at once.
    v1.2: added the practice HUD (.practice-hud): measure pill, five-dot
    finger guide, accompaniment toggle. Also .section-circle.locked for the
@@ -226,87 +229,249 @@
   box-shadow: 0 10px 24px -12px rgba(0, 0, 0, 0.6);
 }
 
-/* ---------- Hands overlay (on the stage, bottom corners) ---------- */
 
-.stage-inner { position: relative; }
 
-.hands-overlay {
+/* ---------- Hand silhouettes (docked beside the keyboard) ---------- */
+
+.stage { position: relative; }
+
+/* Docked to the stage's own side margin (outside stage-inner's max-width),
+   vertically aligned with the on-screen keyboard. Only shown when that
+   margin actually exists — see the media query at the end of this block. */
+.hand-dock {
   position: absolute;
-  left: 32px;
-  right: 32px;
-  /* Sits just above the keyboard, over the lower part of the fall. */
-  bottom: 186px;
-  display: flex;
-  justify-content: space-between;
+  bottom: 20px;
+  height: 190px;
+  width: 118px;
+  display: none;
   pointer-events: none;
-  z-index: 2;
+  opacity: 0.9;
 }
 
-.hand-panel {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 5px;
-  opacity: 0.85;
+.hand-dock-left { left: 10px; }
+.hand-dock-right { right: 10px; }
+
+.hand-silhouette { width: 100%; height: 100%; display: block; }
+
+.hand-silhouette .palm,
+.hand-silhouette .palm-base,
+.hand-silhouette .finger path {
+  fill: rgba(180, 190, 220, 0.16);
 }
 
-.hand-shape {
-  width: 74px;
-  height: 80px;
-  display: block;
-}
-
-.hand-shape .finger rect,
-.hand-shape .palm-base {
-  fill: rgba(255, 255, 255, 0.07);
-  stroke: rgba(255, 255, 255, 0.16);
-  stroke-width: 1;
+.hand-silhouette .finger path {
   transition: fill 0.14s ease, filter 0.14s ease;
 }
 
-.hand-shape .finger.active rect {
+.hand-silhouette .finger.active path {
   fill: var(--finger-color, var(--amber));
-  stroke: transparent;
-  filter: drop-shadow(0 0 8px var(--finger-color, var(--amber)));
+  filter: drop-shadow(0 0 10px var(--finger-color, var(--amber)));
 }
 
-.hand-dots { display: flex; gap: 5px; }
+.hand-silhouette .finger text {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 15px;
+  fill: rgba(238, 241, 250, 0.35);
+  text-anchor: middle;
+  transition: fill 0.14s ease;
+}
 
-.finger-dot {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
+.hand-silhouette .finger.active text {
+  fill: #12151f;
+}
+
+/* Only show the hand(s) currently in play; the idle one fades out rather
+   than being removed, so layout never shifts. */
+.hand-dock.idle { opacity: 0.15; }
+
+/* There's only room beside the keyboard once the stage is noticeably
+   wider than stage-inner's own max-width (1400px) plus both docks. Below
+   that, keys and note lanes already reach the stage's edges, so a dock
+   here WOULD sit in the falling notes' path — hide it instead. */
+@media (min-width: 1680px) {
+  .hand-dock { display: block; }
+}
+
+/* ---------- Score celebration modal ---------- */
+
+.score-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(6, 9, 18, 0.72);
+  backdrop-filter: blur(3px);
+}
+
+.score-modal-backdrop.hidden { display: none; }
+
+.score-modal-card {
+  position: relative;
+  width: min(420px, 92vw);
+  background: linear-gradient(165deg, var(--surface-raised), var(--surface));
   border: 1px solid var(--line);
-  color: var(--muted);
-  font-family: var(--font-mono);
-  font-size: 11px;
+  border-radius: 28px;
+  padding: 34px 32px 28px;
+  text-align: center;
+  box-shadow: 0 30px 70px -20px rgba(0, 0, 0, 0.7);
+  overflow: hidden;
+}
+
+.score-modal-kicker {
+  font-family: var(--font-display);
+  font-size: 24px;
   font-weight: 700;
-  transition: transform 0.14s ease, background 0.14s ease, color 0.14s ease;
+  margin-bottom: 22px;
 }
 
-.finger-dot.active {
-  background: var(--finger-color, var(--amber));
-  border-color: transparent;
-  color: #12151f;
-  transform: translateY(-2px) scale(1.15);
-  box-shadow: 0 0 14px var(--finger-color, var(--amber));
+.score-modal-card.passed .score-modal-kicker { color: var(--teal); }
+.score-modal-card.failed .score-modal-kicker { color: var(--coral); }
+
+.score-modal-body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 26px;
+  margin-bottom: 26px;
 }
 
-.hand-label {
+.score-gauge {
+  position: relative;
+  width: 46px;
+  height: 200px;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  flex-shrink: 0;
+}
+
+.score-gauge-track {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    #ff5c5c 0%,
+    #ff9a4d 30%,
+    #f4d34d 55%,
+    #9fd854 75%,
+    #57cbb3 100%
+  );
+}
+
+/* Covers the unfilled portion from the top; animates its own height down
+   to (100 - pct)% on reveal so the gauge visibly "fills up". */
+.score-gauge-mask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100%;
+  background: var(--surface);
+  transition: height 1.1s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.score-modal-figures { text-align: left; }
+
+.score-modal-pct {
   font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  font-size: 56px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--text);
+}
+
+.score-modal-detail {
+  font-family: var(--font-mono);
+  font-size: 13px;
   color: var(--muted);
+  margin-top: 8px;
 }
 
-/* One hand practice: dim the hand that isn't in play. */
-.hand-panel.idle { opacity: 0.28; }
-
-@media (max-width: 900px) {
-  .hands-overlay { display: none; }
+.score-modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
 }
+
+.score-modal-actions .transport-btn { flex: 1; }
+
+/* Confetti: a handful of absolutely-positioned dots, hidden until the
+   card gets .passed, then a CSS class restart triggers the fall/fade. */
+.score-confetti {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.score-confetti span {
+  position: absolute;
+  top: -14px;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  opacity: 0;
+}
+
+.score-modal-card.passed .score-confetti span {
+  animation: confetti-fall 1.5s ease-in forwards;
+}
+
+.score-confetti span:nth-child(1)  { left: 6%;  background: #f4b942; animation-delay: 0.02s; }
+.score-confetti span:nth-child(2)  { left: 18%; background: #57cbb3; animation-delay: 0.12s; }
+.score-confetti span:nth-child(3)  { left: 30%; background: #ff7a6e; animation-delay: 0.04s; }
+.score-confetti span:nth-child(4)  { left: 42%; background: #9d5ce8; animation-delay: 0.20s; }
+.score-confetti span:nth-child(5)  { left: 54%; background: #4fb8f0; animation-delay: 0.08s; }
+.score-confetti span:nth-child(6)  { left: 64%; background: #f4b942; animation-delay: 0.26s; }
+.score-confetti span:nth-child(7)  { left: 74%; background: #57cbb3; animation-delay: 0.0s;  }
+.score-confetti span:nth-child(8)  { left: 82%; background: #ff7a6e; animation-delay: 0.18s; }
+.score-confetti span:nth-child(9)  { left: 90%; background: #9d5ce8; animation-delay: 0.10s; }
+.score-confetti span:nth-child(10) { left: 96%; background: #4fb8f0; animation-delay: 0.24s; }
+
+@keyframes confetti-fall {
+  0%   { opacity: 1; transform: translateY(0) rotate(0deg); }
+  100% { opacity: 0; transform: translateY(260px) rotate(340deg); }
+}
+
+/* ---------- Tempo selector ---------- */
+
+.tempo-switch {
+  display: flex;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px;
+  gap: 3px;
+}
+
+.tempo-btn {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 7px 13px;
+  border-radius: 999px;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.tempo-btn:hover { color: var(--text); }
+
+.tempo-btn.active {
+  background: linear-gradient(135deg, #ffcf6b, var(--amber));
+  color: #2a1a04;
+}
+
+.tempo-note {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--coral);
+  margin: 4px 0 0;
+  min-height: 16px;
+}
+
+.score-modal-card.practice-run .score-modal-kicker { color: var(--muted); }
