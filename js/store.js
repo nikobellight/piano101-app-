@@ -1,7 +1,11 @@
-// v1.2
+// v1.3
 // store.js — Shared in-memory state for the SPA, replacing what used to be
 // passed between pages as URL query params (?song=&section=&hand=&completed=).
 // Because the page is never reloaded, this object simply survives navigation.
+//
+// v1.3: adds tempo (0.5 / 0.75 / 1 / 1.25) and TEMPO_OPTIONS. Practising
+// below 1x is meant for learning a passage, not for scoring it — the
+// Learning view checks tempo before recording a section as passed.
 //
 // v1.2: adds accompaniment (on/off) and PASS_THRESHOLD, which both the
 // Sections view (star ratings, section locking) and the Learning view
@@ -22,6 +26,7 @@ window.KEYBOARD_RANGES = {
 };
 
 window.PASS_THRESHOLD = 80;
+window.TEMPO_OPTIONS = [0.5, 0.75, 1, 1.25];
 
 window.Store = {
   songId: "ode-to-joy",
@@ -29,6 +34,7 @@ window.Store = {
   hand: "right",          // "right" | "both"
   keyboardMode: "solo",   // "solo" | "duo"
   accompaniment: true,    // play the other hand underneath, sound only
+  tempo: 1,               // one of TEMPO_OPTIONS — below 1 doesn't score
   completed: {},          // { [sectionId]: bestPct }
 
   range() {
