@@ -1,5 +1,17 @@
-// v1.9
+// v2.1
 // view-learning.js
+// v2.1: matches visualizer.js v2.0's ghost-note behaviour — a played
+// note now keeps falling (grey, big bold white finger number) instead of
+// vanishing instantly. Renamed the hideNotes() call to markPlayed(), and
+// finishPractice()'s wind-down before the score modal now waits for
+// visualizer.ghostFallDurationMs() so the last note's ghost fall is
+// actually visible instead of being cut short.
+//
+// v2.0: finger guide retargeted at the hand-drawn SVG (app.html v1.9) —
+// toggles .finger.active on <g> elements instead of positioning a badge
+// over an emoji. Numbers are baked into the SVG itself now, so there is
+// nothing left to position or guess here.
+//
 // v1.9: fixes for regressions/feedback from the flex-row hand redesign.
 //  1. LED chord bug: v1.8's Promise.all fired every LED write at once —
 //     the physical keyboard silently accepted only the first and dropped
@@ -16,7 +28,7 @@
 //     (see app.html v1.6), not the old SVG.
 //  2. Every timeline entry gets a unique id (toTimeline()); startPractice
 //     re-points the visualizer at the SAME array it uses for gameplay, and
-//     practiceNoteOff calls visualizer.hideNotes() the instant a note or
+//     practiceNoteOff calls visualizer.markPlayed() the instant a note or
 //     chord is fully validated — it disappears right there instead of
 //     lingering (white or coloured) for its nominal duration.
 //  3. LATE_MISTAKE_THRESHOLD_MS: a note struck more than 600ms after its
@@ -127,7 +139,7 @@ window.ViewLearning = (function () {
 
   // Module-wide counter so every toTimeline() call hands out unique ids,
   // even across separate calls (melody vs accompaniment, or a fresh
-  // Start Practice) — see hideNotes() in visualizer.js.
+  // Start Practice) — see markPlayed() in visualizer.js.
   let nextTimelineId = 1;
 
   const state = {
@@ -232,7 +244,7 @@ window.ViewLearning = (function () {
     return notes.map((n) => ({
       // Unique per entry, across the whole session — lets the visualizer
       // permanently hide ONE specific note the instant it's validated
-      // (see hideNotes()), even if another note of the same pitch occurs
+      // (see markPlayed()), even if another note of the same pitch occurs
       // later in the same timeline.
       id: nextTimelineId++,
       note: n.note,
@@ -470,7 +482,7 @@ window.ViewLearning = (function () {
     state.practiceActive = state.groups.length > 0;
 
     // Re-point the visualizer at THIS EXACT array (same objects, same
-    // ids) rather than the separate one built at mount() — hideNotes()
+    // ids) rather than the separate one built at mount() — markPlayed()
     // below only works because the ids it's given match what's on screen.
     state.visualizer.setNotes(state.waitQueue, state.song.notesColor);
 
@@ -541,19 +553,18 @@ window.ViewLearning = (function () {
   // Practice HUD — finger guide + measure counter
   // -------------------------------------------------------------------
 
-  // Lights the finger(s) to use next as a small colored badge over that
-  // fingertip on each hand's emoji visual — the number is written on the
-  // badge itself, coloured to match the note. Takes a single timeline
-  // entry or a whole chord.
+  // Lights the finger(s) to use next on each hand's SVG — the number is
+  // baked into the SVG at build time (same coordinates as the finger
+  // shape itself), so this only needs to toggle colour, never position
+  // any text. Takes a single timeline entry or a whole chord.
   function updateFingerGuide(entryOrGroup) {
     const entries = entryOrGroup == null
       ? []
       : (Array.isArray(entryOrGroup) ? entryOrGroup : [entryOrGroup]);
 
-    document.querySelectorAll(".finger-badge").forEach((b) => {
-      b.classList.remove("active");
-      b.textContent = "";
-      b.style.removeProperty("--finger-color");
+    document.querySelectorAll(".hand-svg .finger").forEach((f) => {
+      f.classList.remove("active");
+      f.style.removeProperty("--finger-color");
     });
 
     const caption = document.getElementById("finger-caption");
@@ -567,13 +578,12 @@ window.ViewLearning = (function () {
     for (const e of withFinger) {
       const hand = e.hand === "left" ? "left" : "right";
       const color = colorForNote(e.note);
-      const badge = document.querySelector(
-        `.hand-visual[data-hand="${hand}"] .finger-badge[data-finger="${e.finger}"]`
+      const finger = document.querySelector(
+        `.hand-svg[data-hand="${hand}"] .finger[data-finger="${e.finger}"]`
       );
-      if (badge) {
-        badge.classList.add("active");
-        badge.textContent = e.finger;
-        badge.style.setProperty("--finger-color", color);
+      if (finger) {
+        finger.classList.add("active");
+        finger.style.setProperty("--finger-color", color);
       }
     }
 
@@ -806,7 +816,7 @@ window.ViewLearning = (function () {
     if (state.released.size < group.length) return;
 
     // Gone from the canvas the instant it's validated — no lingering.
-    state.visualizer.hideNotes(group.map((e) => e.id));
+    state.visualizer.markPlayed(group.map((e) => e.id));
 
     const lead = leadEntry(group);
     state.practiceBaseMs = lead.startMs;
@@ -822,16 +832,16 @@ window.ViewLearning = (function () {
   }
 
   function finishPractice() {
-    // Let the last note visibly finish its fall (its own duration, plus a
-    // small buffer) instead of cutting straight to the score the instant
-    // it's played. state.practiceBaseMs is already the last note's
-    // startMs at this point (set in practiceNoteOff).
+    // Let the last note's ghost visibly finish falling through the
+    // buffer below the hit line instead of cutting straight to the score
+    // the instant it's played. state.practiceBaseMs is already the last
+    // note's startMs at this point (set in practiceNoteOff), and it was
+    // already marked played (visualizer.markPlayed()) there too.
     cancelAnimationFrame(state.practiceRafId);
     clearExpectedNoteLed();
 
-    const last = state.waitQueue[state.waitQueue.length - 1];
     const windDownFromMs = state.practiceBaseMs;
-    const windDownDurationMs = last.durationMs + FINISH_WINDDOWN_BUFFER_MS;
+    const windDownDurationMs = state.visualizer.ghostFallDurationMs() + FINISH_WINDDOWN_BUFFER_MS;
     const windDownStart = performance.now();
 
     function windDownLoop() {
