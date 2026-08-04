@@ -1,9 +1,11 @@
-/* v1.2 */
+/* v1.3 */
 /* app.css — SPA-only styles: the persistent app shell (brand + BLE widget
    + profile switch), the show/hide mechanics for the three views, and the
    1-keyboard / 2-linked selector in the Learning view.
    Everything else still comes from style.css / sections.css / learning.css,
    which are loaded unchanged.
+   v1.3: hands are now an overlay on the stage (.hands-overlay) rather
+   than a dot row in the HUD; a chord can light several fingers at once.
    v1.2: added the practice HUD (.practice-hud): measure pill, five-dot
    finger guide, accompaniment toggle. Also .section-circle.locked for the
    padlocked sections on the Sections view.
@@ -222,4 +224,89 @@
 .section-circle.locked:hover {
   transform: none;
   box-shadow: 0 10px 24px -12px rgba(0, 0, 0, 0.6);
+}
+
+/* ---------- Hands overlay (on the stage, bottom corners) ---------- */
+
+.stage-inner { position: relative; }
+
+.hands-overlay {
+  position: absolute;
+  left: 32px;
+  right: 32px;
+  /* Sits just above the keyboard, over the lower part of the fall. */
+  bottom: 186px;
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.hand-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  opacity: 0.85;
+}
+
+.hand-shape {
+  width: 74px;
+  height: 80px;
+  display: block;
+}
+
+.hand-shape .finger rect,
+.hand-shape .palm-base {
+  fill: rgba(255, 255, 255, 0.07);
+  stroke: rgba(255, 255, 255, 0.16);
+  stroke-width: 1;
+  transition: fill 0.14s ease, filter 0.14s ease;
+}
+
+.hand-shape .finger.active rect {
+  fill: var(--finger-color, var(--amber));
+  stroke: transparent;
+  filter: drop-shadow(0 0 8px var(--finger-color, var(--amber)));
+}
+
+.hand-dots { display: flex; gap: 5px; }
+
+.finger-dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  transition: transform 0.14s ease, background 0.14s ease, color 0.14s ease;
+}
+
+.finger-dot.active {
+  background: var(--finger-color, var(--amber));
+  border-color: transparent;
+  color: #12151f;
+  transform: translateY(-2px) scale(1.15);
+  box-shadow: 0 0 14px var(--finger-color, var(--amber));
+}
+
+.hand-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* One hand practice: dim the hand that isn't in play. */
+.hand-panel.idle { opacity: 0.28; }
+
+@media (max-width: 900px) {
+  .hands-overlay { display: none; }
 }
