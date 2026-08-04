@@ -1,4 +1,4 @@
-// v1.9
+// v2.0
 // visualizer.js — Draws falling notes on a canvas, synced to song time.
 // Uses the same keyboard layout as the on-screen keyboard so each note
 // lines up exactly with its physical key column. Each note is colored by
@@ -6,11 +6,19 @@
 // Also draws two boundary lines (section start/end) that scroll down
 // together with the notes, so the practiced section is visually framed.
 //
+// v2.0: reverses v1.9's instant-hide behaviour after feedback matching
+// POP Piano more closely — a played note is no longer removed. It keeps
+// falling along its normal trajectory past the hit line (hitY now
+// reserves fallThroughPx of room for this), rendered as a pale grey
+// ghost with a big bold white finger number, until it's fallen through
+// that buffer. hideNotes() is renamed markPlayed() to match; hiddenIds
+// is now ghostIds. Requires each timeline entry to carry an `id` (see
+// toTimeline() in view-learning.js v1.8+).
+//
 // v1.9: notes can now be permanently hidden by id via hideNotes() —
 // called the instant Wait Mode validates a note/chord, so it disappears
 // right away instead of lingering (white or coloured) for its nominal
-// duration. Requires each timeline entry to carry an `id` (see
-// toTimeline() in view-learning.js v1.8+).
+// duration. Requires each timeline entry to carry an `id`.
 //
 // v1.8: reverses part of v1.7 after feedback — a note being waited for
 // must keep its normal colour the whole time it sits frozen at the line,
@@ -46,7 +54,8 @@ class FallingNotesVisualizer {
     this.color = color || "#f4b942";
     this.leadTimeMs = 3400; // how long a note takes to fall to the hit line — gives more time to get ready before it arrives
     this.notes = [];
-    this.hiddenIds = new Set();
+    this.ghostIds = new Set();   // ids of notes already played — see markPlayed()
+    this.fallThroughPx = 90;     // extra room below the hit line where a played note keeps visibly falling, greyed out, before it's gone
     this.keyByNote = {};
     for (const k of layout.keys) this.keyByNote[k.note] = k;
     this.sectionBoundsMs = null; // { startMs, endMs } — set via setActiveSection()
@@ -181,16 +190,28 @@ class FallingNotesVisualizer {
   // upstream, so this class doesn't need to know about beats/bpm at all.
   setNotes(notes, color) {
     this.notes = notes;
-    this.hiddenIds = new Set();
+    this.ghostIds = new Set();
     if (color) this.color = color;
   }
 
-  // Permanently removes specific notes from the canvas from this instant
-  // on, identified by the `id` toTimeline() stamps on each entry. Called
-  // the moment a note/chord is actually validated in Wait Mode, so it
-  // disappears right away instead of lingering for its nominal duration.
-  hideNotes(ids) {
-    for (const id of ids) this.hiddenIds.add(id);
+  // Marks specific notes as played, identified by the `id` toTimeline()
+  // stamps on each entry. A played note is NOT removed — it keeps falling
+  // along its normal trajectory past the hit line (same physics, nothing
+  // special), just rendered as a pale grey ghost with its finger number
+  // still legible, until it exits the fall-through buffer below the hit
+  // line (see fallThroughPx / ghostFallDurationMs()).
+  markPlayed(ids) {
+    for (const id of ids) this.ghostIds.add(id);
+  }
+
+  // How long (ms) a ghost note needs to keep being drawn after its own
+  // startMs to visibly fall all the way through fallThroughPx — used by
+  // the caller to know how long to keep animating after the last note of
+  // a section, so it doesn't cut off mid-fall.
+  ghostFallDurationMs() {
+    const hitY = this.height - 6 - this.fallThroughPx;
+    if (hitY <= 0) return this.leadTimeMs * 0.2;
+    return (this.fallThroughPx / hitY) * this.leadTimeMs;
   }
 
   resize() {
@@ -207,7 +228,10 @@ class FallingNotesVisualizer {
     const ctx = this.ctx;
     ctx.clearRect(0, 0, this.width, this.height);
 
-    const hitY = this.height - 6;
+    // Leaves fallThroughPx of room below the hit line — that's where a
+    // played note keeps visibly falling as a grey ghost instead of
+    // stopping dead at the line.
+    const hitY = this.height - 6 - this.fallThroughPx;
 
     // Column guides (subtle) so falling notes read against a grid.
     ctx.strokeStyle = "rgba(255,255,255,0.04)";
@@ -257,14 +281,21 @@ class FallingNotesVisualizer {
     }
 
     for (const n of this.notes) {
-      if (this.hiddenIds.has(n.id)) continue;
-
       const key = this.keyByNote[n.note];
       if (!key) continue;
 
+      const isGhost = this.ghostIds.has(n.id);
       const spawnMs = n.startMs - this.leadTimeMs;
-      const endMs = n.startMs + n.durationMs;
-      if (currentMs < spawnMs - 300 || currentMs > endMs + 300) continue;
+
+      // A ghost note keeps being drawn until it's fallen all the way
+      // through the buffer below the hit line, regardless of its own
+      // (possibly much shorter) nominal duration — that's what makes it
+      // keep visibly descending instead of vanishing the instant it's
+      // played.
+      const visibilityEndMs = isGhost
+        ? n.startMs + this.ghostFallDurationMs()
+        : n.startMs + n.durationMs + 300;
+      if (currentMs < spawnMs - 300 || currentMs > visibilityEndMs) continue;
 
       const fraction = (currentMs - spawnMs) / this.leadTimeMs;
       const noteHeight = Math.max(16, (n.durationMs / this.leadTimeMs) * hitY);
@@ -275,26 +306,33 @@ class FallingNotesVisualizer {
       const x = key.x + pad;
       const w = key.width - pad * 2;
 
-      const hit = currentMs >= n.startMs && currentMs <= endMs;
-
-      // A note still being WAITED FOR keeps its normal colour the whole
-      // time it's held at the line — it must not go white or vanish just
-      // because it's frozen there. It only turns white — briefly, as
-      // usual — once it's actually been played and Wait Mode has moved
-      // on to the next note/chord (at which point it's no longer in
-      // waitingNotes), then disappears on its own a moment later as time
-      // moves past its endMs, same as any played note always has.
-      const isStillWaiting = this.waitingNotes.includes(n.note) && hit;
-
-      const baseColor = colorForNote(n.note);
-
-      if (hit && !isStillWaiting) {
-        ctx.fillStyle = "#ffffff";
+      if (isGhost) {
+        // Flat, pale grey, fading a little as it falls through the
+        // buffer — colour is gone, this is no longer "the note to play".
+        const ghostProgress = Math.min(1, Math.max(0,
+          (currentMs - n.startMs) / this.ghostFallDurationMs()
+        ));
+        ctx.fillStyle = `rgba(210, 214, 226, ${0.32 * (1 - ghostProgress * 0.6)})`;
       } else {
-        const gradient = ctx.createLinearGradient(x, yTop, x, yBottom);
-        gradient.addColorStop(0, lightenColor(baseColor, 0.4));
-        gradient.addColorStop(1, baseColor);
-        ctx.fillStyle = gradient;
+        const endMs = n.startMs + n.durationMs;
+        const hit = currentMs >= n.startMs && currentMs <= endMs;
+
+        // A note still being WAITED FOR keeps its normal colour the whole
+        // time it's held at the line — it must not go white just because
+        // it's frozen there. It only flashes white for this brief instant
+        // once it's actually been played (right before markPlayed() turns
+        // it into a ghost on the next frame).
+        const isStillWaiting = this.waitingNotes.includes(n.note) && hit;
+        const baseColor = colorForNote(n.note);
+
+        if (hit && !isStillWaiting) {
+          ctx.fillStyle = "#ffffff";
+        } else {
+          const gradient = ctx.createLinearGradient(x, yTop, x, yBottom);
+          gradient.addColorStop(0, lightenColor(baseColor, 0.4));
+          gradient.addColorStop(1, baseColor);
+          ctx.fillStyle = gradient;
+        }
       }
 
       ctx.beginPath();
@@ -305,8 +343,19 @@ class FallingNotesVisualizer {
       }
       ctx.fill();
 
-      // Finger number written large directly on the bar, POP Piano style.
-      if (n.finger && noteHeight > 22) {
+      if (n.finger && isGhost) {
+        // Big, bold, white with a dark outline so it stays legible over
+        // the pale grey ghost bar (and whatever falls behind it).
+        ctx.font = "800 22px Manrope, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.lineWidth = 3.5;
+        ctx.strokeStyle = "rgba(11, 15, 28, 0.75)";
+        ctx.strokeText(String(n.finger), x + w / 2, yTop + noteHeight / 2);
+        ctx.fillStyle = "#ffffff";
+        ctx.fillText(String(n.finger), x + w / 2, yTop + noteHeight / 2);
+      } else if (n.finger && noteHeight > 22) {
+        // Finger number written directly on the bar, POP Piano style.
         ctx.fillStyle = "rgba(11, 15, 28, 0.85)";
         ctx.font = "700 15px Manrope, sans-serif";
         ctx.textAlign = "center";
