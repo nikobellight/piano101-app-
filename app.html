@@ -1,4 +1,19 @@
-<!-- Piano 101 — app.html — v1.3 -->
+<!-- Piano 101 — app.html — v1.5 -->
+<!-- v1.5: tempo control (0.5x / 0.75x / 1x / 1.25x) in the practice HUD,
+     plus a note under it that says when a slower run won't count toward
+     the score — see view-learning.js v1.7. -->
+<!-- Piano 101 — app.html — v1.4 -->
+<!-- v1.4: hand redesign per feedback on the POP Piano reference screenshot
+     — a single translucent shadow-hand per side (not the blocky bar
+     design), with the finger number written ON the fingertip itself, no
+     separate dot row. Docked in the stage's own side margins (outside
+     stage-inner), so it structurally can never overlap the falling notes
+     or the keys, and sits beside the keyboard as asked. Hidden below the
+     width where that margin doesn't exist (see app.css).
+     Also adds the score celebration modal (#score-modal): a vertical
+     gauge, red at the bottom fading to green at the top, that fills to
+     the section's score, plus a big percentage and Practice again / Back
+     to sections actions. -->
 <!-- v1.3: hands moved out of the HUD row and onto the stage itself —
      left hand bottom-left, right hand bottom-right, over the falling
      notes. Each shows a schematic hand plus numbered dots; the finger(s)
@@ -151,80 +166,89 @@
 
         <div id="finger-caption" class="finger-caption">Right hand</div>
 
+        <div id="tempo-switch" class="tempo-switch">
+          <button class="tempo-btn" data-tempo="0.5">0.5x</button>
+          <button class="tempo-btn" data-tempo="0.75">0.75x</button>
+          <button class="tempo-btn active" data-tempo="1">1x</button>
+          <button class="tempo-btn" data-tempo="1.25">1.25x</button>
+        </div>
+
         <button id="accompaniment-btn" class="accompaniment-btn" aria-pressed="true">
           Accompaniment: on
         </button>
       </div>
+      <div id="tempo-note" class="tempo-note"></div>
 
       <div class="stage">
+        <!-- Hand silhouettes sit OUTSIDE stage-inner, in the stage's own
+             side margins — never above the note lanes or the keys, so
+             they're never in the falling notes' path. Each is a single
+             translucent shadow hand (matching POP Piano) with the
+             fingertip's own number written on the finger itself; no
+             separate dot row. Hidden on narrow viewports where there's
+             no side margin to put them in (see app.css breakpoint). -->
+        <div class="hand-dock hand-dock-left">
+          <svg class="hand-silhouette" data-hand="left" viewBox="0 0 140 210" aria-hidden="true">
+            <path class="palm" d="M30 96 C24 60 30 34 40 30 C48 27 52 34 52 52
+                                   L52 96 Z" />
+            <g class="finger" data-finger="5">
+              <path d="M18 96 C14 78 15 62 22 58 C28 55 32 62 32 74 L32 96 Z" />
+              <text x="24" y="80">5</text>
+            </g>
+            <g class="finger" data-finger="4">
+              <path d="M36 96 L36 40 C36 30 46 30 46 40 L46 96 Z" />
+              <text x="40" y="60">4</text>
+            </g>
+            <g class="finger" data-finger="3">
+              <path d="M50 96 L50 24 C50 13 61 13 61 24 L61 96 Z" />
+              <text x="55" y="52">3</text>
+            </g>
+            <g class="finger" data-finger="2">
+              <path d="M65 96 L65 34 C65 24 75 24 75 34 L75 96 Z" />
+              <text x="70" y="56">2</text>
+            </g>
+            <g class="finger" data-finger="1">
+              <path d="M79 96 C79 78 84 62 96 56 C104 52 110 58 106 66
+                       C99 80 90 88 82 96 Z" />
+              <text x="93" y="72">1</text>
+            </g>
+            <path class="palm-base" d="M14 96 L112 96 L112 170 C112 194 92 208 63 208
+                                        C34 208 14 194 14 170 Z" />
+          </svg>
+        </div>
+
+        <div class="hand-dock hand-dock-right">
+          <svg class="hand-silhouette" data-hand="right" viewBox="0 0 140 210" aria-hidden="true">
+            <path class="palm" d="M110 96 C116 60 110 34 100 30 C92 27 88 34 88 52
+                                   L88 96 Z" />
+            <g class="finger" data-finger="5">
+              <path d="M122 96 C126 78 125 62 118 58 C112 55 108 62 108 74 L108 96 Z" />
+              <text x="112" y="80">5</text>
+            </g>
+            <g class="finger" data-finger="4">
+              <path d="M104 96 L104 40 C104 30 94 30 94 40 L94 96 Z" />
+              <text x="96" y="60">4</text>
+            </g>
+            <g class="finger" data-finger="3">
+              <path d="M90 96 L90 24 C90 13 79 13 79 24 L79 96 Z" />
+              <text x="81" y="52">3</text>
+            </g>
+            <g class="finger" data-finger="2">
+              <path d="M75 96 L75 34 C75 24 65 24 65 34 L65 96 Z" />
+              <text x="66" y="56">2</text>
+            </g>
+            <g class="finger" data-finger="1">
+              <path d="M61 96 C61 78 56 62 44 56 C36 52 30 58 34 66
+                       C41 80 50 88 58 96 Z" />
+              <text x="41" y="72">1</text>
+            </g>
+            <path class="palm-base" d="M126 96 L28 96 L28 170 C28 194 48 208 77 208
+                                        C106 208 126 194 126 170 Z" />
+          </svg>
+        </div>
+
         <div class="stage-inner">
           <canvas id="visualizer"></canvas>
-
-          <!-- Hands sit over the bottom corners of the stage, like POP
-               Piano: left hand bottom-left, right hand bottom-right. The
-               finger that's due lights up in that note's colour. Each
-               <g class="finger"> is one finger; the dot carries its
-               number so it can be read at a glance. -->
-          <div class="hands-overlay">
-            <div class="hand-panel" data-hand="left">
-              <svg class="hand-shape" viewBox="0 0 120 130" aria-hidden="true">
-                <path class="palm" d="M22 62 q-6 -22 4 -24 t12 16 l3 14 z" />
-                <g class="finger" data-finger="5">
-                  <rect x="12" y="52" width="13" height="40" rx="6.5" />
-                </g>
-                <g class="finger" data-finger="4">
-                  <rect x="29" y="36" width="14" height="56" rx="7" />
-                </g>
-                <g class="finger" data-finger="3">
-                  <rect x="47" y="30" width="14" height="62" rx="7" />
-                </g>
-                <g class="finger" data-finger="2">
-                  <rect x="65" y="38" width="14" height="54" rx="7" />
-                </g>
-                <g class="finger" data-finger="1">
-                  <rect x="84" y="62" width="24" height="14" rx="7" />
-                </g>
-                <rect class="palm-base" x="12" y="88" width="82" height="34" rx="16" />
-              </svg>
-              <div class="hand-dots">
-                <span class="finger-dot" data-finger="5">5</span>
-                <span class="finger-dot" data-finger="4">4</span>
-                <span class="finger-dot" data-finger="3">3</span>
-                <span class="finger-dot" data-finger="2">2</span>
-                <span class="finger-dot" data-finger="1">1</span>
-              </div>
-              <div class="hand-label">Left</div>
-            </div>
-
-            <div class="hand-panel" data-hand="right">
-              <svg class="hand-shape" viewBox="0 0 120 130" aria-hidden="true">
-                <g class="finger" data-finger="1">
-                  <rect x="12" y="62" width="24" height="14" rx="7" />
-                </g>
-                <g class="finger" data-finger="2">
-                  <rect x="41" y="38" width="14" height="54" rx="7" />
-                </g>
-                <g class="finger" data-finger="3">
-                  <rect x="59" y="30" width="14" height="62" rx="7" />
-                </g>
-                <g class="finger" data-finger="4">
-                  <rect x="77" y="36" width="14" height="56" rx="7" />
-                </g>
-                <g class="finger" data-finger="5">
-                  <rect x="95" y="52" width="13" height="40" rx="6.5" />
-                </g>
-                <rect class="palm-base" x="26" y="88" width="82" height="34" rx="16" />
-              </svg>
-              <div class="hand-dots">
-                <span class="finger-dot" data-finger="1">1</span>
-                <span class="finger-dot" data-finger="2">2</span>
-                <span class="finger-dot" data-finger="3">3</span>
-                <span class="finger-dot" data-finger="4">4</span>
-                <span class="finger-dot" data-finger="5">5</span>
-              </div>
-              <div class="hand-label">Right</div>
-            </div>
-          </div>
 
           <div class="keyboard-wrap">
             <div id="keyboard"></div>
@@ -239,10 +263,39 @@
         </div>
         <div id="score-display" class="score-display"></div>
       </div>
+
+      <!-- Score celebration — hidden by default, shown by showFinalScore().
+           A vertical gauge (red at the bottom, green at the top) fills up
+           to the score's own level; a dark mask covers the unfilled part
+           and animates down to reveal it. -->
+      <div id="score-modal" class="score-modal-backdrop hidden">
+        <div class="score-modal-card">
+          <div id="score-modal-kicker" class="score-modal-kicker">Section passed!</div>
+          <div class="score-modal-body">
+            <div class="score-gauge">
+              <div class="score-gauge-track"></div>
+              <div id="score-gauge-mask" class="score-gauge-mask"></div>
+            </div>
+            <div class="score-modal-figures">
+              <div id="score-modal-pct" class="score-modal-pct">0%</div>
+              <div id="score-modal-detail" class="score-modal-detail">clean run</div>
+            </div>
+          </div>
+          <div id="score-confetti" class="score-confetti">
+            <span></span><span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span><span></span>
+          </div>
+          <div class="score-modal-actions">
+            <button id="score-modal-secondary" class="transport-btn secondary">Back to sections</button>
+            <button id="score-modal-primary" class="transport-btn primary">Practice again</button>
+          </div>
+        </div>
+      </div>
     </main>
   </section>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/15.5.27/Tone.js"></script>
+
 
   <!-- Shared engine modules (unchanged from the multi-page version) -->
   <script src="js/keyboard-layout.js"></script>
