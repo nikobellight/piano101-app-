@@ -1,3 +1,11 @@
+<!-- Piano 101 — app.html — v1.8 -->
+<!-- v1.8: hands moved INTO the keyboard's own row (flex layout: left
+     hand / keys / right hand, side by side) instead of being absolutely
+     positioned outside it. The previous approach could end up entirely
+     off-screen and unreachable on narrower viewports (no way to scroll
+     into negative space) — this can't, by construction, on any width.
+     Also: "2 linked" -> "2 keyboards" (the old label didn't read as an
+     option alongside "1 keyboard"). -->
 <!-- Piano 101 — app.html — v1.7 -->
 <!-- v1.7: hands moved OFF the keyboard entirely — anchored just outside
      stage-inner's own box (immediately beside the keys, not over them),
@@ -154,7 +162,7 @@
         <a id="learning-back-link" class="back-link" href="#/">&larr; Back to sections</a>
         <div id="keyboard-mode-switch" class="keyboard-mode-switch">
           <button class="kbmode-btn" data-mode="solo">1 keyboard</button>
-          <button class="kbmode-btn" data-mode="duo">2 linked</button>
+          <button class="kbmode-btn" data-mode="duo">2 keyboards</button>
         </div>
       </div>
 
@@ -196,38 +204,39 @@
         <div class="stage-inner">
           <canvas id="visualizer"></canvas>
 
+          <!-- Hands share the SAME row as the keyboard (flex layout) —
+               left hand, keys, right hand, side by side, splitting the
+               available width. The keyboard ends up a bit narrower to
+               make room, but this guarantees the hands are always right
+               beside it, on any screen width, never overlapping the
+               keys and never able to end up off-screen (the previous
+               absolute-positioned approach could vanish entirely on
+               narrower screens — this can't). Built from an emoji glyph
+               with a small colored badge overlaid near each fingertip;
+               the badge shows that finger's number when it's due. -->
           <div class="keyboard-wrap">
-            <div id="keyboard"></div>
-          </div>
-
-          <!-- Hands are anchored just OUTSIDE stage-inner's own box now —
-               fully off the keys, not overlapping them at all. Built from
-               an emoji glyph (professionally illustrated, unlike the
-               hand-drawn SVG attempt) with a small colored badge overlaid
-               near each fingertip; the badge shows that finger's number
-               when it's due. On narrow screens there's no room beside
-               the keys without going off the edge of the page — that's
-               allowed here (a horizontal scrollbar) rather than moving
-               the hands back onto the keys. -->
-          <div class="hand-dock hand-dock-left">
-            <div class="hand-visual" data-hand="left">
-              <div class="hand-emoji" aria-hidden="true">✋</div>
-              <span class="finger-badge" data-finger="1"></span>
-              <span class="finger-badge" data-finger="2"></span>
-              <span class="finger-badge" data-finger="3"></span>
-              <span class="finger-badge" data-finger="4"></span>
-              <span class="finger-badge" data-finger="5"></span>
+            <div class="hand-dock hand-dock-left">
+              <div class="hand-visual" data-hand="left">
+                <div class="hand-emoji" aria-hidden="true">✋</div>
+                <span class="finger-badge" data-finger="1"></span>
+                <span class="finger-badge" data-finger="2"></span>
+                <span class="finger-badge" data-finger="3"></span>
+                <span class="finger-badge" data-finger="4"></span>
+                <span class="finger-badge" data-finger="5"></span>
+              </div>
             </div>
-          </div>
 
-          <div class="hand-dock hand-dock-right">
-            <div class="hand-visual" data-hand="right">
-              <div class="hand-emoji" aria-hidden="true">✋</div>
-              <span class="finger-badge" data-finger="1"></span>
-              <span class="finger-badge" data-finger="2"></span>
-              <span class="finger-badge" data-finger="3"></span>
-              <span class="finger-badge" data-finger="4"></span>
-              <span class="finger-badge" data-finger="5"></span>
+            <div id="keyboard"></div>
+
+            <div class="hand-dock hand-dock-right">
+              <div class="hand-visual" data-hand="right">
+                <div class="hand-emoji" aria-hidden="true">✋</div>
+                <span class="finger-badge" data-finger="1"></span>
+                <span class="finger-badge" data-finger="2"></span>
+                <span class="finger-badge" data-finger="3"></span>
+                <span class="finger-badge" data-finger="4"></span>
+                <span class="finger-badge" data-finger="5"></span>
+              </div>
             </div>
           </div>
         </div>
