@@ -1,5 +1,11 @@
-// v1.0
-// view-dashboard.js — SPA version of the old app.js. Same demo data and
+// v1.1
+// view-dashboard.js
+// v1.1: the three real profiles (Nicolas / Mia / Tenzin) replace the
+// Profile 1 / Profile 2 placeholders, and the greeting now uses the
+// active profile's name. Tenzin starts empty, which also exercises the
+// "no songs played yet" empty state.
+//
+// v1.0: SPA version of the old app.js. Same demo data and
 // same rendering; the only real changes are (a) it's wrapped in a module
 // with mount()/unmount() instead of running on DOMContentLoaded, and
 // (b) library rows navigate with a hash route instead of a page load.
@@ -12,7 +18,7 @@ window.ViewDashboard = (function () {
     activeProfile: 1,
     profiles: {
       1: {
-        name: "Profile 1",
+        name: "Nicolas",
         hoursPracticed: 12.5,
         avgMinutesPerDay: 22,
         recentSongs: [
@@ -21,12 +27,18 @@ window.ViewDashboard = (function () {
         ],
       },
       2: {
-        name: "Profile 2",
+        name: "Mia",
         hoursPracticed: 3.2,
         avgMinutesPerDay: 9,
         recentSongs: [
           { name: "Ode to Joy", when: "3 days ago", progress: 20, color: "#4f9c8a" },
         ],
+      },
+      3: {
+        name: "Tenzin",
+        hoursPracticed: 0,
+        avgMinutesPerDay: 0,
+        recentSongs: [],
       },
     },
   };
@@ -91,6 +103,8 @@ window.ViewDashboard = (function () {
       btn.classList.toggle("active", Number(btn.dataset.profile) === id);
     });
     const profile = DEMO_STATE.profiles[id];
+    const greeting = document.querySelector("#view-dashboard .greeting");
+    if (greeting) greeting.textContent = `Hi ${profile.name} 👋`;
     renderStats(profile);
     renderRecentSongs(profile);
   }
