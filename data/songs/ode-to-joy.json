@@ -1,23 +1,29 @@
 {
-  "_version": "v1.2",
+  "_version": "v2.0",
+  "_changes": "v2.0: added notesLeft (left-hand accompaniment chords) and beatStart/beatEnd on each section. noteIndexStart/noteIndexEnd are kept untouched so the old non-SPA pages keep working; the SPA slices sections by beat instead, which is what makes two-hand sections possible.",
   "id": "ode-to-joy",
   "title": "Ode to Joy",
   "difficulty": "Beginner",
   "notesColor": "#4f9c8a",
   "bpm": 100,
+  "beatsPerMeasure": 4,
   "keyboardMode": "solo",
   "sections": [
     {
       "id": "phrase-1",
       "label": "Phrase 1",
       "noteIndexStart": 0,
-      "noteIndexEnd": 7
+      "noteIndexEnd": 7,
+      "beatStart": 0,
+      "beatEnd": 7
     },
     {
       "id": "phrase-2",
       "label": "Phrase 2",
       "noteIndexStart": 8,
-      "noteIndexEnd": 14
+      "noteIndexEnd": 14,
+      "beatStart": 8,
+      "beatEnd": 14
     }
   ],
   "notes": [
@@ -125,6 +131,176 @@
       "durationBeats": 1.4,
       "finger": 2,
       "hand": "right"
+    }
+  ],
+  "notesLeft": [
+    {
+      "note": 48,
+      "beat": 0,
+      "durationBeats": 1.9,
+      "finger": 5,
+      "hand": "left"
+    },
+    {
+      "note": 52,
+      "beat": 0,
+      "durationBeats": 1.9,
+      "finger": 3,
+      "hand": "left"
+    },
+    {
+      "note": 55,
+      "beat": 0,
+      "durationBeats": 1.9,
+      "finger": 1,
+      "hand": "left"
+    },
+    {
+      "note": 48,
+      "beat": 2,
+      "durationBeats": 1.9,
+      "finger": 5,
+      "hand": "left"
+    },
+    {
+      "note": 52,
+      "beat": 2,
+      "durationBeats": 1.9,
+      "finger": 3,
+      "hand": "left"
+    },
+    {
+      "note": 55,
+      "beat": 2,
+      "durationBeats": 1.9,
+      "finger": 1,
+      "hand": "left"
+    },
+    {
+      "note": 48,
+      "beat": 4,
+      "durationBeats": 1.9,
+      "finger": 5,
+      "hand": "left"
+    },
+    {
+      "note": 52,
+      "beat": 4,
+      "durationBeats": 1.9,
+      "finger": 3,
+      "hand": "left"
+    },
+    {
+      "note": 55,
+      "beat": 4,
+      "durationBeats": 1.9,
+      "finger": 1,
+      "hand": "left"
+    },
+    {
+      "note": 50,
+      "beat": 6,
+      "durationBeats": 1.9,
+      "finger": 5,
+      "hand": "left"
+    },
+    {
+      "note": 55,
+      "beat": 6,
+      "durationBeats": 1.9,
+      "finger": 3,
+      "hand": "left"
+    },
+    {
+      "note": 59,
+      "beat": 6,
+      "durationBeats": 1.9,
+      "finger": 1,
+      "hand": "left"
+    },
+    {
+      "note": 48,
+      "beat": 8,
+      "durationBeats": 1.9,
+      "finger": 5,
+      "hand": "left"
+    },
+    {
+      "note": 52,
+      "beat": 8,
+      "durationBeats": 1.9,
+      "finger": 3,
+      "hand": "left"
+    },
+    {
+      "note": 55,
+      "beat": 8,
+      "durationBeats": 1.9,
+      "finger": 1,
+      "hand": "left"
+    },
+    {
+      "note": 48,
+      "beat": 10,
+      "durationBeats": 1.9,
+      "finger": 5,
+      "hand": "left"
+    },
+    {
+      "note": 52,
+      "beat": 10,
+      "durationBeats": 1.9,
+      "finger": 3,
+      "hand": "left"
+    },
+    {
+      "note": 55,
+      "beat": 10,
+      "durationBeats": 1.9,
+      "finger": 1,
+      "hand": "left"
+    },
+    {
+      "note": 50,
+      "beat": 12,
+      "durationBeats": 1.9,
+      "finger": 5,
+      "hand": "left"
+    },
+    {
+      "note": 55,
+      "beat": 12,
+      "durationBeats": 1.9,
+      "finger": 3,
+      "hand": "left"
+    },
+    {
+      "note": 59,
+      "beat": 12,
+      "durationBeats": 1.9,
+      "finger": 1,
+      "hand": "left"
+    },
+    {
+      "note": 50,
+      "beat": 14,
+      "durationBeats": 1.4,
+      "finger": 5,
+      "hand": "left"
+    },
+    {
+      "note": 55,
+      "beat": 14,
+      "durationBeats": 1.4,
+      "finger": 3,
+      "hand": "left"
+    },
+    {
+      "note": 59,
+      "beat": 14,
+      "durationBeats": 1.4,
+      "finger": 1,
+      "hand": "left"
     }
   ]
 }
