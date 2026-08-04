@@ -1,4 +1,4 @@
-/* v1.6 */
+/* v1.7 */
 /* app.css — SPA-only styles: the persistent app shell (brand + BLE widget
    + profile switch), the show/hide mechanics for the three views, and the
    1-keyboard / 2-linked selector in the Learning view.
@@ -416,25 +416,31 @@
 
 .score-modal-card.practice-run .score-modal-kicker { color: var(--muted); }
 
-/* ---------- Hands (emoji + finger badges, docked at keyboard corners) ---------- */
+/* ---------- Hands (emoji + finger badges, docked beside the keyboard) ---------- */
 
-/* Allow the hand to render slightly beyond the rounded-corner clip that
-   keyboard-wrap normally applies to the keys. */
-.keyboard-wrap { position: relative; overflow: visible; }
+.keyboard-wrap { position: relative; }
 
+/* Anchored just OUTSIDE stage-inner's own box (stage-inner already has
+   position:relative), immediately beside the keys — never over them, so
+   there's no ambiguity about being "in the way" of anything. Sized to
+   the keyboard's own height (learning.css: #keyboard height:150px), i.e.
+   as big as the keyboard, per feedback.
+   On a screen narrower than stage-inner's max-width + both docks, there
+   is no room in the margin: the dock then renders partly off the edge
+   of the page, producing a horizontal scrollbar. That's accepted here —
+   the alternative (snapping back onto the keys) is what this was fixing. */
 .hand-dock {
   position: absolute;
   bottom: 0;
-  width: 84px;
-  height: 150px; /* matches key height — never pokes up into the canvas
-                    above, where notes fall, however wide the screen is */
+  width: 130px;
+  height: 150px;
   z-index: 3;
   pointer-events: none;
   transition: opacity 0.2s ease;
 }
 
-.hand-dock-left  { left: 0; }
-.hand-dock-right { right: 0; }
+.hand-dock-left  { right: 100%; margin-right: 10px; }
+.hand-dock-right { left: 100%;  margin-left: 10px; }
 
 .hand-visual {
   position: relative;
@@ -455,7 +461,7 @@
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  font-size: 74px;
+  font-size: 118px;
   line-height: 1;
   filter: grayscale(1) brightness(1.7) opacity(0.5);
   transition: filter 0.2s ease;
@@ -465,17 +471,18 @@
 
 /* Approximate fingertip positions over the ✋ glyph — thumb (1) to pinky
    (5) left-to-right on the unflipped (right-hand) glyph. These are
-   estimates and may need nudging once seen against the real emoji font. */
+   estimates; send a screenshot of this version and they can be nudged
+   precisely rather than guessed again. */
 .finger-badge {
   position: absolute;
-  width: 22px;
-  height: 22px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   color: transparent;
   background: transparent;
@@ -498,7 +505,3 @@
 }
 
 .hand-dock-left .finger-badge.active { transform: scaleX(-1); }
-
-@media (max-width: 560px) {
-  .hand-dock { display: none; }
-}
