@@ -1,5 +1,15 @@
-// v1.8
+// v1.9
 // view-learning.js
+// v1.9: fixes for regressions/feedback from the flex-row hand redesign.
+//  1. LED chord bug: v1.8's Promise.all fired every LED write at once —
+//     the physical keyboard silently accepted only the first and dropped
+//     the rest, so only one note ever lit. Reverted to sequential writes
+//     (still using the no-response fast path from ble.js v1.1).
+//  2. Accompaniment button hidden entirely when practising both hands —
+//     there's no "other hand" left to accompany in that mode.
+// Hand layout and the "2 keyboards" label fix are in app.html v1.8 and
+// css/app.css v1.8, no JS changes needed for those.
+//
 // v1.8: three fixes from feedback on the emoji hand redesign and a live
 // test run.
 //  1. Finger guide now targets the emoji hand's .finger-badge elements
@@ -617,12 +627,14 @@ window.ViewLearning = (function () {
 
     const fallDurationMs = Math.max(0, leadEntry(group).startMs - state.practiceBaseMs);
     state.ledTimerId = setTimeout(async () => {
-      // Every key of the chord fires together (Promise.all, not one
-      // await per note) — sequential awaiting was exactly what made a
-      // chord's LEDs visibly light one at a time instead of as a group.
-      await Promise.all(state.currentLedNotes.map((n) => ble().sendLedOff(n)));
+      // Sequential, not Promise.all: firing several BLE writes at once
+      // made the keyboard only accept the first one and silently drop
+      // the rest, so only one LED ever lit up. One at a time, but each
+      // using the no-response write (ble.js v1.1) to stay as fast as the
+      // link allows — this is the trade-off that actually works.
+      for (const n of state.currentLedNotes) await ble().sendLedOff(n);
       state.currentLedNotes = group.map((e) => e.note);
-      await Promise.all(state.currentLedNotes.map((n) => ble().sendLedOn(n)));
+      for (const n of state.currentLedNotes) await ble().sendLedOn(n);
     }, fallDurationMs);
   }
 
@@ -636,7 +648,7 @@ window.ViewLearning = (function () {
   async function clearExpectedNoteLed() {
     cancelScheduledLed();
     if (ble() && ble().connected) {
-      await Promise.all(state.currentLedNotes.map((n) => ble().sendLedOff(n)));
+      for (const n of state.currentLedNotes) await ble().sendLedOff(n);
     }
     state.currentLedNotes = [];
   }
@@ -1037,6 +1049,9 @@ window.ViewLearning = (function () {
 
   function syncAccompanimentButton() {
     const btn = document.getElementById("accompaniment-btn");
+    // Nothing to accompany when both hands are being practised — there is
+    // no "other hand" left over to play underneath.
+    btn.style.display = Store.hand === "both" ? "none" : "";
     const on = Store.accompaniment;
     btn.textContent = `Accompaniment: ${on ? "on" : "off"}`;
     btn.setAttribute("aria-pressed", String(on));
