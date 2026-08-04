@@ -1,4 +1,13 @@
-<!-- Piano 101 — app.html — v1.0 -->
+<!-- Piano 101 — app.html — v1.2 -->
+<!-- v1.2: practice HUD above the stage — measure counter, finger guide
+     (5 dots, the active one lit in the note's colour) and an
+     accompaniment on/off toggle. The old SVG hand was dropped rather
+     than restyled; five labelled dots read faster and don't fight the
+     falling notes for attention. -->
+<!-- v1.1: real profile names (Nicolas / Mia / Tenzin) instead of the
+     Profile 1 / Profile 2 placeholders, and a 1-keyboard / 2-linked
+     selector in the Learning view (MIDI 60-83 vs 48-95, matching the
+     validated GPP-101 mappings). -->
 <!-- v1.0: Single Page Application. Replaces index.html + sections.html +
      learning.html with one document holding three views, shown/hidden by
      a small hash router (js/router.js). The point: the page is NEVER
@@ -28,8 +37,9 @@
     <div class="app-shell-right">
       <div id="ble-widget" class="ble-widget"></div>
       <div class="profile-switch">
-        <button class="profile-btn" data-profile="1">Profile 1</button>
-        <button class="profile-btn" data-profile="2">Profile 2</button>
+        <button class="profile-btn" data-profile="1">Nicolas</button>
+        <button class="profile-btn" data-profile="2">Mia</button>
+        <button class="profile-btn" data-profile="3">Tenzin</button>
       </div>
     </div>
   </header>
@@ -109,6 +119,10 @@
     <main class="learning-page">
       <div class="learning-topbar">
         <a id="learning-back-link" class="back-link" href="#/">&larr; Back to sections</a>
+        <div id="keyboard-mode-switch" class="keyboard-mode-switch">
+          <button class="kbmode-btn" data-mode="solo">1 keyboard</button>
+          <button class="kbmode-btn" data-mode="duo">2 linked</button>
+        </div>
       </div>
 
       <div class="learning-header">
@@ -120,6 +134,30 @@
           <button id="restart-btn" class="transport-btn secondary">Restart</button>
           <button id="play-btn" class="transport-btn primary">Play</button>
         </div>
+      </div>
+
+      <div class="practice-hud">
+        <div class="measure-pill">
+          <span id="measure-value">–</span>
+          <span class="measure-sep">/</span>
+          <span id="measure-total">–</span>
+          <span class="measure-caption">measure</span>
+        </div>
+
+        <div class="finger-guide">
+          <div class="finger-dots">
+            <span class="finger-dot" data-finger="1">1</span>
+            <span class="finger-dot" data-finger="2">2</span>
+            <span class="finger-dot" data-finger="3">3</span>
+            <span class="finger-dot" data-finger="4">4</span>
+            <span class="finger-dot" data-finger="5">5</span>
+          </div>
+          <div id="finger-caption" class="finger-caption">Right hand</div>
+        </div>
+
+        <button id="accompaniment-btn" class="accompaniment-btn" aria-pressed="true">
+          Accompaniment: on
+        </button>
       </div>
 
       <div class="stage">
