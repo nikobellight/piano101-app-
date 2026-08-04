@@ -1,8 +1,15 @@
-/* v1.0 */
+/* v1.2 */
 /* app.css — SPA-only styles: the persistent app shell (brand + BLE widget
-   + profile switch) and the show/hide mechanics for the three views.
+   + profile switch), the show/hide mechanics for the three views, and the
+   1-keyboard / 2-linked selector in the Learning view.
    Everything else still comes from style.css / sections.css / learning.css,
-   which are loaded unchanged. */
+   which are loaded unchanged.
+   v1.2: added the practice HUD (.practice-hud): measure pill, five-dot
+   finger guide, accompaniment toggle. Also .section-circle.locked for the
+   padlocked sections on the Sections view.
+   v1.1: added .keyboard-mode-switch (pill pair, same visual language as
+   .profile-switch) and made .learning-topbar lay its children out with
+   space-between now that it holds more than just the back link. */
 
 /* ---------- View switching ---------- */
 
@@ -59,4 +66,160 @@
 #view-sections .sections-page,
 #view-learning .learning-page {
   padding-top: 16px;
+}
+
+/* ---------- Keyboard mode selector (1 keyboard / 2 linked) ---------- */
+
+#view-learning .learning-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.keyboard-mode-switch {
+  display: flex;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px;
+  gap: 3px;
+}
+
+.kbmode-btn {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 7px 16px;
+  border-radius: 999px;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.kbmode-btn:hover { color: var(--text); }
+
+.kbmode-btn.active {
+  background: linear-gradient(135deg, #ffcf6b, var(--amber));
+  color: #2a1a04;
+}
+
+/* With three profiles the shell can get tight on narrow screens — let the
+   switch wrap under the brand rather than squashing the BLE pill. */
+@media (max-width: 700px) {
+  .profile-btn { padding: 8px 14px; font-size: 13px; }
+}
+
+/* ---------- Practice HUD (measure counter + finger guide) ---------- */
+
+.practice-hud {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin: 22px 0 4px;
+}
+
+.measure-pill {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 10px 20px;
+  font-family: var(--font-mono);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--amber);
+  line-height: 1;
+}
+
+.measure-pill .measure-sep { color: var(--muted); font-weight: 400; }
+#measure-total { color: var(--muted); }
+
+.measure-pill .measure-caption {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-left: 6px;
+}
+
+/* Five labelled dots instead of the old SVG hand — reads at a glance and
+   doesn't compete with the falling notes for attention. */
+.finger-guide {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+}
+
+.finger-dots { display: flex; gap: 8px; }
+
+.finger-dot {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  transition: transform 0.14s ease, background 0.14s ease, color 0.14s ease;
+}
+
+.finger-dot.active {
+  background: var(--finger-color, var(--amber));
+  border-color: transparent;
+  color: #12151f;
+  transform: translateY(-3px) scale(1.14);
+  box-shadow: 0 0 16px var(--finger-color, var(--amber));
+}
+
+.finger-caption {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  min-height: 14px;
+}
+
+.accompaniment-btn {
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 10px 18px;
+  border-radius: 999px;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.accompaniment-btn:hover { border-color: var(--amber); }
+.accompaniment-btn.off { color: var(--muted); }
+
+/* ---------- Locked sections ---------- */
+
+.section-circle.locked {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: var(--line);
+  color: var(--muted);
+  cursor: not-allowed;
+  font-size: 26px;
+}
+
+.section-circle.locked:hover {
+  transform: none;
+  box-shadow: 0 10px 24px -12px rgba(0, 0, 0, 0.6);
 }
