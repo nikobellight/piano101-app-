@@ -1,4 +1,4 @@
-/* v1.9 */
+/* v2.0 */
 /* app.css — SPA-only styles: the persistent app shell (brand + BLE widget
    + profile switch), the show/hide mechanics for the three views, and the
    1-keyboard / 2-linked selector in the Learning view.
@@ -431,7 +431,7 @@
   justify-content: space-between;
   align-items: flex-end;
   height: 190px;
-  margin-top: 12px;
+  margin: 4px 0 8px;
   pointer-events: none;
 }
 
@@ -441,8 +441,14 @@
   align-items: center;
   gap: 4px;
   width: 150px;
-  transition: opacity 0.2s ease;
 }
+
+.hand-dock.hidden { display: none; }
+
+/* Keeps the right hand pinned to the right even when the left one is
+   hidden entirely (Right-hand-only mode) — space-between alone only
+   works with two items present. */
+.hand-dock-right { margin-left: auto; }
 
 .hand-svg {
   width: 100%;
@@ -478,7 +484,6 @@
 
 .hand-svg .finger.active text { fill: #12151f; }
 
-.hand-dock.idle { opacity: 0.3; }
 
 .hand-label {
   font-family: var(--font-mono);
