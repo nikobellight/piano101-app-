@@ -110,10 +110,10 @@ window.ViewLearning = (function () {
   const FINISH_WINDDOWN_BUFFER_MS = 400;
 
   // A note struck more than this long after its freeze point counts as a
-  // scoring mistake — same section-wide penalty as a wrong key — on top
-  // of its already-low timing sub-score. Without this, a very slow but
-  // pitch-perfect run could still pass.
-  const LATE_MISTAKE_THRESHOLD_MS = 600;
+  // (softer) scoring mistake — see LATE_PENALTY near finalPercent() — on
+  // top of its already-low timing sub-score. Without this, a very slow
+  // but pitch-perfect run could still pass.
+  const LATE_MISTAKE_THRESHOLD_MS = 900;
 
   // Module-wide counter so every toTimeline() call hands out unique ids,
   // even across separate calls (melody vs accompaniment, or a fresh
@@ -143,6 +143,7 @@ window.ViewLearning = (function () {
     noteScores: [],
     currentWrongAttempts: 0,
     totalWrongAttempts: 0,
+    totalLateHits: 0,
     currentTimingScore: 0,
     currentLedNotes: [],
     ledTimerId: null,
@@ -455,6 +456,7 @@ window.ViewLearning = (function () {
     state.noteScores = [];
     state.currentWrongAttempts = 0;
     state.totalWrongAttempts = 0;
+    state.totalLateHits = 0;
     state.practiceActive = state.groups.length > 0;
 
     // Re-point the visualizer at THIS EXACT array (same objects, same
@@ -615,11 +617,12 @@ window.ViewLearning = (function () {
 
     const fallDurationMs = Math.max(0, leadEntry(group).startMs - state.practiceBaseMs);
     state.ledTimerId = setTimeout(async () => {
-      // Every key of the chord lights together — that's the whole point
-      // of a chord guide on the instrument itself.
-      for (const n of state.currentLedNotes) await ble().sendLedOff(n);
+      // Every key of the chord fires together (Promise.all, not one
+      // await per note) — sequential awaiting was exactly what made a
+      // chord's LEDs visibly light one at a time instead of as a group.
+      await Promise.all(state.currentLedNotes.map((n) => ble().sendLedOff(n)));
       state.currentLedNotes = group.map((e) => e.note);
-      for (const n of state.currentLedNotes) await ble().sendLedOn(n);
+      await Promise.all(state.currentLedNotes.map((n) => ble().sendLedOn(n)));
     }, fallDurationMs);
   }
 
@@ -633,7 +636,7 @@ window.ViewLearning = (function () {
   async function clearExpectedNoteLed() {
     cancelScheduledLed();
     if (ble() && ble().connected) {
-      for (const n of state.currentLedNotes) await ble().sendLedOff(n);
+      await Promise.all(state.currentLedNotes.map((n) => ble().sendLedOff(n)));
     }
     state.currentLedNotes = [];
   }
@@ -669,10 +672,10 @@ window.ViewLearning = (function () {
 
   function timingScoreFromDelta(deltaMs) {
     const abs = Math.abs(deltaMs);
-    if (abs <= 120) return 1;
-    if (abs <= 250) return 0.7;
-    if (abs <= 450) return 0.4;
-    return 0.1;
+    if (abs <= 180) return 1;
+    if (abs <= 350) return 0.7;
+    if (abs <= 600) return 0.4;
+    return 0.15;
   }
 
   function durationScoreFromRatio(ratio) {
@@ -695,12 +698,19 @@ window.ViewLearning = (function () {
   // mistake drops a clean run well under the pass mark, which is the
   // behaviour asked for.
   const MISTAKE_PENALTY = 0.25;
+  // Being very late is real, but shouldn't hit as hard as an outright
+  // wrong note — a softer section-wide penalty, on top of the low
+  // per-note timing score above.
+  const LATE_PENALTY = 0.12;
 
   function finalPercent() {
     const total = state.noteScores.length;
     if (total === 0) return 0;
     const mean = state.noteScores.reduce((a, b) => a + b, 0) / total;
-    const penalty = Math.max(0, 1 - MISTAKE_PENALTY * state.totalWrongAttempts);
+    const penalty = Math.max(
+      0,
+      1 - MISTAKE_PENALTY * state.totalWrongAttempts - LATE_PENALTY * state.totalLateHits
+    );
     return Math.round(mean * penalty * 100);
   }
 
@@ -736,12 +746,12 @@ window.ViewLearning = (function () {
       const freezeRealTime = state.practiceRealStart + fallDurationMs;
       const deltaMs = now - freezeRealTime;
       state.currentTimingScore = timingScoreFromDelta(deltaMs);
-      // A note struck way after its freeze point isn't just "a bit off
-      // timing" — it's treated the same as a wrong key: it adds to the
-      // section-wide mistake penalty, so consistently slow playing can't
-      // pass just because the pitches were all correct.
+      // A note struck way after its freeze point counts toward its own,
+      // softer penalty (LATE_PENALTY) — separate from wrong-key mistakes
+      // — so consistently slow-but-correct playing scores lower without
+      // being treated as harshly as a wrong note.
       if (Math.abs(deltaMs) > LATE_MISTAKE_THRESHOLD_MS) {
-        state.totalWrongAttempts++;
+        state.totalLateHits++;
       }
       // Wait Mode has no continuous clock — the accompaniment is released
       // as the player reaches each chord, so it lands with the melody at
@@ -830,7 +840,8 @@ window.ViewLearning = (function () {
 
     const pct = finalPercent();
     const passed = pct >= PASS_THRESHOLD;
-    const mistakes = state.totalWrongAttempts;
+    const wrongKeys = state.totalWrongAttempts;
+    const lateHits = state.totalLateHits;
     const counts = tempoCounts();
 
     document.getElementById("next-note-display").textContent = "";
@@ -844,14 +855,14 @@ window.ViewLearning = (function () {
       Store.recordScore(Store.sectionId, pct);
     }
 
-    openScoreModal(pct, passed, mistakes, counts);
+    openScoreModal(pct, passed, wrongKeys, lateHits, counts);
   }
 
   // -------------------------------------------------------------------
   // Score celebration modal
   // -------------------------------------------------------------------
 
-  function openScoreModal(pct, passed, mistakes, counts) {
+  function openScoreModal(pct, passed, wrongKeys, lateHits, counts) {
     const card = document.querySelector("#score-modal .score-modal-card");
     const mask = document.getElementById("score-gauge-mask");
     const kicker = document.getElementById("score-modal-kicker");
@@ -872,9 +883,10 @@ window.ViewLearning = (function () {
     }
     pctEl.textContent = `${pct}%`;
 
-    const mistakeText = mistakes === 0
-      ? "Clean run — no mistakes"
-      : `${mistakes} mistake${mistakes > 1 ? "s" : ""} (wrong keys or off-tempo hits)`;
+    const parts = [];
+    if (wrongKeys > 0) parts.push(`${wrongKeys} wrong key${wrongKeys > 1 ? "s" : ""}`);
+    if (lateHits > 0) parts.push(`${lateHits} late hit${lateHits > 1 ? "s" : ""}`);
+    const mistakeText = parts.length === 0 ? "Clean run — no mistakes" : parts.join(", ");
     detailEl.textContent = counts
       ? mistakeText
       : `${mistakeText} — played at ${Store.tempo}x, doesn't count`;
