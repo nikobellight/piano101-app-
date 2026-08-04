@@ -1,10 +1,16 @@
-// v1.8
+// v1.9
 // visualizer.js — Draws falling notes on a canvas, synced to song time.
 // Uses the same keyboard layout as the on-screen keyboard so each note
 // lines up exactly with its physical key column. Each note is colored by
 // pitch class (see note-colors.js) and tagged with its finger number.
 // Also draws two boundary lines (section start/end) that scroll down
 // together with the notes, so the practiced section is visually framed.
+//
+// v1.9: notes can now be permanently hidden by id via hideNotes() —
+// called the instant Wait Mode validates a note/chord, so it disappears
+// right away instead of lingering (white or coloured) for its nominal
+// duration. Requires each timeline entry to carry an `id` (see
+// toTimeline() in view-learning.js v1.8+).
 //
 // v1.8: reverses part of v1.7 after feedback — a note being waited for
 // must keep its normal colour the whole time it sits frozen at the line,
@@ -40,6 +46,7 @@ class FallingNotesVisualizer {
     this.color = color || "#f4b942";
     this.leadTimeMs = 3400; // how long a note takes to fall to the hit line — gives more time to get ready before it arrives
     this.notes = [];
+    this.hiddenIds = new Set();
     this.keyByNote = {};
     for (const k of layout.keys) this.keyByNote[k.note] = k;
     this.sectionBoundsMs = null; // { startMs, endMs } — set via setActiveSection()
@@ -174,7 +181,16 @@ class FallingNotesVisualizer {
   // upstream, so this class doesn't need to know about beats/bpm at all.
   setNotes(notes, color) {
     this.notes = notes;
+    this.hiddenIds = new Set();
     if (color) this.color = color;
+  }
+
+  // Permanently removes specific notes from the canvas from this instant
+  // on, identified by the `id` toTimeline() stamps on each entry. Called
+  // the moment a note/chord is actually validated in Wait Mode, so it
+  // disappears right away instead of lingering for its nominal duration.
+  hideNotes(ids) {
+    for (const id of ids) this.hiddenIds.add(id);
   }
 
   resize() {
@@ -241,6 +257,8 @@ class FallingNotesVisualizer {
     }
 
     for (const n of this.notes) {
+      if (this.hiddenIds.has(n.id)) continue;
+
       const key = this.keyByNote[n.note];
       if (!key) continue;
 
