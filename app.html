@@ -1,3 +1,12 @@
+<!-- Piano 101 — app.html — v1.9 -->
+<!-- v1.9: keyboard restored to its original full width (no longer shares
+     its row with the hands — that broke note/key alignment since the
+     canvas and the keyboard need to stay exactly the same width). Hands
+     moved to their own dedicated row between the canvas and the keyboard,
+     sharing its height with neither. Hand-drawn SVG replaced the emoji:
+     each finger is its own elongated, well-separated shape, with its
+     number written at the SAME coordinates as the finger tip in the
+     SVG's own coordinate system, so it can't end up off the finger. -->
 <!-- Piano 101 — app.html — v1.8 -->
 <!-- v1.8: hands moved INTO the keyboard's own row (flex layout: left
      hand / keys / right hand, side by side) instead of being absolutely
@@ -204,40 +213,71 @@
         <div class="stage-inner">
           <canvas id="visualizer"></canvas>
 
-          <!-- Hands share the SAME row as the keyboard (flex layout) —
-               left hand, keys, right hand, side by side, splitting the
-               available width. The keyboard ends up a bit narrower to
-               make room, but this guarantees the hands are always right
-               beside it, on any screen width, never overlapping the
-               keys and never able to end up off-screen (the previous
-               absolute-positioned approach could vanish entirely on
-               narrower screens — this can't). Built from an emoji glyph
-               with a small colored badge overlaid near each fingertip;
-               the badge shows that finger's number when it's due. -->
-          <div class="keyboard-wrap">
+          <!-- Own dedicated row, between the canvas and the keyboard —
+               shares its height with neither. Notes fall only within the
+               canvas above it; keys only start below it; the hands live
+               only here. Each finger is drawn as its own elongated shape
+               in the SVG, well separated, with its number written at the
+               SAME coordinates as the finger tip itself — not a guessed
+               overlay — so it can't end up off the finger. -->
+          <div class="hands-row">
             <div class="hand-dock hand-dock-left">
-              <div class="hand-visual" data-hand="left">
-                <div class="hand-emoji" aria-hidden="true">✋</div>
-                <span class="finger-badge" data-finger="1"></span>
-                <span class="finger-badge" data-finger="2"></span>
-                <span class="finger-badge" data-finger="3"></span>
-                <span class="finger-badge" data-finger="4"></span>
-                <span class="finger-badge" data-finger="5"></span>
-              </div>
+              <svg class="hand-svg" data-hand="left" viewBox="0 0 170 230" aria-hidden="true">
+                <rect class="palm" x="10" y="140" width="150" height="80" rx="30" />
+                <g class="finger" data-finger="5">
+                  <rect x="22" y="65" width="22" height="82" rx="11" />
+                  <text x="33" y="90">5</text>
+                </g>
+                <g class="finger" data-finger="4">
+                  <rect x="50" y="38" width="22" height="109" rx="11" />
+                  <text x="61" y="63">4</text>
+                </g>
+                <g class="finger" data-finger="3">
+                  <rect x="78" y="15" width="22" height="132" rx="11" />
+                  <text x="89" y="40">3</text>
+                </g>
+                <g class="finger" data-finger="2">
+                  <rect x="106" y="40" width="22" height="107" rx="11" />
+                  <text x="117" y="65">2</text>
+                </g>
+                <g class="finger" data-finger="1">
+                  <rect x="134" y="95" width="22" height="52" rx="11" />
+                  <text x="145" y="120">1</text>
+                </g>
+              </svg>
+              <div class="hand-label">Left</div>
             </div>
-
-            <div id="keyboard"></div>
 
             <div class="hand-dock hand-dock-right">
-              <div class="hand-visual" data-hand="right">
-                <div class="hand-emoji" aria-hidden="true">✋</div>
-                <span class="finger-badge" data-finger="1"></span>
-                <span class="finger-badge" data-finger="2"></span>
-                <span class="finger-badge" data-finger="3"></span>
-                <span class="finger-badge" data-finger="4"></span>
-                <span class="finger-badge" data-finger="5"></span>
-              </div>
+              <svg class="hand-svg" data-hand="right" viewBox="0 0 170 230" aria-hidden="true">
+                <rect class="palm" x="10" y="140" width="150" height="80" rx="30" />
+                <g class="finger" data-finger="1">
+                  <rect x="14" y="95" width="22" height="52" rx="11" />
+                  <text x="25" y="120">1</text>
+                </g>
+                <g class="finger" data-finger="2">
+                  <rect x="42" y="40" width="22" height="107" rx="11" />
+                  <text x="53" y="65">2</text>
+                </g>
+                <g class="finger" data-finger="3">
+                  <rect x="70" y="15" width="22" height="132" rx="11" />
+                  <text x="81" y="40">3</text>
+                </g>
+                <g class="finger" data-finger="4">
+                  <rect x="98" y="38" width="22" height="109" rx="11" />
+                  <text x="109" y="63">4</text>
+                </g>
+                <g class="finger" data-finger="5">
+                  <rect x="126" y="65" width="22" height="82" rx="11" />
+                  <text x="137" y="90">5</text>
+                </g>
+              </svg>
+              <div class="hand-label">Right</div>
             </div>
+          </div>
+
+          <div class="keyboard-wrap">
+            <div id="keyboard"></div>
           </div>
         </div>
       </div>
