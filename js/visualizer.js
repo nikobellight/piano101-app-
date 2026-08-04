@@ -1,4 +1,6 @@
-// v2.1
+// v2.2
+// v2.2: finger number on not-yet-played falling notes is now plain white
+// (was dark) — quick color tweak requested by Nico, nothing else changed.
 // visualizer.js — Draws falling notes on a canvas, synced to song time.
 // Uses the same keyboard layout as the on-screen keyboard so each note
 // lines up exactly with its physical key column. Each note is colored by
@@ -365,7 +367,7 @@ class FallingNotesVisualizer {
         // actually matters (glancing ahead while the note is still
         // falling or waiting on the line), so it's now noticeably bigger
         // and bolder than before.
-        ctx.fillStyle = "rgba(11, 15, 28, 0.88)";
+        ctx.fillStyle = "#ffffff";
         ctx.font = "800 19px Manrope, sans-serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
