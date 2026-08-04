@@ -1,3 +1,19 @@
+// v1.5
+// view-learning.js
+// v1.5: CHORDS. Notes landing on the same beat are now one event, not a
+// sequence. Before this, a three-note left-hand chord had to be played
+// one key at a time and only ever lit one key — which is what looked
+// broken in two-hand mode. Now every key of the chord lights together
+// (screen + physical LEDs), the keys may be struck in ANY order, and the
+// chord only advances once all of them have been pressed and released.
+// Timing is judged once per chord on its first key, so the natural
+// spread of fingers landing isn't scored as lateness. When both hands
+// share a beat the right hand is the lead: it drives the measure counter
+// and the freeze point, with the left as harmony underneath.
+// Also: the finger guide became a pair of hands sitting on the stage
+// (bottom-left / bottom-right), able to light several fingers at once,
+// with the idle hand dimmed. Requires visualizer.js v1.6+.
+//
 // v1.4
 // view-learning.js
 // v1.4: four things at once, all of which touch the same gameplay loop.
@@ -78,15 +94,17 @@ window.ViewLearning = (function () {
 
     practiceActive: false,
     waitQueue: [],
-    waitPointer: 0,
+    groups: [],           // notes grouped by beat — a chord is one event
+    groupPointer: 0,
+    pressed: new Map(),   // note -> press timestamp, within current group
+    released: new Set(),  // notes of the current group already scored
     accompQueue: [],
     accompPointer: 0,
     noteScores: [],
     currentWrongAttempts: 0,
     totalWrongAttempts: 0,
-    currentPressRealTime: null,
     currentTimingScore: 0,
-    currentLedNote: null,
+    currentLedNotes: [],
     ledTimerId: null,
     practiceBaseMs: 0,
     practiceRealStart: 0,
@@ -336,6 +354,33 @@ window.ViewLearning = (function () {
     return getActiveNotes().filter((n) => n.note < range.start || n.note > range.end);
   }
 
+  // Notes that land on the same beat form ONE event. Without this, a
+  // three-note left-hand chord had to be played one key at a time and
+  // only ever lit one key — the thing that looked most broken in
+  // two-hand mode. Grouping also means both hands striking together on
+  // the same beat is a single validation, which is how it's actually
+  // played.
+  function buildGroups(timeline) {
+    const groups = [];
+    for (const entry of timeline) {
+      const last = groups[groups.length - 1];
+      if (last && Math.abs(last[0].startMs - entry.startMs) < 1) last.push(entry);
+      else groups.push([entry]);
+    }
+    return groups;
+  }
+
+  function currentGroup() {
+    return state.groups[state.groupPointer] || null;
+  }
+
+  // The entry a group's HUD should follow. With both hands on one beat
+  // the right hand carries the melody, so it drives the measure counter
+  // and the fall — the left hand is harmony underneath it.
+  function leadEntry(group) {
+    return group.find((e) => e.hand === "right") || group[0];
+  }
+
   async function startPractice() {
     pausePlayback();
 
@@ -352,14 +397,16 @@ window.ViewLearning = (function () {
     await state.audio.init();
 
     state.waitQueue = toTimeline(getActiveNotes(), currentMsPerBeat());
+    state.groups = buildGroups(state.waitQueue);
+    state.groupPointer = 0;
+    state.pressed = new Map();   // note -> press timestamp, current group
+    state.released = new Set();  // notes of the current group already scored
     state.accompQueue = toAccompanimentTimeline(currentMsPerBeat());
     state.accompPointer = 0;
-    state.waitPointer = 0;
     state.noteScores = [];
     state.currentWrongAttempts = 0;
     state.totalWrongAttempts = 0;
-    state.currentPressRealTime = null;
-    state.practiceActive = state.waitQueue.length > 0;
+    state.practiceActive = state.groups.length > 0;
 
     document.getElementById("practice-btn").textContent = "Stop Practice";
     document.getElementById("score-display").textContent = "";
@@ -367,11 +414,7 @@ window.ViewLearning = (function () {
     if (state.practiceActive) {
       state.practiceBaseMs = -state.visualizer.leadTimeMs;
       state.practiceRealStart = performance.now();
-      state.visualizer.setWaitingNote(state.waitQueue[0].note);
-      updateFingerGuide(state.waitQueue[0]);
-      updateMeasureCounter(state.waitQueue[0]);
-      updateNextNoteLabel();
-      scheduleExpectedNoteLed();
+      showCurrentGroup();
       state.practiceRafId = requestAnimationFrame(practiceAnimationLoop);
     } else {
       document.getElementById("score-display").textContent =
@@ -391,47 +434,99 @@ window.ViewLearning = (function () {
 
   function practiceAnimationLoop() {
     if (!state.practiceActive) return;
-    const expected = state.waitQueue[state.waitPointer];
+    const group = currentGroup();
+    if (!group) return;
     const elapsed = performance.now() - state.practiceRealStart;
     // Strict freeze on the hit line — same as POP Piano. What keeps it
     // from looking dead is the waiting cue drawn by the visualizer, not
-    // letting the fall drift past the line.
-    const currentMs = Math.min(state.practiceBaseMs + elapsed, expected.startMs);
+    // letting the fall drift past the line. The freeze point is the
+    // chord's own beat, so both hands stop together.
+    const currentMs = Math.min(state.practiceBaseMs + elapsed, leadEntry(group).startMs);
     state.visualizer.draw(currentMs);
     state.practiceRafId = requestAnimationFrame(practiceAnimationLoop);
   }
 
+  // Lights every key of the current chord at once, on screen and on the
+  // physical keyboard's LEDs, and points the finger guide at all the
+  // fingers involved.
+  function showCurrentGroup() {
+    const group = currentGroup();
+    if (!group) return;
+    state.pressed = new Map();
+    state.released = new Set();
+    state.currentWrongAttempts = 0;
+
+    state.visualizer.setWaitingNote(group.map((e) => e.note));
+    updateFingerGuide(group);
+    updateMeasureCounter(leadEntry(group));
+    updateNextNoteLabel();
+    scheduleExpectedNoteLed();
+  }
+
   function updateNextNoteLabel() {
+    const group = currentGroup();
+    const size = group ? group.length : 0;
+    const what = size > 1 ? `Chord (${size} notes)` : "Note";
     document.getElementById("next-note-display").textContent =
-      `Note ${state.waitPointer + 1} / ${state.waitQueue.length}`;
+      `${what} ${state.groupPointer + 1} / ${state.groups.length}`;
   }
 
   // -------------------------------------------------------------------
   // Practice HUD — finger guide + measure counter
   // -------------------------------------------------------------------
 
-  // Lights the finger to use next, in that note's own colour, so the dot
-  // matches the falling bar and the key glow.
-  function updateFingerGuide(entry) {
-    const dots = document.querySelectorAll(".finger-dot");
-    dots.forEach((d) => {
+  // Lights the finger(s) to use next, each in its note's own colour, so
+  // the dots match the falling bars and the key glows. Takes a single
+  // timeline entry or a whole chord.
+  function updateFingerGuide(entryOrGroup) {
+    const entries = entryOrGroup == null
+      ? []
+      : (Array.isArray(entryOrGroup) ? entryOrGroup : [entryOrGroup]);
+
+    document.querySelectorAll(".hand-panel .finger-dot").forEach((d) => {
       d.classList.remove("active");
       d.style.removeProperty("--finger-color");
     });
+    document.querySelectorAll(".hand-shape .finger").forEach((f) => {
+      f.classList.remove("active");
+      f.style.removeProperty("--finger-color");
+    });
 
     const caption = document.getElementById("finger-caption");
-    if (!entry || !entry.finger) {
+    const withFinger = entries.filter((e) => e.finger);
+
+    if (withFinger.length === 0) {
       caption.textContent = Store.hand === "both" ? "Both hands" : "Right hand";
       return;
     }
 
-    const dot = document.querySelector(`.finger-dot[data-finger="${entry.finger}"]`);
-    if (dot) {
-      dot.classList.add("active");
-      dot.style.setProperty("--finger-color", colorForNote(entry.note));
+    for (const e of withFinger) {
+      const hand = e.hand === "left" ? "left" : "right";
+      const color = colorForNote(e.note);
+
+      const dot = document.querySelector(
+        `.hand-panel[data-hand="${hand}"] .finger-dot[data-finger="${e.finger}"]`
+      );
+      if (dot) {
+        dot.classList.add("active");
+        dot.style.setProperty("--finger-color", color);
+      }
+      const shape = document.querySelector(
+        `.hand-panel[data-hand="${hand}"] .hand-shape .finger[data-finger="${e.finger}"]`
+      );
+      if (shape) {
+        shape.classList.add("active");
+        shape.style.setProperty("--finger-color", color);
+      }
     }
-    const handWord = entry.hand === "left" ? "Left" : "Right";
-    caption.textContent = `${handWord} hand · finger ${entry.finger}`;
+
+    // Describe the chord compactly: "Left 5+3+1 · Right 3".
+    const byHand = { left: [], right: [] };
+    for (const e of withFinger) byHand[e.hand === "left" ? "left" : "right"].push(e.finger);
+    const parts = [];
+    if (byHand.left.length) parts.push(`Left ${byHand.left.join("+")}`);
+    if (byHand.right.length) parts.push(`Right ${byHand.right.join("+")}`);
+    caption.textContent = parts.join(" · ");
   }
 
   function beatsPerMeasure() {
@@ -470,14 +565,16 @@ window.ViewLearning = (function () {
     cancelScheduledLed();
     if (!ble() || !ble().connected) return;
 
-    const expected = state.waitQueue[state.waitPointer];
-    if (!expected) return;
+    const group = currentGroup();
+    if (!group) return;
 
-    const fallDurationMs = Math.max(0, expected.startMs - state.practiceBaseMs);
+    const fallDurationMs = Math.max(0, leadEntry(group).startMs - state.practiceBaseMs);
     state.ledTimerId = setTimeout(async () => {
-      if (state.currentLedNote != null) await ble().sendLedOff(state.currentLedNote);
-      await ble().sendLedOn(expected.note);
-      state.currentLedNote = expected.note;
+      // Every key of the chord lights together — that's the whole point
+      // of a chord guide on the instrument itself.
+      for (const n of state.currentLedNotes) await ble().sendLedOff(n);
+      state.currentLedNotes = group.map((e) => e.note);
+      for (const n of state.currentLedNotes) await ble().sendLedOn(n);
     }, fallDurationMs);
   }
 
@@ -490,10 +587,10 @@ window.ViewLearning = (function () {
 
   async function clearExpectedNoteLed() {
     cancelScheduledLed();
-    if (ble() && ble().connected && state.currentLedNote != null) {
-      await ble().sendLedOff(state.currentLedNote);
+    if (ble() && ble().connected) {
+      for (const n of state.currentLedNotes) await ble().sendLedOff(n);
     }
-    state.currentLedNote = null;
+    state.currentLedNotes = [];
   }
 
   // -------------------------------------------------------------------
@@ -563,10 +660,14 @@ window.ViewLearning = (function () {
   }
 
   function practiceNoteOn(note) {
-    const expected = state.waitQueue[state.waitPointer];
-    if (!expected) return;
+    const group = currentGroup();
+    if (!group) return;
 
-    if (note !== expected.note) {
+    const entry = group.find((e) => e.note === note);
+
+    // Not part of this chord, or a key already down — either way it's a
+    // wrong press. Notes of the chord may be struck in ANY order.
+    if (!entry || state.pressed.has(note) || state.released.has(note)) {
       state.currentWrongAttempts++;
       state.totalWrongAttempts++;
       state.audio.playNote(note, 0.3);
@@ -574,19 +675,26 @@ window.ViewLearning = (function () {
       return;
     }
 
-    state.currentPressRealTime = performance.now();
-    const fallDurationMs = Math.max(0, expected.startMs - state.practiceBaseMs);
-    const freezeRealTime = state.practiceRealStart + fallDurationMs;
-    state.currentTimingScore = timingScoreFromDelta(state.currentPressRealTime - freezeRealTime);
+    const now = performance.now();
+    state.pressed.set(note, now);
 
-    state.audio.playNote(note, expected.durationMs / 1000);
-    highlightKey(note, expected.durationMs, colorForNote(note));
-    // Immediate reward burst on the key column, POP Piano style.
+    state.audio.playNote(note, entry.durationMs / 1000);
+    highlightKey(note, entry.durationMs, colorForNote(note));
     state.visualizer.spark(note);
-    // Wait Mode has no continuous clock — the accompaniment is therefore
-    // released as the player reaches each note, so the chords land with
-    // the melody however fast or slow the section is being played.
-    flushAccompanimentUpTo(expected.startMs);
+
+    // Timing is judged once per chord, on its FIRST key — otherwise the
+    // natural spread of fingers landing across a few milliseconds would
+    // be scored as lateness.
+    if (state.pressed.size === 1) {
+      const lead = leadEntry(group);
+      const fallDurationMs = Math.max(0, lead.startMs - state.practiceBaseMs);
+      const freezeRealTime = state.practiceRealStart + fallDurationMs;
+      state.currentTimingScore = timingScoreFromDelta(now - freezeRealTime);
+      // Wait Mode has no continuous clock — the accompaniment is released
+      // as the player reaches each chord, so it lands with the melody at
+      // whatever speed the section is being played.
+      flushAccompanimentUpTo(lead.startMs);
+    }
   }
 
   function flushAccompanimentUpTo(ms) {
@@ -601,33 +709,37 @@ window.ViewLearning = (function () {
   }
 
   function practiceNoteOff(note) {
-    const expected = state.waitQueue[state.waitPointer];
-    if (!expected || note !== expected.note || state.currentPressRealTime == null) return;
+    const group = currentGroup();
+    if (!group) return;
 
-    const heldMs = performance.now() - state.currentPressRealTime;
-    const durationScore = durationScoreFromRatio(heldMs / expected.durationMs);
+    const pressedAt = state.pressed.get(note);
+    if (pressedAt == null) return;
+
+    const entry = group.find((e) => e.note === note);
+    state.pressed.delete(note);
+    state.released.add(note);
+
+    const heldMs = performance.now() - pressedAt;
+    const durationScore = durationScoreFromRatio(heldMs / entry.durationMs);
     const pitchScore = pitchScoreFromAttempts(state.currentWrongAttempts);
-    // Pitch now dominates: timing and duration can polish a score but can
-    // no longer rescue a note that was played wrong.
+    // Pitch dominates: timing and duration can polish a note's score but
+    // can no longer rescue one that was played wrong.
     state.noteScores.push(pitchScore * 0.75 + state.currentTimingScore * 0.15 + durationScore * 0.10);
 
-    state.currentPressRealTime = null;
-    state.currentWrongAttempts = 0;
+    // The chord only counts as done once every one of its keys has been
+    // struck AND let go.
+    if (state.released.size < group.length) return;
 
-    state.practiceBaseMs = expected.startMs;
+    const lead = leadEntry(group);
+    state.practiceBaseMs = lead.startMs;
     state.practiceRealStart = performance.now();
 
-    state.waitPointer++;
-    if (state.waitPointer >= state.waitQueue.length) {
+    state.groupPointer++;
+    if (state.groupPointer >= state.groups.length) {
       state.visualizer.setWaitingNote(null);
       finishPractice();
     } else {
-      const next = state.waitQueue[state.waitPointer];
-      state.visualizer.setWaitingNote(next.note);
-      updateFingerGuide(next);
-      updateMeasureCounter(next);
-      updateNextNoteLabel();
-      scheduleExpectedNoteLed();
+      showCurrentGroup();
     }
   }
 
@@ -749,6 +861,15 @@ window.ViewLearning = (function () {
     });
   }
 
+  // Dims the hand that isn't being practised, so the eye goes straight to
+  // the one that matters.
+  function syncHandPanels() {
+    document.querySelectorAll(".hand-panel").forEach((panel) => {
+      const inPlay = Store.hand === "both" || panel.dataset.hand === Store.hand;
+      panel.classList.toggle("idle", !inPlay);
+    });
+  }
+
   function syncAccompanimentButton() {
     const btn = document.getElementById("accompaniment-btn");
     const on = Store.accompaniment;
@@ -761,6 +882,7 @@ window.ViewLearning = (function () {
     wireControls();
     syncKeyboardModeButtons();
     syncAccompanimentButton();
+    syncHandPanels();
 
     // Gameplay hooks on the shared, still-connected BLE instance.
     await PianoBle.ready;
