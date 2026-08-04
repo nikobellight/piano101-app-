@@ -1,4 +1,4 @@
-/* v1.5 */
+/* v1.6 */
 /* app.css — SPA-only styles: the persistent app shell (brand + BLE widget
    + profile switch), the show/hide mechanics for the three views, and the
    1-keyboard / 2-linked selector in the Learning view.
@@ -231,67 +231,7 @@
 
 
 
-/* ---------- Hand silhouettes (docked beside the keyboard) ---------- */
 
-.stage { position: relative; }
-
-/* Docked to the stage's own side margin (outside stage-inner's max-width),
-   vertically aligned with the on-screen keyboard. Only shown when that
-   margin actually exists — see the media query at the end of this block. */
-.hand-dock {
-  position: absolute;
-  bottom: 20px;
-  height: 190px;
-  width: 118px;
-  display: none;
-  pointer-events: none;
-  opacity: 0.9;
-}
-
-.hand-dock-left { left: 10px; }
-.hand-dock-right { right: 10px; }
-
-.hand-silhouette { width: 100%; height: 100%; display: block; }
-
-.hand-silhouette .palm,
-.hand-silhouette .palm-base,
-.hand-silhouette .finger path {
-  fill: rgba(180, 190, 220, 0.16);
-}
-
-.hand-silhouette .finger path {
-  transition: fill 0.14s ease, filter 0.14s ease;
-}
-
-.hand-silhouette .finger.active path {
-  fill: var(--finger-color, var(--amber));
-  filter: drop-shadow(0 0 10px var(--finger-color, var(--amber)));
-}
-
-.hand-silhouette .finger text {
-  font-family: var(--font-mono);
-  font-weight: 700;
-  font-size: 15px;
-  fill: rgba(238, 241, 250, 0.35);
-  text-anchor: middle;
-  transition: fill 0.14s ease;
-}
-
-.hand-silhouette .finger.active text {
-  fill: #12151f;
-}
-
-/* Only show the hand(s) currently in play; the idle one fades out rather
-   than being removed, so layout never shifts. */
-.hand-dock.idle { opacity: 0.15; }
-
-/* There's only room beside the keyboard once the stage is noticeably
-   wider than stage-inner's own max-width (1400px) plus both docks. Below
-   that, keys and note lanes already reach the stage's edges, so a dock
-   here WOULD sit in the falling notes' path — hide it instead. */
-@media (min-width: 1680px) {
-  .hand-dock { display: block; }
-}
 
 /* ---------- Score celebration modal ---------- */
 
@@ -475,3 +415,90 @@
 }
 
 .score-modal-card.practice-run .score-modal-kicker { color: var(--muted); }
+
+/* ---------- Hands (emoji + finger badges, docked at keyboard corners) ---------- */
+
+/* Allow the hand to render slightly beyond the rounded-corner clip that
+   keyboard-wrap normally applies to the keys. */
+.keyboard-wrap { position: relative; overflow: visible; }
+
+.hand-dock {
+  position: absolute;
+  bottom: 0;
+  width: 84px;
+  height: 150px; /* matches key height — never pokes up into the canvas
+                    above, where notes fall, however wide the screen is */
+  z-index: 3;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.hand-dock-left  { left: 0; }
+.hand-dock-right { right: 0; }
+
+.hand-visual {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* Right hand is the canonical, unflipped orientation (thumb on its own
+   left side, i.e. pointing toward keyboard centre since this dock sits
+   at the right edge). Left hand is the same markup mirrored — thumb ends
+   up on ITS right side, also pointing toward centre — so finger-badge
+   coordinates only need to be written once. */
+.hand-dock-left .hand-visual { transform: scaleX(-1); }
+
+.hand-emoji {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  font-size: 74px;
+  line-height: 1;
+  filter: grayscale(1) brightness(1.7) opacity(0.5);
+  transition: filter 0.2s ease;
+}
+
+.hand-dock.idle .hand-emoji { filter: grayscale(1) brightness(1.7) opacity(0.22); }
+
+/* Approximate fingertip positions over the ✋ glyph — thumb (1) to pinky
+   (5) left-to-right on the unflipped (right-hand) glyph. These are
+   estimates and may need nudging once seen against the real emoji font. */
+.finger-badge {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: transparent;
+  background: transparent;
+  transition: background 0.14s ease, color 0.14s ease, transform 0.14s ease;
+}
+
+/* Text must read normally even though .hand-visual may be mirrored. */
+.hand-dock-left .finger-badge { transform: scaleX(-1); }
+
+.finger-badge[data-finger="1"] { left: 8%;  top: 58%; }
+.finger-badge[data-finger="2"] { left: 27%; top: 14%; }
+.finger-badge[data-finger="3"] { left: 46%; top: 2%;  }
+.finger-badge[data-finger="4"] { left: 65%; top: 12%; }
+.finger-badge[data-finger="5"] { left: 82%; top: 30%; }
+
+.finger-badge.active {
+  background: var(--finger-color, var(--amber));
+  color: #12151f;
+  box-shadow: 0 0 12px var(--finger-color, var(--amber));
+}
+
+.hand-dock-left .finger-badge.active { transform: scaleX(-1); }
+
+@media (max-width: 560px) {
+  .hand-dock { display: none; }
+}
