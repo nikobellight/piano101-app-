@@ -1,5 +1,18 @@
-// v2.1
+// v2.2
 // view-learning.js
+// v2.2: three fixes.
+//  1. "2 linked" -> "2 keyboards" in the range-mismatch error message —
+//     a leftover from before that label was renamed.
+//  2. Solo mode's keyboard now uses duo mode's white-key count as a
+//     fixed reference width (REFERENCE_WHITE_COUNT, see
+//     keyboard-layout.js v1.1), instead of stretching its own smaller
+//     key count to fill the container. Same key width in both modes;
+//     solo is simply narrower and centered.
+//  3. syncHandPanels() now fully hides the hand not being practised
+//     (.hand-dock.hidden) instead of dimming it — there's no left-hand
+//     part to show at all in Right-hand-only mode.
+// Requires keyboard-layout.js v1.1+, app.html v2.0+, css/app.css v2.0+.
+//
 // v2.1: matches visualizer.js v2.0's ghost-note behaviour — a played
 // note now keeps falling (grey, big bold white finger number) instead of
 // vanishing instantly. Renamed the hideNotes() call to markPlayed(), and
@@ -461,7 +474,7 @@ window.ViewLearning = (function () {
       const scoreEl = document.getElementById("score-display");
       scoreEl.textContent =
         `${blocked.length} note${blocked.length > 1 ? "s" : ""} of this part fall outside ` +
-        `the 1-keyboard range — switch to "2 linked" to practise it.`;
+        `the 1-keyboard range — switch to "2 keyboards" to practise it.`;
       scoreEl.style.color = "#ff7a6e";
       return;
     }
@@ -952,10 +965,19 @@ window.ViewLearning = (function () {
   // Mount / unmount
   // -------------------------------------------------------------------
 
+  // Duo mode (2 keyboards) is the visual reference: solo mode uses its
+  // white-key count too, so a key is exactly the same width in either
+  // mode — only the number of keys (and so the overall keyboard width)
+  // changes. Computed once; KEYBOARD_RANGES.duo never changes at runtime.
+  const REFERENCE_WHITE_COUNT = countWhiteKeys(
+    window.KEYBOARD_RANGES.duo.start,
+    window.KEYBOARD_RANGES.duo.end
+  );
+
   function rebuildKeyboardAndCanvas() {
     const keyboardWidth = document.getElementById("keyboard").clientWidth;
     const range = Store.range();
-    state.layout = buildKeyboardLayout(range.start, range.end, keyboardWidth);
+    state.layout = buildKeyboardLayout(range.start, range.end, keyboardWidth, REFERENCE_WHITE_COUNT);
     buildKeyboardDOM(state.layout);
   }
 
@@ -1049,11 +1071,13 @@ window.ViewLearning = (function () {
 
   // Dims the hand that isn't being practised, so the eye goes straight to
   // the one that matters.
+  // The hand not being practised is fully hidden, not just dimmed — in
+  // "Right hand" mode there IS no left hand part to show at all.
   function syncHandPanels() {
     document.querySelectorAll(".hand-dock").forEach((dock) => {
       const hand = dock.classList.contains("hand-dock-left") ? "left" : "right";
       const inPlay = Store.hand === "both" || hand === Store.hand;
-      dock.classList.toggle("idle", !inPlay);
+      dock.classList.toggle("hidden", !inPlay);
     });
   }
 
