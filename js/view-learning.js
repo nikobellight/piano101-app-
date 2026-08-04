@@ -1,5 +1,20 @@
-// v1.7
+// v1.8
 // view-learning.js
+// v1.8: three fixes from feedback on the emoji hand redesign and a live
+// test run.
+//  1. Finger guide now targets the emoji hand's .finger-badge elements
+//     (see app.html v1.6), not the old SVG.
+//  2. Every timeline entry gets a unique id (toTimeline()); startPractice
+//     re-points the visualizer at the SAME array it uses for gameplay, and
+//     practiceNoteOff calls visualizer.hideNotes() the instant a note or
+//     chord is fully validated — it disappears right there instead of
+//     lingering (white or coloured) for its nominal duration.
+//  3. LATE_MISTAKE_THRESHOLD_MS: a note struck more than 600ms after its
+//     freeze point now adds to the SAME section-wide mistake penalty as a
+//     wrong key, on top of its low timing sub-score — a slow-but-correct
+//     run can no longer pass on pitch alone.
+// Requires visualizer.js v1.9+, app.html v1.6+, css/app.css v1.6+.
+//
 // v1.7: adds a tempo control (0.5x-1.25x). Below 1x is for learning a
 // passage: the section still plays through Wait Mode normally, but the
 // score modal shows "Practice run" instead of pass/fail and nothing is
@@ -93,6 +108,17 @@ window.ViewLearning = (function () {
   // Extra real time (ms) the wind-down animation runs after the last note
   // of a section, so it visibly finishes its fall instead of cutting off.
   const FINISH_WINDDOWN_BUFFER_MS = 400;
+
+  // A note struck more than this long after its freeze point counts as a
+  // scoring mistake — same section-wide penalty as a wrong key — on top
+  // of its already-low timing sub-score. Without this, a very slow but
+  // pitch-perfect run could still pass.
+  const LATE_MISTAKE_THRESHOLD_MS = 600;
+
+  // Module-wide counter so every toTimeline() call hands out unique ids,
+  // even across separate calls (melody vs accompaniment, or a fresh
+  // Start Practice) — see hideNotes() in visualizer.js.
+  let nextTimelineId = 1;
 
   const state = {
     song: null,
@@ -193,6 +219,11 @@ window.ViewLearning = (function () {
     if (notes.length === 0) return [];
     const offsetBeat = notes[0].beat;
     return notes.map((n) => ({
+      // Unique per entry, across the whole session — lets the visualizer
+      // permanently hide ONE specific note the instant it's validated
+      // (see hideNotes()), even if another note of the same pitch occurs
+      // later in the same timeline.
+      id: nextTimelineId++,
       note: n.note,
       startMs: (n.beat - offsetBeat) * msPerBeat,
       durationMs: n.durationBeats * msPerBeat,
@@ -426,6 +457,11 @@ window.ViewLearning = (function () {
     state.totalWrongAttempts = 0;
     state.practiceActive = state.groups.length > 0;
 
+    // Re-point the visualizer at THIS EXACT array (same objects, same
+    // ids) rather than the separate one built at mount() — hideNotes()
+    // below only works because the ids it's given match what's on screen.
+    state.visualizer.setNotes(state.waitQueue, state.song.notesColor);
+
     document.getElementById("practice-btn").textContent = "Stop Practice";
     document.getElementById("score-display").textContent = "";
 
@@ -493,18 +529,19 @@ window.ViewLearning = (function () {
   // Practice HUD — finger guide + measure counter
   // -------------------------------------------------------------------
 
-  // Lights the finger(s) to use next on each hand's SILHOUETTE (one shadow
-  // hand per side, docked beside the keyboard) — the number is written
-  // directly on the fingertip, coloured to match the note, rather than a
-  // separate row of dots. Takes a single timeline entry or a whole chord.
+  // Lights the finger(s) to use next as a small colored badge over that
+  // fingertip on each hand's emoji visual — the number is written on the
+  // badge itself, coloured to match the note. Takes a single timeline
+  // entry or a whole chord.
   function updateFingerGuide(entryOrGroup) {
     const entries = entryOrGroup == null
       ? []
       : (Array.isArray(entryOrGroup) ? entryOrGroup : [entryOrGroup]);
 
-    document.querySelectorAll(".hand-silhouette .finger").forEach((f) => {
-      f.classList.remove("active");
-      f.style.removeProperty("--finger-color");
+    document.querySelectorAll(".finger-badge").forEach((b) => {
+      b.classList.remove("active");
+      b.textContent = "";
+      b.style.removeProperty("--finger-color");
     });
 
     const caption = document.getElementById("finger-caption");
@@ -518,12 +555,13 @@ window.ViewLearning = (function () {
     for (const e of withFinger) {
       const hand = e.hand === "left" ? "left" : "right";
       const color = colorForNote(e.note);
-      const finger = document.querySelector(
-        `.hand-silhouette[data-hand="${hand}"] .finger[data-finger="${e.finger}"]`
+      const badge = document.querySelector(
+        `.hand-visual[data-hand="${hand}"] .finger-badge[data-finger="${e.finger}"]`
       );
-      if (finger) {
-        finger.classList.add("active");
-        finger.style.setProperty("--finger-color", color);
+      if (badge) {
+        badge.classList.add("active");
+        badge.textContent = e.finger;
+        badge.style.setProperty("--finger-color", color);
       }
     }
 
@@ -696,7 +734,15 @@ window.ViewLearning = (function () {
       const lead = leadEntry(group);
       const fallDurationMs = Math.max(0, lead.startMs - state.practiceBaseMs);
       const freezeRealTime = state.practiceRealStart + fallDurationMs;
-      state.currentTimingScore = timingScoreFromDelta(now - freezeRealTime);
+      const deltaMs = now - freezeRealTime;
+      state.currentTimingScore = timingScoreFromDelta(deltaMs);
+      // A note struck way after its freeze point isn't just "a bit off
+      // timing" — it's treated the same as a wrong key: it adds to the
+      // section-wide mistake penalty, so consistently slow playing can't
+      // pass just because the pitches were all correct.
+      if (Math.abs(deltaMs) > LATE_MISTAKE_THRESHOLD_MS) {
+        state.totalWrongAttempts++;
+      }
       // Wait Mode has no continuous clock — the accompaniment is released
       // as the player reaches each chord, so it lands with the melody at
       // whatever speed the section is being played.
@@ -736,6 +782,9 @@ window.ViewLearning = (function () {
     // The chord only counts as done once every one of its keys has been
     // struck AND let go.
     if (state.released.size < group.length) return;
+
+    // Gone from the canvas the instant it's validated — no lingering.
+    state.visualizer.hideNotes(group.map((e) => e.id));
 
     const lead = leadEntry(group);
     state.practiceBaseMs = lead.startMs;
@@ -824,8 +873,8 @@ window.ViewLearning = (function () {
     pctEl.textContent = `${pct}%`;
 
     const mistakeText = mistakes === 0
-      ? "Clean run — no wrong keys"
-      : `${mistakes} wrong key${mistakes > 1 ? "s" : ""}`;
+      ? "Clean run — no mistakes"
+      : `${mistakes} mistake${mistakes > 1 ? "s" : ""} (wrong keys or off-tempo hits)`;
     detailEl.textContent = counts
       ? mistakeText
       : `${mistakeText} — played at ${Store.tempo}x, doesn't count`;
