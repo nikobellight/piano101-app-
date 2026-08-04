@@ -1,18 +1,47 @@
-// v1.1
+// v1.4
 // view-learning.js
-// v1.1: fixes both Wait Mode fluidity issues flagged in the checkpoint.
-//  1. The falling animation used to freeze the instant it reached the hit
-//     line and stay frozen until the exact key was pressed — even when
-//     played roughly on time. It now keeps falling in real time for a
-//     FREEZE_TOLERANCE_MS grace window past the hit line before actually
-//     stopping. Playing within that window advances to the next note
-//     before the freeze point is ever reached, so on-time playing now
-//     looks and feels continuous; only a real late press causes a visible
-//     freeze.
-//  2. The last note of a section used to cut straight to the score the
-//     instant it was played, so it never visually finished falling past
-//     the hit line. finishPractice() now runs a short wind-down animation
-//     (the note's own duration + a small buffer) before showing the score.
+// v1.4: four things at once, all of which touch the same gameplay loop.
+//  1. STRICTER SCORING. Pitch now weighs 0.75 (was 0.5), a single wrong
+//     key on a note drops that note to 0.25 (was 0.66), and — the part
+//     that actually mattered — a section-wide penalty of 25% per wrong
+//     key is applied on top. Averaging alone could never make one
+//     mistake count: one bad note in fifteen barely moved the mean, so
+//     fumbled sections still passed. Now one mistake puts an otherwise
+//     clean run under the pass mark.
+//  2. BEAT-BASED SECTIONS. Sections are sliced by beat window instead of
+//     by note index. Index slicing broke the moment two hands shared one
+//     list; a beat window is hand-agnostic.
+//  3. LEFT-HAND ACCOMPANIMENT. When practising one hand, the other plays
+//     underneath — sound only, never notated, never scored. In auto
+//     playback it's scheduled on the clock; in Wait Mode (which has no
+//     continuous clock) chords are released as the player reaches each
+//     note, so they land with the melody at whatever speed it's played.
+//  4. PRACTICE HUD. Measure counter and a five-dot finger guide, the
+//     active dot lit in that note's own colour. The old SVG hand was
+//     dropped rather than restyled.
+// Requires ode-to-joy.json v2.0+ (notesLeft + beatStart/beatEnd) and
+// store.js v1.2+.
+//
+// v1.3: the playable MIDI range is no longer hardcoded to solo mode. A
+// 1-keyboard / 2-linked selector now drives Store.keyboardMode, and the
+// on-screen keyboard, the layout and the visualizer's note->column map
+// are rebuilt together whenever it changes (solo = 60-83, duo = 48-95,
+// per the validated GPP-101 mappings). Switching mid-exercise stops
+// practice/playback first rather than moving the target under the
+// player's fingers.
+//
+// v1.2: reverses the v1.1 "tolerance window" approach after watching how
+// POP Piano actually behaves (screen recording, frame-by-frame): it DOES
+// freeze strictly on the hit line and wait for the exact key — the fall
+// never drifts past the line. What makes it feel alive rather than stuck
+// is feedback, not motion:
+//   - the held note gets a pulsing halo + drifting motes (visualizer
+//     setWaitingNote / drawWaitingCue)
+//   - a correct hit fires a particle burst on that key (visualizer.spark)
+// So the freeze is back to strict, and the fluidity comes from the two
+// cues above. Requires visualizer.js v1.5+.
+// The v1.1 last-note wind-down fix is kept — the final note still gets to
+// finish its fall before the score appears.
 //
 // v1.0 (SPA conversion) — gameplay logic carried over from learning.js
 // v5.4 unchanged; only the lifecycle/plumbing below changed:
@@ -27,14 +56,10 @@
 //    (#learning-song-title, #learning-back-link)
 
 window.ViewLearning = (function () {
-  const PLAYABLE_RANGE = { start: 60, end: 83 }; // GPP-101 solo mode range
   const PASS_THRESHOLD = 80;
+  // Playable MIDI range is no longer hardcoded to solo mode — it comes
+  // from Store.range(), driven by the 1-keyboard / 2-linked selector.
 
-  // How long (ms) the fall is allowed to keep going past a note's hit time
-  // before it actually freezes and waits for the key. Playing within this
-  // window never visually freezes at all — the pointer has already moved
-  // to the next note by then.
-  const FREEZE_TOLERANCE_MS = 550;
   // Extra real time (ms) the wind-down animation runs after the last note
   // of a section, so it visibly finishes its fall instead of cutting off.
   const FINISH_WINDDOWN_BUFFER_MS = 400;
@@ -54,8 +79,11 @@ window.ViewLearning = (function () {
     practiceActive: false,
     waitQueue: [],
     waitPointer: 0,
+    accompQueue: [],
+    accompPointer: 0,
     noteScores: [],
     currentWrongAttempts: 0,
+    totalWrongAttempts: 0,
     currentPressRealTime: null,
     currentTimingScore: 0,
     currentLedNote: null,
@@ -80,22 +108,53 @@ window.ViewLearning = (function () {
     return (h || "").toString().trim().toLowerCase();
   }
 
-  function handFilter(notes) {
-    if (Store.hand === "both") return notes;
-    return notes.filter((n) => normalizeHand(n.hand) === Store.hand);
+  // All notes of the song, both hands. notesLeft is kept as a separate
+  // array in the JSON so the old non-SPA pages, which slice `notes` by
+  // index, are unaffected by the left hand existing at all.
+  function allNotes() {
+    return [...(state.song.notes || []), ...(state.song.notesLeft || [])];
   }
 
+  // Sections are sliced by BEAT, not by note index. Index slicing broke
+  // as soon as two hands shared one list; a beat window is hand-agnostic
+  // and is what makes two-hand sections possible.
+  function sectionWindow() {
+    if (Store.sectionId === "all") return null;
+    const sec = state.song.sections.find((s) => s.id === Store.sectionId);
+    if (!sec) return null;
+    if (sec.beatStart != null) return { start: sec.beatStart, end: sec.beatEnd };
+    // Fallback for songs not yet migrated to beat-based sections.
+    const notes = state.song.notes;
+    return {
+      start: notes[sec.noteIndexStart].beat,
+      end: notes[sec.noteIndexEnd].beat,
+    };
+  }
+
+  function inWindow(note, win) {
+    return !win || (note.beat >= win.start && note.beat <= win.end);
+  }
+
+  // Notes the player must actually play (notated, scored, shown falling).
   function getActiveNotes() {
-    let notes;
-    if (Store.sectionId === "all") {
-      notes = state.song.notes;
-    } else {
-      const sec = state.song.sections.find((s) => s.id === Store.sectionId);
-      notes = sec
-        ? state.song.notes.slice(sec.noteIndexStart, sec.noteIndexEnd + 1)
-        : state.song.notes;
-    }
-    return handFilter(notes);
+    const win = sectionWindow();
+    const wanted = Store.hand === "both"
+      ? ["right", "left"]
+      : [Store.hand];
+    return allNotes()
+      .filter((n) => wanted.includes(normalizeHand(n.hand)) && inWindow(n, win))
+      .sort((a, b) => a.beat - b.beat || a.note - b.note);
+  }
+
+  // The OTHER hand — played underneath as sound only, never notated and
+  // never scored. Empty when practising both hands (nothing is "other").
+  function getAccompanimentNotes() {
+    if (!Store.accompaniment || Store.hand === "both") return [];
+    const other = Store.hand === "right" ? "left" : "right";
+    const win = sectionWindow();
+    return allNotes()
+      .filter((n) => normalizeHand(n.hand) === other && inWindow(n, win))
+      .sort((a, b) => a.beat - b.beat);
   }
 
   function toTimeline(notes, msPerBeat) {
@@ -105,6 +164,25 @@ window.ViewLearning = (function () {
       note: n.note,
       startMs: (n.beat - offsetBeat) * msPerBeat,
       durationMs: n.durationBeats * msPerBeat,
+      // Carried through so the HUD (finger guide, measure counter) and the
+      // visualizer's finger labels can read them off the timeline entry.
+      finger: n.finger || null,
+      hand: normalizeHand(n.hand),
+      beat: n.beat,
+    }));
+  }
+
+  // Accompaniment shares the melody's time origin, so both line up even
+  // when a section starts mid-song.
+  function toAccompanimentTimeline(msPerBeat) {
+    const active = getActiveNotes();
+    if (active.length === 0) return [];
+    const offsetBeat = active[0].beat;
+    return getAccompanimentNotes().map((n) => ({
+      note: n.note,
+      startMs: (n.beat - offsetBeat) * msPerBeat,
+      durationMs: n.durationBeats * msPerBeat,
+      beat: n.beat,
     }));
   }
 
@@ -174,8 +252,20 @@ window.ViewLearning = (function () {
       const timer = setTimeout(() => {
         state.audio.playNote(n.note, n.durationMs / 1000);
         highlightKey(n.note, n.durationMs, colorForNote(n.note));
+        updateFingerGuide(n);
+        updateMeasureCounter(n);
       }, delay);
       state.timers.push(timer);
+    }
+
+    // The other hand underneath: sound only, no key glow, no finger cue —
+    // it's there to give the melody harmonic context, not to be followed.
+    for (const n of toAccompanimentTimeline(currentMsPerBeat())) {
+      if (n.startMs < fromMs) continue;
+      const delay = leadIn + (n.startMs - fromMs);
+      state.timers.push(setTimeout(() => {
+        state.audio.playNote(n.note, n.durationMs / 1000);
+      }, delay));
     }
 
     if (timeline.length === 0) return;
@@ -236,14 +326,38 @@ window.ViewLearning = (function () {
   // Wait Mode (Practice)
   // -------------------------------------------------------------------
 
+  // Guard: in "Both hands" the left hand sits at MIDI 48-59, which is
+  // outside the one-keyboard range (60-83). Starting practice there would
+  // stall forever on the first left-hand note, because the key needed
+  // simply doesn't exist on screen or on the instrument. Catch it up
+  // front and say what to do instead.
+  function unplayableNotes() {
+    const range = Store.range();
+    return getActiveNotes().filter((n) => n.note < range.start || n.note > range.end);
+  }
+
   async function startPractice() {
     pausePlayback();
+
+    const blocked = unplayableNotes();
+    if (blocked.length > 0) {
+      const scoreEl = document.getElementById("score-display");
+      scoreEl.textContent =
+        `${blocked.length} note${blocked.length > 1 ? "s" : ""} of this part fall outside ` +
+        `the 1-keyboard range — switch to "2 linked" to practise it.`;
+      scoreEl.style.color = "#ff7a6e";
+      return;
+    }
+
     await state.audio.init();
 
     state.waitQueue = toTimeline(getActiveNotes(), currentMsPerBeat());
+    state.accompQueue = toAccompanimentTimeline(currentMsPerBeat());
+    state.accompPointer = 0;
     state.waitPointer = 0;
     state.noteScores = [];
     state.currentWrongAttempts = 0;
+    state.totalWrongAttempts = 0;
     state.currentPressRealTime = null;
     state.practiceActive = state.waitQueue.length > 0;
 
@@ -253,6 +367,9 @@ window.ViewLearning = (function () {
     if (state.practiceActive) {
       state.practiceBaseMs = -state.visualizer.leadTimeMs;
       state.practiceRealStart = performance.now();
+      state.visualizer.setWaitingNote(state.waitQueue[0].note);
+      updateFingerGuide(state.waitQueue[0]);
+      updateMeasureCounter(state.waitQueue[0]);
       updateNextNoteLabel();
       scheduleExpectedNoteLed();
       state.practiceRafId = requestAnimationFrame(practiceAnimationLoop);
@@ -265,8 +382,10 @@ window.ViewLearning = (function () {
   function stopPractice() {
     state.practiceActive = false;
     cancelAnimationFrame(state.practiceRafId);
+    if (state.visualizer) state.visualizer.setWaitingNote(null);
     document.getElementById("practice-btn").textContent = "Start Practice";
     document.getElementById("next-note-display").textContent = "";
+    updateFingerGuide(null);
     clearExpectedNoteLed();
   }
 
@@ -274,11 +393,10 @@ window.ViewLearning = (function () {
     if (!state.practiceActive) return;
     const expected = state.waitQueue[state.waitPointer];
     const elapsed = performance.now() - state.practiceRealStart;
-    const idealMs = state.practiceBaseMs + elapsed;
-    // Keep falling for a grace window past the hit line before actually
-    // freezing — see FREEZE_TOLERANCE_MS above.
-    const freezeAtMs = expected.startMs + FREEZE_TOLERANCE_MS;
-    const currentMs = Math.min(idealMs, freezeAtMs);
+    // Strict freeze on the hit line — same as POP Piano. What keeps it
+    // from looking dead is the waiting cue drawn by the visualizer, not
+    // letting the fall drift past the line.
+    const currentMs = Math.min(state.practiceBaseMs + elapsed, expected.startMs);
     state.visualizer.draw(currentMs);
     state.practiceRafId = requestAnimationFrame(practiceAnimationLoop);
   }
@@ -286,6 +404,62 @@ window.ViewLearning = (function () {
   function updateNextNoteLabel() {
     document.getElementById("next-note-display").textContent =
       `Note ${state.waitPointer + 1} / ${state.waitQueue.length}`;
+  }
+
+  // -------------------------------------------------------------------
+  // Practice HUD — finger guide + measure counter
+  // -------------------------------------------------------------------
+
+  // Lights the finger to use next, in that note's own colour, so the dot
+  // matches the falling bar and the key glow.
+  function updateFingerGuide(entry) {
+    const dots = document.querySelectorAll(".finger-dot");
+    dots.forEach((d) => {
+      d.classList.remove("active");
+      d.style.removeProperty("--finger-color");
+    });
+
+    const caption = document.getElementById("finger-caption");
+    if (!entry || !entry.finger) {
+      caption.textContent = Store.hand === "both" ? "Both hands" : "Right hand";
+      return;
+    }
+
+    const dot = document.querySelector(`.finger-dot[data-finger="${entry.finger}"]`);
+    if (dot) {
+      dot.classList.add("active");
+      dot.style.setProperty("--finger-color", colorForNote(entry.note));
+    }
+    const handWord = entry.hand === "left" ? "Left" : "Right";
+    caption.textContent = `${handWord} hand · finger ${entry.finger}`;
+  }
+
+  function beatsPerMeasure() {
+    return state.song.beatsPerMeasure || 4;
+  }
+
+  function updateMeasureCounter(entry) {
+    const perMeasure = beatsPerMeasure();
+    const valueEl = document.getElementById("measure-value");
+    const totalEl = document.getElementById("measure-total");
+
+    const active = getActiveNotes();
+    if (active.length === 0) {
+      valueEl.textContent = "–";
+      totalEl.textContent = "–";
+      return;
+    }
+
+    const firstBeat = active[0].beat;
+    const lastBeat = active[active.length - 1].beat;
+    const totalMeasures = Math.floor((lastBeat - firstBeat) / perMeasure) + 1;
+    totalEl.textContent = totalMeasures;
+
+    if (!entry) {
+      valueEl.textContent = "–";
+      return;
+    }
+    valueEl.textContent = Math.floor((entry.beat - firstBeat) / perMeasure) + 1;
   }
 
   // -------------------------------------------------------------------
@@ -365,8 +539,27 @@ window.ViewLearning = (function () {
     return 0.3;
   }
 
+  // Per-note pitch accuracy — much harsher than before: a single wrong
+  // key on a note now costs most of that note's value instead of a third.
   function pitchScoreFromAttempts(wrongAttempts) {
-    return Math.max(0, 1 - wrongAttempts / 3);
+    if (wrongAttempts === 0) return 1;
+    if (wrongAttempts === 1) return 0.25;
+    return 0;
+  }
+
+  // Averaging per-note scores alone can't make one mistake matter: one
+  // bad note out of fifteen barely moves the mean, so a fumbled section
+  // still passed. A section-wide penalty per wrong key fixes that — one
+  // mistake drops a clean run well under the pass mark, which is the
+  // behaviour asked for.
+  const MISTAKE_PENALTY = 0.25;
+
+  function finalPercent() {
+    const total = state.noteScores.length;
+    if (total === 0) return 0;
+    const mean = state.noteScores.reduce((a, b) => a + b, 0) / total;
+    const penalty = Math.max(0, 1 - MISTAKE_PENALTY * state.totalWrongAttempts);
+    return Math.round(mean * penalty * 100);
   }
 
   function practiceNoteOn(note) {
@@ -375,6 +568,7 @@ window.ViewLearning = (function () {
 
     if (note !== expected.note) {
       state.currentWrongAttempts++;
+      state.totalWrongAttempts++;
       state.audio.playNote(note, 0.3);
       highlightKey(note, 300, "#ff5555");
       return;
@@ -387,6 +581,23 @@ window.ViewLearning = (function () {
 
     state.audio.playNote(note, expected.durationMs / 1000);
     highlightKey(note, expected.durationMs, colorForNote(note));
+    // Immediate reward burst on the key column, POP Piano style.
+    state.visualizer.spark(note);
+    // Wait Mode has no continuous clock — the accompaniment is therefore
+    // released as the player reaches each note, so the chords land with
+    // the melody however fast or slow the section is being played.
+    flushAccompanimentUpTo(expected.startMs);
+  }
+
+  function flushAccompanimentUpTo(ms) {
+    while (
+      state.accompPointer < state.accompQueue.length &&
+      state.accompQueue[state.accompPointer].startMs <= ms
+    ) {
+      const chordNote = state.accompQueue[state.accompPointer];
+      state.audio.playNote(chordNote.note, chordNote.durationMs / 1000);
+      state.accompPointer++;
+    }
   }
 
   function practiceNoteOff(note) {
@@ -396,7 +607,9 @@ window.ViewLearning = (function () {
     const heldMs = performance.now() - state.currentPressRealTime;
     const durationScore = durationScoreFromRatio(heldMs / expected.durationMs);
     const pitchScore = pitchScoreFromAttempts(state.currentWrongAttempts);
-    state.noteScores.push(pitchScore * 0.5 + state.currentTimingScore * 0.3 + durationScore * 0.2);
+    // Pitch now dominates: timing and duration can polish a score but can
+    // no longer rescue a note that was played wrong.
+    state.noteScores.push(pitchScore * 0.75 + state.currentTimingScore * 0.15 + durationScore * 0.10);
 
     state.currentPressRealTime = null;
     state.currentWrongAttempts = 0;
@@ -406,8 +619,13 @@ window.ViewLearning = (function () {
 
     state.waitPointer++;
     if (state.waitPointer >= state.waitQueue.length) {
+      state.visualizer.setWaitingNote(null);
       finishPractice();
     } else {
+      const next = state.waitQueue[state.waitPointer];
+      state.visualizer.setWaitingNote(next.note);
+      updateFingerGuide(next);
+      updateMeasureCounter(next);
       updateNextNoteLabel();
       scheduleExpectedNoteLed();
     }
@@ -442,18 +660,21 @@ window.ViewLearning = (function () {
   function showFinalScore() {
     state.visualizer.draw(-state.visualizer.leadTimeMs);
 
-    const total = state.noteScores.length;
-    const sum = state.noteScores.reduce((a, b) => a + b, 0);
-    const pct = Math.round((sum / total) * 100);
-
+    const pct = finalPercent();
     const scoreEl = document.getElementById("score-display");
     const passed = pct >= PASS_THRESHOLD;
-    scoreEl.textContent = `${pct}% — ${passed ? "Section passed!" : "Try again"}`;
+    const mistakes = state.totalWrongAttempts;
+    const mistakeNote = mistakes === 0
+      ? "clean run"
+      : `${mistakes} mistake${mistakes > 1 ? "s" : ""}`;
+
+    scoreEl.textContent = `${pct}% — ${mistakeNote} — ${passed ? "Section passed!" : "Try again"}`;
     scoreEl.style.color = passed ? "#57cbb3" : "#ff7a6e";
 
     document.getElementById("next-note-display").textContent = "";
     state.practiceActive = false;
     document.getElementById("practice-btn").textContent = "Start Practice";
+    updateFingerGuide(null);
 
     // Straight into shared state — the Sections view re-reads it on entry,
     // no URL round-trip needed any more.
@@ -466,8 +687,39 @@ window.ViewLearning = (function () {
 
   function rebuildKeyboardAndCanvas() {
     const keyboardWidth = document.getElementById("keyboard").clientWidth;
-    state.layout = buildKeyboardLayout(PLAYABLE_RANGE.start, PLAYABLE_RANGE.end, keyboardWidth);
+    const range = Store.range();
+    state.layout = buildKeyboardLayout(range.start, range.end, keyboardWidth);
     buildKeyboardDOM(state.layout);
+  }
+
+  // Switching between 1 keyboard and 2 linked ones changes the number of
+  // key columns, so the DOM keyboard, the layout and the visualizer's
+  // note->column map all have to be rebuilt together or the falling notes
+  // stop lining up with the keys.
+  function applyKeyboardMode(mode) {
+    if (mode === Store.keyboardMode) return;
+    Store.keyboardMode = mode;
+    syncKeyboardModeButtons();
+
+    // A range change mid-exercise would move the target under the
+    // player's fingers — stop cleanly first.
+    stopPractice();
+    stopPlayback();
+
+    rebuildKeyboardAndCanvas();
+    if (state.visualizer) {
+      state.visualizer.layout = state.layout;
+      state.visualizer.keyByNote = {};
+      for (const k of state.layout.keys) state.visualizer.keyByNote[k.note] = k;
+      state.visualizer.resize();
+      state.visualizer.draw(-state.visualizer.leadTimeMs);
+    }
+  }
+
+  function syncKeyboardModeButtons() {
+    document.querySelectorAll(".kbmode-btn").forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.mode === Store.keyboardMode);
+    });
   }
 
   function wireControls() {
@@ -479,10 +731,36 @@ window.ViewLearning = (function () {
       if (state.practiceActive) stopPractice();
       else startPractice();
     });
+    document.querySelectorAll(".kbmode-btn").forEach((btn) => {
+      btn.addEventListener("click", () => applyKeyboardMode(btn.dataset.mode));
+    });
+    document.getElementById("accompaniment-btn").addEventListener("click", () => {
+      Store.accompaniment = !Store.accompaniment;
+      syncAccompanimentButton();
+      // Rebuild the queue so a mid-session toggle takes effect immediately
+      // rather than only on the next Start Practice.
+      if (state.practiceActive) {
+        state.accompQueue = toAccompanimentTimeline(currentMsPerBeat());
+        state.accompPointer = state.accompQueue.findIndex(
+          (n) => n.startMs > state.practiceBaseMs
+        );
+        if (state.accompPointer === -1) state.accompPointer = state.accompQueue.length;
+      }
+    });
+  }
+
+  function syncAccompanimentButton() {
+    const btn = document.getElementById("accompaniment-btn");
+    const on = Store.accompaniment;
+    btn.textContent = `Accompaniment: ${on ? "on" : "off"}`;
+    btn.setAttribute("aria-pressed", String(on));
+    btn.classList.toggle("off", !on);
   }
 
   async function mount() {
     wireControls();
+    syncKeyboardModeButtons();
+    syncAccompanimentButton();
 
     // Gameplay hooks on the shared, still-connected BLE instance.
     await PianoBle.ready;
@@ -503,6 +781,7 @@ window.ViewLearning = (function () {
 
     document.getElementById("score-display").textContent = "";
     document.getElementById("next-note-display").textContent = "";
+    updateFingerGuide(null);
     state.pausedAtMs = 0;
 
     rebuildKeyboardAndCanvas();
@@ -521,6 +800,9 @@ window.ViewLearning = (function () {
 
     state.visualizer.resize();
     state.visualizer.draw(-state.visualizer.leadTimeMs);
+
+    // Shows the section's total measure count before practice starts.
+    updateMeasureCounter(null);
 
     resizeHandler = () => {
       rebuildKeyboardAndCanvas();
