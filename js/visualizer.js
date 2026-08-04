@@ -1,10 +1,21 @@
-// v1.4 
+// v1.5
 // visualizer.js — Draws falling notes on a canvas, synced to song time.
 // Uses the same keyboard layout as the on-screen keyboard so each note
 // lines up exactly with its physical key column. Each note is colored by
 // pitch class (see note-colors.js) and tagged with its finger number.
 // Also draws two boundary lines (section start/end) that scroll down
 // together with the notes, so the practiced section is visually framed.
+//
+// v1.5: adds the two pieces of visual feedback that make Wait Mode feel
+// alive instead of frozen (matching what POP Piano actually does — it
+// freezes on the hit line too, but never looks dead while it waits):
+//   - setWaitingNote(note): the note currently being waited for gets a
+//     soft pulsing halo plus slow rising motes, so the screen keeps
+//     breathing while the fall is held.
+//   - spark(note): a burst of particles on the key column, fired the
+//     moment the correct key is hit.
+// Both are purely additive — pages that never call them behave exactly
+// as they did in v1.4.
 
 class FallingNotesVisualizer {
   constructor(canvas, layout, color) {
@@ -17,7 +28,107 @@ class FallingNotesVisualizer {
     this.keyByNote = {};
     for (const k of layout.keys) this.keyByNote[k.note] = k;
     this.sectionBoundsMs = null; // { startMs, endMs } — set via setActiveSection()
+    this.waitingNote = null;     // MIDI note currently being waited for
+    this.sparks = [];            // transient hit particles
     this.resize();
+  }
+
+  // The note Wait Mode is currently holding for (or null). Purely visual.
+  setWaitingNote(note) {
+    this.waitingNote = note;
+  }
+
+  // Fires a burst of particles on a key column — called on a correct hit.
+  spark(note) {
+    const key = this.keyByNote[note];
+    if (!key) return;
+    const now = performance.now();
+    const cx = key.x + key.width / 2;
+    const color = colorForNote(note);
+
+    for (let i = 0; i < 14; i++) {
+      const angle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 1.15;
+      const speed = 0.10 + Math.random() * 0.20;
+      this.sparks.push({
+        x: cx + (Math.random() - 0.5) * key.width * 0.7,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed, // negative: upward
+        born: now,
+        life: 420 + Math.random() * 320,
+        size: 1.6 + Math.random() * 2.4,
+        color,
+      });
+    }
+  }
+
+  // Soft pulsing halo + slow rising motes on the held note, so a frozen
+  // fall still reads as "waiting for you" rather than "app crashed".
+  drawWaitingCue(hitY) {
+    if (this.waitingNote == null) return;
+    const key = this.keyByNote[this.waitingNote];
+    if (!key) return;
+
+    const now = performance.now();
+    const color = colorForNote(this.waitingNote);
+    const pad = key.isBlack ? 3 : 4;
+    const x = key.x + pad;
+    const w = key.width - pad * 2;
+
+    // Breathing halo around the key column just above the hit line.
+    const pulse = 0.5 + 0.5 * Math.sin(now / 380);
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.globalAlpha = 0.18 + pulse * 0.3;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 14 + pulse * 18;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    const boxH = 46;
+    if (ctx.roundRect) ctx.roundRect(x, hitY - boxH, w, boxH, 6);
+    else ctx.rect(x, hitY - boxH, w, boxH);
+    ctx.stroke();
+    ctx.restore();
+
+    // A few motes drifting upward out of the key, on a slow loop.
+    ctx.save();
+    for (let i = 0; i < 4; i++) {
+      const phase = ((now / 1500) + i / 4) % 1;
+      const my = hitY - phase * 70;
+      const mx = x + w * (0.22 + 0.18 * i) + Math.sin(now / 400 + i) * 3;
+      ctx.globalAlpha = 0.5 * (1 - phase);
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(mx, my, 1.8, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  // Advances and paints the hit particles, dropping dead ones.
+  drawSparks(hitY) {
+    if (this.sparks.length === 0) return;
+    const now = performance.now();
+    const ctx = this.ctx;
+    ctx.save();
+
+    this.sparks = this.sparks.filter((p) => {
+      const age = now - p.born;
+      if (age >= p.life) return false;
+      const t = age / p.life;
+      // vy is negative (upward); the quadratic term is gravity pulling
+      // them back down, so the burst arcs instead of flying straight out.
+      const px = p.x + p.vx * age;
+      const py = hitY + p.vy * age + 0.00022 * age * age;
+      ctx.globalAlpha = 1 - t;
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(px, py, p.size * (1 - t * 0.5), 0, Math.PI * 2);
+      ctx.fill();
+      return true;
+    });
+
+    ctx.restore();
   }
 
   // Marks the section currently being practiced. Pass null to hide.
@@ -153,6 +264,11 @@ class FallingNotesVisualizer {
         ctx.fillText(String(n.finger), x + w / 2, yTop + noteHeight / 2);
       }
     }
+
+    // Waiting cue and hit sparks paint on top of the notes so they read
+    // clearly against the bars. Both are no-ops when unused.
+    this.drawWaitingCue(hitY);
+    this.drawSparks(hitY);
   }
 }
 
