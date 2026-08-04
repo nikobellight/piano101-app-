@@ -1,10 +1,16 @@
-// v2.0
+// v2.1
 // visualizer.js — Draws falling notes on a canvas, synced to song time.
 // Uses the same keyboard layout as the on-screen keyboard so each note
 // lines up exactly with its physical key column. Each note is colored by
 // pitch class (see note-colors.js) and tagged with its finger number.
 // Also draws two boundary lines (section start/end) that scroll down
 // together with the notes, so the practiced section is visually framed.
+//
+// v2.1: the finger number on a note BEFORE it's played (falling or
+// waiting on the line — the moment it actually matters) is now bigger
+// and bolder (700 15px -> 800 19px), with a slightly taller minimum bar
+// height to fit it. The ghost (after-play) number is unchanged — legible
+// there was never the point, per feedback.
 //
 // v2.0: reverses v1.9's instant-hide behaviour after feedback matching
 // POP Piano more closely — a played note is no longer removed. It keeps
@@ -354,10 +360,13 @@ class FallingNotesVisualizer {
         ctx.strokeText(String(n.finger), x + w / 2, yTop + noteHeight / 2);
         ctx.fillStyle = "#ffffff";
         ctx.fillText(String(n.finger), x + w / 2, yTop + noteHeight / 2);
-      } else if (n.finger && noteHeight > 22) {
-        // Finger number written directly on the bar, POP Piano style.
-        ctx.fillStyle = "rgba(11, 15, 28, 0.85)";
-        ctx.font = "700 15px Manrope, sans-serif";
+      } else if (n.finger && noteHeight > 26) {
+        // Finger number, well before it's played — this is the moment it
+        // actually matters (glancing ahead while the note is still
+        // falling or waiting on the line), so it's now noticeably bigger
+        // and bolder than before.
+        ctx.fillStyle = "rgba(11, 15, 28, 0.88)";
+        ctx.font = "800 19px Manrope, sans-serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillText(String(n.finger), x + w / 2, yTop + noteHeight / 2);
