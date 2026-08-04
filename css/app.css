@@ -1,4 +1,4 @@
-/* v1.7 */
+/* v1.8 */
 /* app.css — SPA-only styles: the persistent app shell (brand + BLE widget
    + profile switch), the show/hide mechanics for the three views, and the
    1-keyboard / 2-linked selector in the Learning view.
@@ -416,31 +416,30 @@
 
 .score-modal-card.practice-run .score-modal-kicker { color: var(--muted); }
 
-/* ---------- Hands (emoji + finger badges, docked beside the keyboard) ---------- */
+/* ---------- Hands (emoji + finger badges, sharing the keyboard's row) ---------- */
 
-.keyboard-wrap { position: relative; }
+/* left hand / keys / right hand, side by side, splitting the available
+   width — this is what guarantees the hands are always beside the keys,
+   on any screen width, with no way to end up off-screen the way the
+   previous absolutely-positioned docks could. #keyboard has no CSS width
+   of its own (learning.css), so flex:1 here is what makes it shrink to
+   fill whatever space the two hands leave — buildKeyboardLayout() already
+   reads the rendered clientWidth, so it adapts automatically. */
+.keyboard-wrap {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
 
-/* Anchored just OUTSIDE stage-inner's own box (stage-inner already has
-   position:relative), immediately beside the keys — never over them, so
-   there's no ambiguity about being "in the way" of anything. Sized to
-   the keyboard's own height (learning.css: #keyboard height:150px), i.e.
-   as big as the keyboard, per feedback.
-   On a screen narrower than stage-inner's max-width + both docks, there
-   is no room in the margin: the dock then renders partly off the edge
-   of the page, producing a horizontal scrollbar. That's accepted here —
-   the alternative (snapping back onto the keys) is what this was fixing. */
+#keyboard { flex: 1 1 auto; min-width: 0; }
+
 .hand-dock {
-  position: absolute;
-  bottom: 0;
-  width: 130px;
-  height: 150px;
-  z-index: 3;
+  flex: 0 0 auto;
+  width: 108px;
+  height: 150px; /* matches #keyboard's own height — "as big as the keyboard" */
   pointer-events: none;
   transition: opacity 0.2s ease;
 }
-
-.hand-dock-left  { right: 100%; margin-right: 10px; }
-.hand-dock-right { left: 100%;  margin-left: 10px; }
 
 .hand-visual {
   position: relative;
@@ -461,7 +460,7 @@
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  font-size: 118px;
+  font-size: 100px;
   line-height: 1;
   filter: grayscale(1) brightness(1.7) opacity(0.5);
   transition: filter 0.2s ease;
@@ -475,14 +474,14 @@
    precisely rather than guessed again. */
 .finger-badge {
   position: absolute;
-  width: 26px;
-  height: 26px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   color: transparent;
   background: transparent;
@@ -505,3 +504,11 @@
 }
 
 .hand-dock-left .finger-badge.active { transform: scaleX(-1); }
+
+/* On very narrow screens, splitting the row three ways would squeeze the
+   keys down to an unplayable width — hide the hands there rather than
+   degrade the instrument itself. This is a deliberate trade-off, not the
+   old positioning bug: the hands simply don't fit in the row any more. */
+@media (max-width: 720px) {
+  .hand-dock { display: none; }
+}
