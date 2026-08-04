@@ -1,10 +1,13 @@
-// v1.5
+// v1.6
 // visualizer.js — Draws falling notes on a canvas, synced to song time.
 // Uses the same keyboard layout as the on-screen keyboard so each note
 // lines up exactly with its physical key column. Each note is colored by
 // pitch class (see note-colors.js) and tagged with its finger number.
 // Also draws two boundary lines (section start/end) that scroll down
 // together with the notes, so the practiced section is visually framed.
+//
+// v1.6: setWaitingNote() now accepts an ARRAY of notes, so a chord
+// lights every one of its keys at once instead of only its lowest note.
 //
 // v1.5: adds the two pieces of visual feedback that make Wait Mode feel
 // alive instead of frozen (matching what POP Piano actually does — it
@@ -28,14 +31,18 @@ class FallingNotesVisualizer {
     this.keyByNote = {};
     for (const k of layout.keys) this.keyByNote[k.note] = k;
     this.sectionBoundsMs = null; // { startMs, endMs } — set via setActiveSection()
-    this.waitingNote = null;     // MIDI note currently being waited for
+    this.waitingNotes = [];      // MIDI notes of the chord being waited for
     this.sparks = [];            // transient hit particles
     this.resize();
   }
 
-  // The note Wait Mode is currently holding for (or null). Purely visual.
-  setWaitingNote(note) {
-    this.waitingNote = note;
+  // The note(s) Wait Mode is currently holding for. Accepts a single note,
+  // an array, or null. Taking an array is what lets a three-note left-hand
+  // chord light all three keys at once and read as ONE event, instead of
+  // three separate ones played in sequence.
+  setWaitingNote(notes) {
+    if (notes == null) this.waitingNotes = [];
+    else this.waitingNotes = Array.isArray(notes) ? notes.slice() : [notes];
   }
 
   // Fires a burst of particles on a key column — called on a correct hit.
@@ -64,12 +71,15 @@ class FallingNotesVisualizer {
   // Soft pulsing halo + slow rising motes on the held note, so a frozen
   // fall still reads as "waiting for you" rather than "app crashed".
   drawWaitingCue(hitY) {
-    if (this.waitingNote == null) return;
-    const key = this.keyByNote[this.waitingNote];
+    for (const note of this.waitingNotes) this.drawWaitingCueFor(note, hitY);
+  }
+
+  drawWaitingCueFor(note, hitY) {
+    const key = this.keyByNote[note];
     if (!key) return;
 
     const now = performance.now();
-    const color = colorForNote(this.waitingNote);
+    const color = colorForNote(note);
     const pad = key.isBlack ? 3 : 4;
     const x = key.x + pad;
     const w = key.width - pad * 2;
