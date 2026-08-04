@@ -1,4 +1,4 @@
-/* v1.8 */
+/* v1.9 */
 /* app.css — SPA-only styles: the persistent app shell (brand + BLE widget
    + profile switch), the show/hide mechanics for the three views, and the
    1-keyboard / 2-linked selector in the Learning view.
@@ -416,99 +416,83 @@
 
 .score-modal-card.practice-run .score-modal-kicker { color: var(--muted); }
 
-/* ---------- Hands (emoji + finger badges, sharing the keyboard's row) ---------- */
+/* ---------- Hands (own dedicated row, SVG fingers) ---------- */
 
-/* left hand / keys / right hand, side by side, splitting the available
-   width — this is what guarantees the hands are always beside the keys,
-   on any screen width, with no way to end up off-screen the way the
-   previous absolutely-positioned docks could. #keyboard has no CSS width
-   of its own (learning.css), so flex:1 here is what makes it shrink to
-   fill whatever space the two hands leave — buildKeyboardLayout() already
-   reads the rendered clientWidth, so it adapts automatically. */
-.keyboard-wrap {
+/* Its own space between the canvas (notes fall) and .keyboard-wrap
+   (keys) — shares its height with neither, so hands can never overlap
+   falling notes or the keys, by construction, regardless of anything
+   else on the page. .keyboard-wrap and #keyboard are intentionally left
+   with NO overrides here any more — full width, exactly as before the
+   hands existed, which is also what keeps the keys and the canvas at
+   matching widths (a mismatch there is what broke note/key alignment
+   in the previous version). */
+.hands-row {
   display: flex;
+  justify-content: space-between;
   align-items: flex-end;
-  gap: 8px;
+  height: 190px;
+  margin-top: 12px;
+  pointer-events: none;
 }
 
-#keyboard { flex: 1 1 auto; min-width: 0; }
-
 .hand-dock {
-  flex: 0 0 auto;
-  width: 108px;
-  height: 150px; /* matches #keyboard's own height — "as big as the keyboard" */
-  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 150px;
   transition: opacity 0.2s ease;
 }
 
-.hand-visual {
-  position: relative;
+.hand-svg {
   width: 100%;
-  height: 100%;
+  height: 172px;
+  display: block;
 }
 
-/* Right hand is the canonical, unflipped orientation (thumb on its own
-   left side, i.e. pointing toward keyboard centre since this dock sits
-   at the right edge). Left hand is the same markup mirrored — thumb ends
-   up on ITS right side, also pointing toward centre — so finger-badge
-   coordinates only need to be written once. */
-.hand-dock-left .hand-visual { transform: scaleX(-1); }
-
-.hand-emoji {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  font-size: 100px;
-  line-height: 1;
-  filter: grayscale(1) brightness(1.7) opacity(0.5);
-  transition: filter 0.2s ease;
+.hand-svg .palm,
+.hand-svg .finger rect {
+  fill: rgba(180, 190, 220, 0.14);
+  stroke: rgba(180, 190, 220, 0.28);
+  stroke-width: 1;
+  transition: fill 0.14s ease, filter 0.14s ease;
 }
 
-.hand-dock.idle .hand-emoji { filter: grayscale(1) brightness(1.7) opacity(0.22); }
+.hand-svg .finger.active rect {
+  fill: var(--finger-color, var(--amber));
+  stroke: transparent;
+  filter: drop-shadow(0 0 8px var(--finger-color, var(--amber)));
+}
 
-/* Approximate fingertip positions over the ✋ glyph — thumb (1) to pinky
-   (5) left-to-right on the unflipped (right-hand) glyph. These are
-   estimates; send a screenshot of this version and they can be nudged
-   precisely rather than guessed again. */
-.finger-badge {
-  position: absolute;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* Baked into the same coordinates as the finger's own rect at build
+   time — not a separately-guessed overlay — so the number always sits
+   exactly on its finger. Hidden until that finger is active. */
+.hand-svg .finger text {
   font-family: var(--font-mono);
-  font-size: 12px;
   font-weight: 700;
-  color: transparent;
-  background: transparent;
-  transition: background 0.14s ease, color 0.14s ease, transform 0.14s ease;
+  font-size: 15px;
+  text-anchor: middle;
+  fill: rgba(238, 241, 250, 0.4);
+  transition: fill 0.14s ease;
 }
 
-/* Text must read normally even though .hand-visual may be mirrored. */
-.hand-dock-left .finger-badge { transform: scaleX(-1); }
+.hand-svg .finger.active text { fill: #12151f; }
 
-.finger-badge[data-finger="1"] { left: 8%;  top: 58%; }
-.finger-badge[data-finger="2"] { left: 27%; top: 14%; }
-.finger-badge[data-finger="3"] { left: 46%; top: 2%;  }
-.finger-badge[data-finger="4"] { left: 65%; top: 12%; }
-.finger-badge[data-finger="5"] { left: 82%; top: 30%; }
+.hand-dock.idle { opacity: 0.3; }
 
-.finger-badge.active {
-  background: var(--finger-color, var(--amber));
-  color: #12151f;
-  box-shadow: 0 0 12px var(--finger-color, var(--amber));
+.hand-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
 }
 
-.hand-dock-left .finger-badge.active { transform: scaleX(-1); }
-
-/* On very narrow screens, splitting the row three ways would squeeze the
-   keys down to an unplayable width — hide the hands there rather than
-   degrade the instrument itself. This is a deliberate trade-off, not the
-   old positioning bug: the hands simply don't fit in the row any more. */
-@media (max-width: 720px) {
-  .hand-dock { display: none; }
+/* On very narrow screens there isn't room for a full extra row without
+   pushing the keyboard down awkwardly — hide the hands there rather than
+   crowd the layout. This is a deliberate trade-off, not the earlier
+   positioning bug: the hands simply don't get their own row below this
+   width. */
+@media (max-width: 640px) {
+  .hands-row { display: none; }
 }
