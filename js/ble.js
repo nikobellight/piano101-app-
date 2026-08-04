@@ -1,16 +1,16 @@
 // v1.1
 // ble.js — Web Bluetooth wrapper for the GPP-101, using the protocol we
+// v1.1: sendLedOn/Off now use writeValueWithoutResponse when available —
+// no per-command BLE ack means a chord's LEDs can fire almost together
+// instead of visibly lighting one at a time. Falls back to the original
+// acked write if the device doesn't support it. Note on/off (actual
+// sound-triggering commands) are untouched, still acked.
 // reverse-engineered and validated earlier (service/characteristic UUIDs,
 // frame format, LED command). Reused as-is, not re-derived.
 //
-// Exposes: connect(), reconnect(device), sendNoteOn/Off(), sendLedOn/Off(),
-// and callbacks (onNoteOn / onNoteOff) fired when a REAL physical key is
-// pressed — this is what powers Wait Mode.
-//
-// v1.1: added reconnect(device) — binds to a device the browser already
-// granted access to (via navigator.bluetooth.getDevices()) without
-// showing the picker again. Used by ble-ui.js for silent reconnection on
-// every page load.
+// Exposes: connect(), sendNoteOn/Off(), sendLedOn/Off(), and callbacks
+// (onNoteOn / onNoteOff) fired when a REAL physical key is pressed —
+// this is what powers Wait Mode.
 
 const GPP101_SERVICE_UUID = "03b80e5a-ede8-4b33-a751-6ce34ec4c700";
 const GPP101_CHARACTERISTIC_UUID = "7772e5db-3868-4112-a1a9-f2669d106bf3";
@@ -29,22 +29,10 @@ class GPP101 {
     return new Uint8Array([0x80, 0x80, ...bytes, 0xf7]);
   }
 
-  // Opens the browser's device picker — first-time pairing.
   async connect() {
-    const device = await navigator.bluetooth.requestDevice({
+    this.device = await navigator.bluetooth.requestDevice({
       filters: [{ services: [GPP101_SERVICE_UUID] }],
     });
-    return this.bindDevice(device);
-  }
-
-  // Binds directly to a device object already granted to this origin
-  // (e.g. from navigator.bluetooth.getDevices()) — no picker shown.
-  async reconnect(device) {
-    return this.bindDevice(device);
-  }
-
-  async bindDevice(device) {
-    this.device = device;
 
     this.device.addEventListener("gattserverdisconnected", () => {
       this.connected = false;
@@ -85,9 +73,19 @@ class GPP101 {
     }
   }
 
-  async write(bytes) {
+  async write(bytes, { noResponse = false } = {}) {
     if (!this.characteristic) return;
-    await this.characteristic.writeValueWithResponse(this.buildFrame(bytes));
+    const frame = this.buildFrame(bytes);
+    // LED commands use writeValueWithoutResponse when the device supports
+    // it: no round-trip ack means several LEDs can be fired back-to-back
+    // without each one waiting on the last, instead of visibly lighting
+    // up one at a time on a chord. Falls back to the acked write if the
+    // characteristic doesn't support it.
+    if (noResponse && this.characteristic.writeValueWithoutResponse) {
+      await this.characteristic.writeValueWithoutResponse(frame);
+    } else {
+      await this.characteristic.writeValueWithResponse(frame);
+    }
   }
 
   sendNoteOn(note) {
@@ -99,11 +97,11 @@ class GPP101 {
   }
 
   sendLedOn(note) {
-    return this.write([0xf0, 0x4d, 0x4c, 0x4e, 0x45, note, 0x02, 0x00]);
+    return this.write([0xf0, 0x4d, 0x4c, 0x4e, 0x45, note, 0x02, 0x00], { noResponse: true });
   }
 
   sendLedOff(note) {
-    return this.write([0xf0, 0x4d, 0x4c, 0x4e, 0x45, note, 0x00, 0x00]);
+    return this.write([0xf0, 0x4d, 0x4c, 0x4e, 0x45, note, 0x00, 0x00], { noResponse: true });
   }
 }
 
