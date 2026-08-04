@@ -1,4 +1,9 @@
-<!-- Piano 101 — app.html — v1.2 -->
+<!-- Piano 101 — app.html — v1.3 -->
+<!-- v1.3: hands moved out of the HUD row and onto the stage itself —
+     left hand bottom-left, right hand bottom-right, over the falling
+     notes. Each shows a schematic hand plus numbered dots; the finger(s)
+     due next light in their note colour, and a chord lights several at
+     once. -->
 <!-- v1.2: practice HUD above the stage — measure counter, finger guide
      (5 dots, the active one lit in the note's colour) and an
      accompaniment on/off toggle. The old SVG hand was dropped rather
@@ -144,16 +149,7 @@
           <span class="measure-caption">measure</span>
         </div>
 
-        <div class="finger-guide">
-          <div class="finger-dots">
-            <span class="finger-dot" data-finger="1">1</span>
-            <span class="finger-dot" data-finger="2">2</span>
-            <span class="finger-dot" data-finger="3">3</span>
-            <span class="finger-dot" data-finger="4">4</span>
-            <span class="finger-dot" data-finger="5">5</span>
-          </div>
-          <div id="finger-caption" class="finger-caption">Right hand</div>
-        </div>
+        <div id="finger-caption" class="finger-caption">Right hand</div>
 
         <button id="accompaniment-btn" class="accompaniment-btn" aria-pressed="true">
           Accompaniment: on
@@ -163,6 +159,73 @@
       <div class="stage">
         <div class="stage-inner">
           <canvas id="visualizer"></canvas>
+
+          <!-- Hands sit over the bottom corners of the stage, like POP
+               Piano: left hand bottom-left, right hand bottom-right. The
+               finger that's due lights up in that note's colour. Each
+               <g class="finger"> is one finger; the dot carries its
+               number so it can be read at a glance. -->
+          <div class="hands-overlay">
+            <div class="hand-panel" data-hand="left">
+              <svg class="hand-shape" viewBox="0 0 120 130" aria-hidden="true">
+                <path class="palm" d="M22 62 q-6 -22 4 -24 t12 16 l3 14 z" />
+                <g class="finger" data-finger="5">
+                  <rect x="12" y="52" width="13" height="40" rx="6.5" />
+                </g>
+                <g class="finger" data-finger="4">
+                  <rect x="29" y="36" width="14" height="56" rx="7" />
+                </g>
+                <g class="finger" data-finger="3">
+                  <rect x="47" y="30" width="14" height="62" rx="7" />
+                </g>
+                <g class="finger" data-finger="2">
+                  <rect x="65" y="38" width="14" height="54" rx="7" />
+                </g>
+                <g class="finger" data-finger="1">
+                  <rect x="84" y="62" width="24" height="14" rx="7" />
+                </g>
+                <rect class="palm-base" x="12" y="88" width="82" height="34" rx="16" />
+              </svg>
+              <div class="hand-dots">
+                <span class="finger-dot" data-finger="5">5</span>
+                <span class="finger-dot" data-finger="4">4</span>
+                <span class="finger-dot" data-finger="3">3</span>
+                <span class="finger-dot" data-finger="2">2</span>
+                <span class="finger-dot" data-finger="1">1</span>
+              </div>
+              <div class="hand-label">Left</div>
+            </div>
+
+            <div class="hand-panel" data-hand="right">
+              <svg class="hand-shape" viewBox="0 0 120 130" aria-hidden="true">
+                <g class="finger" data-finger="1">
+                  <rect x="12" y="62" width="24" height="14" rx="7" />
+                </g>
+                <g class="finger" data-finger="2">
+                  <rect x="41" y="38" width="14" height="54" rx="7" />
+                </g>
+                <g class="finger" data-finger="3">
+                  <rect x="59" y="30" width="14" height="62" rx="7" />
+                </g>
+                <g class="finger" data-finger="4">
+                  <rect x="77" y="36" width="14" height="56" rx="7" />
+                </g>
+                <g class="finger" data-finger="5">
+                  <rect x="95" y="52" width="13" height="40" rx="6.5" />
+                </g>
+                <rect class="palm-base" x="26" y="88" width="82" height="34" rx="16" />
+              </svg>
+              <div class="hand-dots">
+                <span class="finger-dot" data-finger="1">1</span>
+                <span class="finger-dot" data-finger="2">2</span>
+                <span class="finger-dot" data-finger="3">3</span>
+                <span class="finger-dot" data-finger="4">4</span>
+                <span class="finger-dot" data-finger="5">5</span>
+              </div>
+              <div class="hand-label">Right</div>
+            </div>
+          </div>
+
           <div class="keyboard-wrap">
             <div id="keyboard"></div>
           </div>
