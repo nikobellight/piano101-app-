@@ -1,10 +1,22 @@
-// v1.6
+// v1.8
 // visualizer.js — Draws falling notes on a canvas, synced to song time.
 // Uses the same keyboard layout as the on-screen keyboard so each note
 // lines up exactly with its physical key column. Each note is colored by
 // pitch class (see note-colors.js) and tagged with its finger number.
 // Also draws two boundary lines (section start/end) that scroll down
 // together with the notes, so the practiced section is visually framed.
+//
+// v1.8: reverses part of v1.7 after feedback — a note being waited for
+// must keep its normal colour the whole time it sits frozen at the line,
+// not turn white or vanish. It only goes white (briefly, as always) once
+// it has actually been played and Wait Mode has moved past it, then
+// disappears on its own a moment later like any played note does.
+//
+// v1.7: leadTimeMs increased
+// before the first note/chord actually arrives. Also: a note that is both
+// "hit" and the one Wait Mode is currently holding for now disappears
+// entirely instead of sitting frozen as a solid white bar — the pulsing
+// halo (drawWaitingCue) is what signals "waiting for you" now.
 //
 // v1.6: setWaitingNote() now accepts an ARRAY of notes, so a chord
 // lights every one of its keys at once instead of only its lowest note.
@@ -26,7 +38,7 @@ class FallingNotesVisualizer {
     this.ctx = canvas.getContext("2d");
     this.layout = layout;
     this.color = color || "#f4b942";
-    this.leadTimeMs = 2200; // how long a note takes to fall to the hit line
+    this.leadTimeMs = 3400; // how long a note takes to fall to the hit line — gives more time to get ready before it arrives
     this.notes = [];
     this.keyByNote = {};
     for (const k of layout.keys) this.keyByNote[k.note] = k;
@@ -246,9 +258,19 @@ class FallingNotesVisualizer {
       const w = key.width - pad * 2;
 
       const hit = currentMs >= n.startMs && currentMs <= endMs;
+
+      // A note still being WAITED FOR keeps its normal colour the whole
+      // time it's held at the line — it must not go white or vanish just
+      // because it's frozen there. It only turns white — briefly, as
+      // usual — once it's actually been played and Wait Mode has moved
+      // on to the next note/chord (at which point it's no longer in
+      // waitingNotes), then disappears on its own a moment later as time
+      // moves past its endMs, same as any played note always has.
+      const isStillWaiting = this.waitingNotes.includes(n.note) && hit;
+
       const baseColor = colorForNote(n.note);
 
-      if (hit) {
+      if (hit && !isStillWaiting) {
         ctx.fillStyle = "#ffffff";
       } else {
         const gradient = ctx.createLinearGradient(x, yTop, x, yBottom);
