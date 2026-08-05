@@ -1,5 +1,32 @@
-// v2.9
+// v2.11
 // view-learning.js
+// v2.11: #learning-shell-info (song title/subtitle/measure) also shown/
+// hidden on mount()/unmount(), now that it lives in the app shell
+// (index.html v2.7). Practice button text shortened to "Practice"/"Stop"
+// to fit the shrunk sticky bar.
+//
+// v2.10: the REAL, architectural fix for the recurring "notes jump"
+// glitch — root-caused by comparing against the file from right before
+// this bug was first reported (see chat history) rather than patching
+// symptoms one at a time. Every group's freeze/fall timing was being
+// derived from the clock's position carried over from the PREVIOUS
+// group (practiceBaseMs re-based at release) — but since v2.5 lets the
+// clock run freely while a key is held, a long-enough hold could carry
+// the clock PAST the next group's own freeze point before that group
+// even appeared, forcing a visible snap backward the instant it did.
+// v2.6 tried to fix this at the release point specifically and helped,
+// but the same class of bug could still happen at the group TRANSITION
+// itself.
+//
+// The actual fix, per the original design comment "Wait Mode has no
+// continuous clock": each group (note or chord) now gets its own fresh,
+// fixed-duration fall-in (leadTimeMs) the instant it becomes current
+// (showCurrentGroup()), completely independent of how long the previous
+// note was held. practiceNoteOff() no longer re-bases the clock for the
+// NEXT group at all — only for the wind-down of the LAST group, where
+// there's no "next" to hand off to. This removes the entire class of
+// carry-over bug rather than special-casing another instance of it.
+//
 // v2.9: three changes to match index.html v2.6 / app.css v2.4.
 //  1. #keyboard-mode-switch now lives in the app shell — shown on
 //     mount(), hidden again on unmount(), instead of always visible.
@@ -589,12 +616,13 @@ window.ViewLearning = (function () {
     // below only works because the ids it's given match what's on screen.
     state.visualizer.setNotes(state.waitQueue, state.song.notesColor);
 
-    document.getElementById("practice-btn").textContent = "Stop Practice";
+    document.getElementById("practice-btn").textContent = "Stop";
     document.getElementById("score-display").textContent = "";
 
     if (state.practiceActive) {
-      state.practiceBaseMs = -state.visualizer.leadTimeMs;
-      state.practiceRealStart = performance.now();
+      // practiceBaseMs/practiceRealStart no longer need setting here —
+      // showCurrentGroup() gives the first group its own fresh fall-in,
+      // same as every other group.
       showCurrentGroup();
       state.practiceRafId = requestAnimationFrame(practiceAnimationLoop);
     } else {
@@ -611,7 +639,7 @@ window.ViewLearning = (function () {
       state.loopRestartTimer = null;
     }
     if (state.visualizer) state.visualizer.setWaitingNote(null);
-    document.getElementById("practice-btn").textContent = "Start Practice";
+    document.getElementById("practice-btn").textContent = "Practice";
     document.getElementById("next-note-display").textContent = "";
     updateFingerGuide(null);
     clearExpectedNoteLed();
@@ -649,6 +677,19 @@ window.ViewLearning = (function () {
     state.released = new Set();
     state.currentWrongAttempts = 0;
     state.groupStruckAtMs = null;
+
+    // Each group gets its OWN fresh fall-in, always taking exactly
+    // leadTimeMs to arrive at the hit line and freeze there — completely
+    // decoupled from the previous group's actual release time. Wait Mode
+    // has no continuous song-relative clock (see flushAccompanimentUpTo's
+    // comment below); tying a group's freeze point to wherever the clock
+    // happened to land after an arbitrarily long hold on the previous
+    // note is what caused it to sometimes already be PAST its own freeze
+    // point the instant it appeared — a visible backward jump to catch
+    // up. Giving every group its own fixed-duration fall-in removes that
+    // possibility entirely.
+    state.practiceBaseMs = leadEntry(group).startMs - state.visualizer.leadTimeMs;
+    state.practiceRealStart = performance.now();
 
     state.visualizer.setWaitingNote(group.map((e) => e.note));
     updateFingerGuide(group);
@@ -936,17 +977,18 @@ window.ViewLearning = (function () {
     // Gone from the canvas the instant it's validated — no lingering.
     state.visualizer.markPlayed(group.map((e) => e.id));
 
-    // Re-base the clock on wherever it's ACTUALLY at right now — not on
-    // the chord's own nominal beat (lead.startMs). Since the clock has
-    // been running freely (see currentPracticeMs()) for as long as this
-    // chord was held, snapping back to lead.startMs would jump the
-    // timeline backward whenever the hold lasted past that beat.
-    state.practiceBaseMs = currentPracticeMs(group);
-    state.practiceRealStart = performance.now();
+    // Capture the clock's actual position at release — used ONLY for
+    // finishPractice()'s wind-down below (the last note's ghost needs to
+    // keep falling from wherever it visually is). NOT carried forward
+    // into the next group: showCurrentGroup() gives that one its own
+    // fresh, independent fall-in instead (see its comment) — that's the
+    // fix for the "jumps backward" glitch.
+    const releaseMs = currentPracticeMs(group);
 
     state.groupPointer++;
     if (state.groupPointer >= state.groups.length) {
       state.visualizer.setWaitingNote(null);
+      state.practiceBaseMs = releaseMs;
       finishPractice();
     } else {
       showCurrentGroup();
@@ -991,7 +1033,7 @@ window.ViewLearning = (function () {
 
     document.getElementById("next-note-display").textContent = "";
     state.practiceActive = false;
-    document.getElementById("practice-btn").textContent = "Start Practice";
+    document.getElementById("practice-btn").textContent = "Practice";
     updateFingerGuide(null);
 
     // Below 1x is for learning the passage, not for passing it — nothing
@@ -1235,6 +1277,7 @@ window.ViewLearning = (function () {
     // while actually in the Learning view, so it's hidden the rest of
     // the time rather than shown on every page.
     document.getElementById("keyboard-mode-switch").classList.remove("hidden");
+    document.getElementById("learning-shell-info").classList.remove("hidden");
 
     // Gameplay hooks on the shared, still-connected BLE instance.
     await PianoBle.ready;
@@ -1303,6 +1346,7 @@ window.ViewLearning = (function () {
     closeScoreModal();
     state.loopEnabled = false;
     document.getElementById("keyboard-mode-switch").classList.add("hidden");
+    document.getElementById("learning-shell-info").classList.add("hidden");
 
     // Detach gameplay only — the BLE connection itself stays up. This is
     // the behaviour the whole SPA conversion was for.
