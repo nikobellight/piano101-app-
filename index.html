@@ -1,3 +1,11 @@
+<!-- Piano 101 — index.html — v2.2 -->
+<!-- v2.2: added .learning-sticky-bar (Start/Stop Practice, Play, Restart,
+     tempo, new #loop-btn) pinned to the top of the learning view on
+     scroll — on tablet, these buttons used to require scrolling to reach.
+     Removed from their old spots (.learning-header's .transport, and
+     .practice-panel-left) now that they live in the sticky bar. Requires
+     css/app.css v2.1+ (.learning-sticky-bar, .loop-btn) and
+     js/view-learning.js v2.4+ (#loop-btn wiring). -->
 <!-- Piano 101 — index.html — v2.1 -->
 <!-- v2.1: file renamed from app.html to index.html as part of SPA
      consolidation — the old 3-page site (index/sections/learning.html)
@@ -175,6 +183,22 @@
   <!-- ============================ LEARNING ============================= -->
   <section id="view-learning" class="view">
     <main class="learning-page">
+      <!-- Sticky bar: everything needed WHILE actually playing, so it's
+           never a scroll away on tablet. position: sticky, stays pinned
+           under the app-shell as the rest of the page scrolls under it. -->
+      <div class="learning-sticky-bar">
+        <button id="practice-btn" class="transport-btn primary">Start Practice</button>
+        <button id="play-btn" class="transport-btn secondary">Play</button>
+        <button id="restart-btn" class="transport-btn secondary">Restart</button>
+        <div id="tempo-switch" class="tempo-switch">
+          <button class="tempo-btn" data-tempo="0.5">0.5x</button>
+          <button class="tempo-btn" data-tempo="0.75">0.75x</button>
+          <button class="tempo-btn active" data-tempo="1">1x</button>
+          <button class="tempo-btn" data-tempo="1.25">1.25x</button>
+        </div>
+        <button id="loop-btn" class="loop-btn" aria-pressed="false">&#8635; Loop</button>
+      </div>
+
       <div class="learning-topbar">
         <a id="learning-back-link" class="back-link" href="#/">&larr; Back to sections</a>
         <div id="keyboard-mode-switch" class="keyboard-mode-switch">
@@ -188,10 +212,6 @@
           <h1 id="learning-song-title">Loading…</h1>
           <div id="context-subtitle" class="context-subtitle"></div>
         </div>
-        <div class="transport">
-          <button id="restart-btn" class="transport-btn secondary">Restart</button>
-          <button id="play-btn" class="transport-btn primary">Play</button>
-        </div>
       </div>
 
       <div class="practice-hud">
@@ -203,13 +223,6 @@
         </div>
 
         <div id="finger-caption" class="finger-caption">Right hand</div>
-
-        <div id="tempo-switch" class="tempo-switch">
-          <button class="tempo-btn" data-tempo="0.5">0.5x</button>
-          <button class="tempo-btn" data-tempo="0.75">0.75x</button>
-          <button class="tempo-btn active" data-tempo="1">1x</button>
-          <button class="tempo-btn" data-tempo="1.25">1.25x</button>
-        </div>
 
         <button id="accompaniment-btn" class="accompaniment-btn" aria-pressed="true">
           Accompaniment: on
@@ -292,7 +305,6 @@
 
       <div class="practice-panel">
         <div class="practice-panel-left">
-          <button id="practice-btn" class="transport-btn primary">Start Practice</button>
           <span id="next-note-display" class="next-note"></span>
         </div>
         <div id="score-display" class="score-display"></div>
