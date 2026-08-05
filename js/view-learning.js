@@ -1,5 +1,19 @@
-// v2.5r
+// v2.6
 // view-learning.js
+// v2.6: root cause finally identified — v2.5 (the "confirmed working"
+// version) had the SAME jump bug all along, just not caught by a short
+// test: on release, it re-based the shared clock to the group's nominal
+// beat (lead.startMs), which only stayed correct because the clock had
+// been allowed to run past that beat while a key was held. Removed
+// state.groupStruckAtMs and the "unfreeze once struck" behaviour
+// entirely — the shared clock (currentPracticeMs()) now ALWAYS stays
+// frozen at the current group's own beat while waiting, full stop. A
+// held note's own continued fall is entirely the visualizer's job now
+// (ghostStruckAt, visualizer.js v2.5) — completely decoupled from this
+// clock, so it can never race ahead of or get yanked back by it. The
+// release re-basing in practiceNoteOff (practiceBaseMs = lead.startMs)
+// is now a true no-op — the clock was already sitting exactly there.
+//
 // v2.5r: reverted the game-logic (practice/timing/animation) code back
 // to the confirmed-working v2.5 behaviour, per explicit request — v2.6
 // through v2.10/v2.13's attempts (release re-basing, per-group fresh
@@ -312,7 +326,6 @@ window.ViewLearning = (function () {
     practiceBaseMs: 0,
     practiceRealStart: 0,
     practiceRafId: null,
-    groupStruckAtMs: null,
     loopEnabled: false,
     loopRestartTimer: null,
   };
@@ -639,7 +652,6 @@ window.ViewLearning = (function () {
     state.groupPointer = 0;
     state.pressed = new Map();   // note -> press timestamp, current group
     state.released = new Set();  // notes of the current group already scored
-    state.groupStruckAtMs = null;
     state.accompQueue = toAccompanimentTimeline(currentMsPerBeat());
     state.accompPointer = 0;
     state.noteScores = [];
@@ -689,14 +701,17 @@ window.ViewLearning = (function () {
     state.practiceRafId = requestAnimationFrame(practiceAnimationLoop);
   }
 
-  // The visualizer's current position on the timeline: frozen at the
-  // chord's own beat until it's been struck, then running freely at
-  // normal speed once a key is down.
+  // The shared clock, used only to position still-WAITING notes: ALWAYS
+  // frozen at the current group's own beat for as long as we're waiting
+  // on it — it never unfreezes, no matter how long a key is held. That's
+  // what a held note's own falling animation is for (see
+  // visualizer.js's ghostStruckAt) — this clock doesn't need to move to
+  // make that happen, and letting it move is what caused the jump/glitch
+  // bug (a long hold could race it past its own or even future notes'
+  // beats, then release would snap it back).
   function currentPracticeMs(group) {
     const elapsed = performance.now() - state.practiceRealStart;
-    return state.groupStruckAtMs != null
-      ? state.practiceBaseMs + elapsed
-      : Math.min(state.practiceBaseMs + elapsed, leadEntry(group).startMs);
+    return Math.min(state.practiceBaseMs + elapsed, leadEntry(group).startMs);
   }
 
   // Lights every key of the current chord at once, on screen and on the
@@ -708,7 +723,6 @@ window.ViewLearning = (function () {
     state.pressed = new Map();
     state.released = new Set();
     state.currentWrongAttempts = 0;
-    state.groupStruckAtMs = null;
 
     state.visualizer.setWaitingNote(group.map((e) => e.note));
     updateFingerGuide(group);
@@ -948,7 +962,6 @@ window.ViewLearning = (function () {
     // natural spread of fingers landing across a few milliseconds would
     // be scored as lateness.
     if (state.pressed.size === 1) {
-      state.groupStruckAtMs = now;
       const lead = leadEntry(group);
       const fallDurationMs = Math.max(0, lead.startMs - state.practiceBaseMs);
       const freezeRealTime = state.practiceRealStart + fallDurationMs;
