@@ -1,9 +1,12 @@
-/* v2.0 */
+/* v2.1 */
 /* app.css — SPA-only styles: the persistent app shell (brand + BLE widget
    + profile switch), the show/hide mechanics for the three views, and the
    1-keyboard / 2-linked selector in the Learning view.
    Everything else still comes from style.css / sections.css / learning.css,
    which are loaded unchanged.
+   v2.1: added .learning-sticky-bar and .loop-btn — the learning view's
+   play/practice/tempo/loop controls are now pinned to the top of the
+   viewport on scroll instead of living further down the page.
    v1.4: hand redesign — single shadow-hand silhouette per side, docked
    outside stage-inner in the stage's own margins so it can never overlap
    the falling notes, with the finger number written on the fingertip
@@ -500,4 +503,45 @@
    width. */
 @media (max-width: 640px) {
   .hands-row { display: none; }
+}
+
+/* ---------- Sticky control bar (learning view) ----------
+   v2.1: pinned to the top of the viewport (position: sticky) once the
+   page scrolls past it, so Start/Stop Practice, Play, Restart, tempo and
+   Loop are always reachable without scrolling back up — the original
+   problem on tablet, where reaching these meant sliding the whole page. */
+
+.learning-sticky-bar {
+  position: sticky;
+  top: 0;
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 14px 0;
+  margin-bottom: 20px;
+  background: rgba(11, 15, 28, 0.92);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+
+.loop-btn {
+  border: 1px solid var(--line);
+  background: var(--surface-raised);
+  color: var(--muted);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 700;
+  padding: 11px 20px;
+  border-radius: 999px;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.loop-btn:hover { color: var(--text); }
+
+.loop-btn.active {
+  background: linear-gradient(135deg, #ffcf6b, var(--amber));
+  color: #2a1a04;
+  border-color: transparent;
 }
