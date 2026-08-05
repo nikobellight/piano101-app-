@@ -1,9 +1,13 @@
-/* v2.2 */
+/* v2.3 */
 /* app.css — SPA-only styles: the persistent app shell (brand + BLE widget
    + profile switch), the show/hide mechanics for the three views, and the
    1-keyboard / 2-linked selector in the Learning view.
    Everything else still comes from style.css / sections.css / learning.css,
    which are loaded unchanged.
+   v2.3: song title/subtitle/measure counter/keyboard-mode/accompaniment
+   folded into .learning-sticky-bar (.sticky-back, .sticky-song-info,
+   .sticky-song-title, .sticky-measure) — the old second row below it is
+   gone from index.html now (v2.4).
    v2.2: added .mini-hands / .hand-dock-mini — small hand illustrations
    inside the sticky bar.
    v2.1: added .learning-sticky-bar and .loop-btn — the learning view's
@@ -574,4 +578,65 @@
 
 .hand-dock-mini .hand-svg {
   height: 54px;
+}
+
+/* ---------- Sticky bar v2.3: song info + measure + keyboard mode +
+   accompaniment, all folded in alongside the transport controls, per
+   feedback that the second row below (old .learning-topbar /
+   .learning-header / .practice-hud) was redundant and pushed the
+   playable controls out of reach on tablet. Everything here is sized
+   down (13-14px) since it's now sharing one row with the buttons. ---- */
+
+.sticky-back {
+  font-size: 18px;
+  line-height: 1;
+  padding: 8px 2px;
+  flex-shrink: 0;
+}
+
+.sticky-song-info {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-right: 6px;
+  min-width: 0;
+}
+
+.sticky-song-title {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.sticky-song-info .context-subtitle {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.sticky-measure {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--amber);
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px 10px;
+  white-space: nowrap;
+}
+
+.sticky-measure .measure-sep {
+  color: var(--muted);
+  font-weight: 400;
+  margin: 0 1px;
+}
+
+/* Sticky bar now carries more than the transport controls — allow it to
+   wrap onto a second line on narrow viewports rather than overflow. */
+.learning-sticky-bar {
+  row-gap: 8px;
 }
