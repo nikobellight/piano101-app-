@@ -1,5 +1,15 @@
-// v2.8
+// v2.9
 // view-learning.js
+// v2.9: three changes to match index.html v2.6 / app.css v2.4.
+//  1. #keyboard-mode-switch now lives in the app shell — shown on
+//     mount(), hidden again on unmount(), instead of always visible.
+//  2. syncAccompanimentButton() now toggles a compact dot indicator
+//     (.on class + #accompaniment-state text) instead of writing the
+//     whole "Accompaniment: on/off" sentence into the button.
+//  3. syncHandPanels() also sets #mini-hand-label ("Right"/"Both"); the
+//     hand mention is dropped from #context-subtitle's text (now just
+//     the section label) since it would say the same thing twice.
+//
 // v2.8: struck notes are now also removed from the waiting cue
 // immediately (visualizer.clearWaitingNote(), see visualizer.js v2.3) —
 // fixes a leftover glitch where a held note's pulsing halo stayed glued
@@ -1197,6 +1207,8 @@ window.ViewLearning = (function () {
       const inPlay = Store.hand === "both" || hand === Store.hand;
       dock.classList.toggle("hidden", !inPlay);
     });
+    const label = document.getElementById("mini-hand-label");
+    if (label) label.textContent = Store.hand === "both" ? "Both" : "Right";
   }
 
   function syncAccompanimentButton() {
@@ -1205,9 +1217,9 @@ window.ViewLearning = (function () {
     // no "other hand" left over to play underneath.
     btn.style.display = Store.hand === "both" ? "none" : "";
     const on = Store.accompaniment;
-    btn.textContent = `Accompaniment: ${on ? "on" : "off"}`;
+    document.getElementById("accompaniment-state").textContent = on ? "On" : "Off";
     btn.setAttribute("aria-pressed", String(on));
-    btn.classList.toggle("off", !on);
+    btn.classList.toggle("on", on);
   }
 
   async function mount() {
@@ -1218,6 +1230,11 @@ window.ViewLearning = (function () {
     document.getElementById("loop-btn").classList.toggle("active", state.loopEnabled);
     document.getElementById("loop-btn").setAttribute("aria-pressed", String(state.loopEnabled));
     syncHandPanels();
+    // The keyboard-mode switch now lives in the persistent app shell (so
+    // it reads as part of the top bar, per feedback) — only relevant
+    // while actually in the Learning view, so it's hidden the rest of
+    // the time rather than shown on every page.
+    document.getElementById("keyboard-mode-switch").classList.remove("hidden");
 
     // Gameplay hooks on the shared, still-connected BLE instance.
     await PianoBle.ready;
@@ -1233,8 +1250,10 @@ window.ViewLearning = (function () {
       Store.sectionId === "all"
         ? "Whole song"
         : (state.song.sections.find((s) => s.id === Store.sectionId) || {}).label || "Whole song";
-    const handLabel = Store.hand === "both" ? "Both hands" : "Right hand";
-    document.getElementById("context-subtitle").textContent = `${handLabel} — ${sectionLabel}`;
+    // Hand is no longer repeated here — the mini-hand label right next to
+    // the hand illustration already says it, right there in the sticky
+    // bar, so this would just be saying the same thing twice.
+    document.getElementById("context-subtitle").textContent = sectionLabel;
 
     document.getElementById("score-display").textContent = "";
     document.getElementById("next-note-display").textContent = "";
@@ -1283,6 +1302,7 @@ window.ViewLearning = (function () {
     clearExpectedNoteLed();
     closeScoreModal();
     state.loopEnabled = false;
+    document.getElementById("keyboard-mode-switch").classList.add("hidden");
 
     // Detach gameplay only — the BLE connection itself stays up. This is
     // the behaviour the whole SPA conversion was for.
