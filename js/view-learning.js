@@ -1,9 +1,30 @@
-// v2.11
+// v2.13
 // view-learning.js
+// v2.13: v2.10's per-group decoupling was necessary but not sufficient —
+// it stopped there being visible AT ALL, but the shared clock still ran
+// freely once struck (state.groupStruckAtMs), and that shared clock also
+// drives the render position of every OTHER, unrelated note in the
+// timeline. A long hold could race it far past future notes' render
+// windows (making them flicker/vanish), then the next group's fresh
+// fall-in would reset it — a much more visible jump than before. Ghost
+// notes (visualizer.js v2.4) now fall on their OWN independent
+// wall-clock timer, entirely decoupled from the shared clock — so the
+// shared clock (frozenPracticeMs(), replaces currentPracticeMs()) can go
+// back to simply staying frozen at the current group's beat the whole
+// time it's waiting, same as the pre-v2.5 original. groupStruckAtMs is
+// gone entirely; no longer needed.
+//
+// v2.12
+// view-learning.js
+// v2.12: reverted the button-label shortening from v2.11 per feedback —
+// "Start Practice"/"Play"/"Restart" keep their full text, just smaller
+// (index.html v2.8 undoes the compact/icon-only styling on the labels,
+// keeps the buttons themselves smaller). #learning-shell-info show/hide
+// (song title/subtitle/measure, now in the app shell) is unaffected.
+//
 // v2.11: #learning-shell-info (song title/subtitle/measure) also shown/
 // hidden on mount()/unmount(), now that it lives in the app shell
-// (index.html v2.7). Practice button text shortened to "Practice"/"Stop"
-// to fit the shrunk sticky bar.
+// (index.html v2.7).
 //
 // v2.10: the REAL, architectural fix for the recurring "notes jump"
 // glitch — root-caused by comparing against the file from right before
@@ -275,7 +296,6 @@ window.ViewLearning = (function () {
     practiceBaseMs: 0,
     practiceRealStart: 0,
     practiceRafId: null,
-    groupStruckAtMs: null,
     loopEnabled: false,
     loopRestartTimer: null,
   };
@@ -602,7 +622,6 @@ window.ViewLearning = (function () {
     state.groupPointer = 0;
     state.pressed = new Map();   // note -> press timestamp, current group
     state.released = new Set();  // notes of the current group already scored
-    state.groupStruckAtMs = null;
     state.accompQueue = toAccompanimentTimeline(currentMsPerBeat());
     state.accompPointer = 0;
     state.noteScores = [];
@@ -616,7 +635,7 @@ window.ViewLearning = (function () {
     // below only works because the ids it's given match what's on screen.
     state.visualizer.setNotes(state.waitQueue, state.song.notesColor);
 
-    document.getElementById("practice-btn").textContent = "Stop";
+    document.getElementById("practice-btn").textContent = "Stop Practice";
     document.getElementById("score-display").textContent = "";
 
     if (state.practiceActive) {
@@ -639,7 +658,7 @@ window.ViewLearning = (function () {
       state.loopRestartTimer = null;
     }
     if (state.visualizer) state.visualizer.setWaitingNote(null);
-    document.getElementById("practice-btn").textContent = "Practice";
+    document.getElementById("practice-btn").textContent = "Start Practice";
     document.getElementById("next-note-display").textContent = "";
     updateFingerGuide(null);
     clearExpectedNoteLed();
@@ -649,22 +668,21 @@ window.ViewLearning = (function () {
     if (!state.practiceActive) return;
     const group = currentGroup();
     if (!group) return;
-    state.visualizer.draw(currentPracticeMs(group));
+    state.visualizer.draw(frozenPracticeMs(group));
     state.practiceRafId = requestAnimationFrame(practiceAnimationLoop);
   }
 
-  // The visualizer's current position on the timeline: frozen at the
-  // chord's own beat until it's been struck, then running freely at
-  // normal speed. Shared by the animation loop AND by practiceNoteOff
-  // (so the clock is re-based on wherever it ACTUALLY is at release,
-  // instead of snapping back to the chord's nominal beat — that snap
-  // was causing the "note jumps backward" glitch whenever a key was held
-  // past its own beat).
-  function currentPracticeMs(group) {
+  // The shared clock, used only to position still-WAITING notes: frozen
+  // at the current group's own beat for as long as we're waiting on it,
+  // exactly like the original design. It no longer needs to run freely
+  // once a key is struck — that's now handled entirely by the
+  // visualizer's own per-note ghost clock (see visualizer.js v2.4),
+  // completely independent of this one. Keeping this one simply frozen
+  // means it can never race ahead of (and desync) other, unrelated
+  // future notes while a key is held.
+  function frozenPracticeMs(group) {
     const elapsed = performance.now() - state.practiceRealStart;
-    return state.groupStruckAtMs != null
-      ? state.practiceBaseMs + elapsed
-      : Math.min(state.practiceBaseMs + elapsed, leadEntry(group).startMs);
+    return Math.min(state.practiceBaseMs + elapsed, leadEntry(group).startMs);
   }
 
   // Lights every key of the current chord at once, on screen and on the
@@ -676,18 +694,10 @@ window.ViewLearning = (function () {
     state.pressed = new Map();
     state.released = new Set();
     state.currentWrongAttempts = 0;
-    state.groupStruckAtMs = null;
 
     // Each group gets its OWN fresh fall-in, always taking exactly
     // leadTimeMs to arrive at the hit line and freeze there — completely
-    // decoupled from the previous group's actual release time. Wait Mode
-    // has no continuous song-relative clock (see flushAccompanimentUpTo's
-    // comment below); tying a group's freeze point to wherever the clock
-    // happened to land after an arbitrarily long hold on the previous
-    // note is what caused it to sometimes already be PAST its own freeze
-    // point the instant it appeared — a visible backward jump to catch
-    // up. Giving every group its own fixed-duration fall-in removes that
-    // possibility entirely.
+    // decoupled from the previous group's actual release time.
     state.practiceBaseMs = leadEntry(group).startMs - state.visualizer.leadTimeMs;
     state.practiceRealStart = performance.now();
 
@@ -921,7 +931,6 @@ window.ViewLearning = (function () {
     // natural spread of fingers landing across a few milliseconds would
     // be scored as lateness.
     if (state.pressed.size === 1) {
-      state.groupStruckAtMs = now;
       const lead = leadEntry(group);
       const fallDurationMs = Math.max(0, lead.startMs - state.practiceBaseMs);
       const freezeRealTime = state.practiceRealStart + fallDurationMs;
@@ -983,7 +992,7 @@ window.ViewLearning = (function () {
     // into the next group: showCurrentGroup() gives that one its own
     // fresh, independent fall-in instead (see its comment) — that's the
     // fix for the "jumps backward" glitch.
-    const releaseMs = currentPracticeMs(group);
+    const releaseMs = frozenPracticeMs(group);
 
     state.groupPointer++;
     if (state.groupPointer >= state.groups.length) {
@@ -996,23 +1005,22 @@ window.ViewLearning = (function () {
   }
 
   function finishPractice() {
-    // Let the last note's ghost visibly finish falling through the
-    // buffer below the hit line instead of cutting straight to the score
-    // the instant it's played. state.practiceBaseMs is the clock's actual
-    // position when the last chord was released (see currentPracticeMs()
-    // in practiceNoteOff) — if it was held past its own ghost-fall
-    // window, this wind-down is mostly a no-op wait, which is harmless.
+    // The last note's ghost keeps falling through the buffer below the
+    // hit line on its OWN clock now (visualizer.js v2.4) — it no longer
+    // needs the shared currentMs to advance for that to happen. This
+    // loop just keeps re-rendering the canvas for that same duration so
+    // the ghost's motion is actually drawn frame by frame, then shows
+    // the score. The value passed to draw() can just stay constant.
     cancelAnimationFrame(state.practiceRafId);
     clearExpectedNoteLed();
 
-    const windDownFromMs = state.practiceBaseMs;
+    const frozenMs = state.practiceBaseMs;
     const windDownDurationMs = state.visualizer.ghostFallDurationMs() + FINISH_WINDDOWN_BUFFER_MS;
     const windDownStart = performance.now();
 
     function windDownLoop() {
       const elapsed = performance.now() - windDownStart;
-      const currentMs = windDownFromMs + Math.min(elapsed, windDownDurationMs);
-      state.visualizer.draw(currentMs);
+      state.visualizer.draw(frozenMs);
       if (elapsed < windDownDurationMs) {
         state.practiceRafId = requestAnimationFrame(windDownLoop);
       } else {
@@ -1033,7 +1041,7 @@ window.ViewLearning = (function () {
 
     document.getElementById("next-note-display").textContent = "";
     state.practiceActive = false;
-    document.getElementById("practice-btn").textContent = "Practice";
+    document.getElementById("practice-btn").textContent = "Start Practice";
     updateFingerGuide(null);
 
     // Below 1x is for learning the passage, not for passing it — nothing
