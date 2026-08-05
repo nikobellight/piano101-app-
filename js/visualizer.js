@@ -1,4 +1,11 @@
-// v2.2
+// v2.3
+// v2.3: added clearWaitingNote(note) — removes a single struck note from
+// the waiting cue immediately (called from view-learning.js's
+// practiceNoteOn), instead of the whole chord's cue staying lit at the
+// hit line until every key was released. That leftover halo, stuck at
+// the line while the actual note (already a falling ghost) had visibly
+// moved on, is what looked like a freeze/glitch during a held key.
+//
 // v2.2: finger number on not-yet-played falling notes is now plain white
 // (was dark) — quick color tweak requested by Nico, nothing else changed.
 // visualizer.js — Draws falling notes on a canvas, synced to song time.
@@ -79,6 +86,16 @@ class FallingNotesVisualizer {
   setWaitingNote(notes) {
     if (notes == null) this.waitingNotes = [];
     else this.waitingNotes = Array.isArray(notes) ? notes.slice() : [notes];
+  }
+
+  // Removes a single note from the waiting cue the instant it's struck —
+  // called from practiceNoteOn(), not on release. Previously the whole
+  // chord's cue stayed lit at the hit line until every key was released,
+  // so a struck-but-still-held note's halo stayed glued to the hit line
+  // even while the note itself (now a falling ghost) had already moved
+  // on — looking like a glitch/freeze at the line.
+  clearWaitingNote(note) {
+    this.waitingNotes = this.waitingNotes.filter((n) => n !== note);
   }
 
   // Fires a burst of particles on a key column — called on a correct hit.
