@@ -1,3 +1,9 @@
+<!-- Piano 101 — index.html — v2.7 -->
+<!-- v2.7: song title/subtitle/measure counter (#learning-shell-info) also
+     moved into the app shell, next to the brand — same show/hide
+     mechanism as the keyboard-mode switch. Practice/Restart buttons
+     shrunk (.compact, .icon-btn) so the sticky bar fits one row.
+     Requires css/app.css v2.5+ and js/view-learning.js v2.11+. -->
 <!-- Piano 101 — index.html — v2.6 -->
 <!-- v2.6: three changes per feedback.
      1. Keyboard-mode switch (1/2 keyboards) moved out of the sticky bar
@@ -137,6 +143,13 @@
       <span class="brand-mark">Piano 101</span>
       <span class="brand-sub">Smart Practice</span>
     </a>
+    <div id="learning-shell-info" class="sticky-song-info hidden">
+      <span id="learning-song-title" class="sticky-song-title">Loading…</span>
+      <span id="context-subtitle" class="context-subtitle"></span>
+      <span class="sticky-measure">
+        <span id="measure-value">–</span><span class="measure-sep">/</span><span id="measure-total">–</span>
+      </span>
+    </div>
     <div class="app-shell-right">
       <div id="keyboard-mode-switch" class="keyboard-mode-switch hidden">
         <button class="kbmode-btn" data-mode="solo">1 keyboard</button>
@@ -230,17 +243,9 @@
       <div class="learning-sticky-bar">
         <a id="learning-back-link" class="back-link sticky-back" href="#/">&larr;</a>
 
-        <div class="sticky-song-info">
-          <span id="learning-song-title" class="sticky-song-title">Loading…</span>
-          <span id="context-subtitle" class="context-subtitle"></span>
-          <span class="sticky-measure">
-            <span id="measure-value">–</span><span class="measure-sep">/</span><span id="measure-total">–</span>
-          </span>
-        </div>
-
-        <button id="practice-btn" class="transport-btn primary">Start Practice</button>
-        <button id="play-btn" class="transport-btn secondary">Play</button>
-        <button id="restart-btn" class="transport-btn secondary">Restart</button>
+        <button id="practice-btn" class="transport-btn primary compact">Practice</button>
+        <button id="play-btn" class="transport-btn secondary compact">Play</button>
+        <button id="restart-btn" class="transport-btn secondary compact icon-btn" title="Restart">&#9198;</button>
         <div id="tempo-switch" class="tempo-switch">
           <button class="tempo-btn" data-tempo="0.5">0.5x</button>
           <button class="tempo-btn" data-tempo="0.75">0.75x</button>
