@@ -6,12 +6,13 @@
 // fall-in, independent ghost clock) never fully fixed the note-jump
 // glitch and in v2.13's case made it visibly worse, so rather than layer
 // on yet another attempted fix, Nico asked to stop and restore the last
-// version that actually worked well. All UI/bandeau changes made in the
-// meantime (index.html v2.8, css/app.css v2.5, Loop, keyboard-mode
-// switch relocation, compact accompaniment toggle, mini-hand label,
-// finger-caption removal, battery in ble.js/ble-shared.js) are left
-// exactly as they were — none of them touch this game-logic code, so
-// there was no reason for them to be involved in the first place.
+// version that actually worked well. Bandeau/UI elements added after
+// that point (keyboard-mode switch in the app shell, mini-hand label,
+// compact accompaniment toggle, #learning-shell-info) have now ALSO been
+// reverted here (index.html v2.2r, css/app.css v2.1r) — syncHandPanels(),
+// syncAccompanimentButton(), updateFingerGuide(), mount()/unmount() are
+// back to referencing the original #finger-caption/#accompaniment-btn/
+// #keyboard-mode-switch elements that exist again in that reverted HTML.
 //
 // v2.13
 // view-learning.js
@@ -742,8 +743,13 @@ window.ViewLearning = (function () {
       f.style.removeProperty("--finger-color");
     });
 
+    const caption = document.getElementById("finger-caption");
     const withFinger = entries.filter((e) => e.finger);
-    if (withFinger.length === 0) return;
+
+    if (withFinger.length === 0) {
+      caption.textContent = Store.hand === "both" ? "Both hands" : "Right hand";
+      return;
+    }
 
     for (const e of withFinger) {
       const hand = e.hand === "left" ? "left" : "right";
@@ -756,6 +762,14 @@ window.ViewLearning = (function () {
         finger.style.setProperty("--finger-color", color);
       }
     }
+
+    // Describe the chord compactly: "Left 5+3+1 · Right 3".
+    const byHand = { left: [], right: [] };
+    for (const e of withFinger) byHand[e.hand === "left" ? "left" : "right"].push(e.finger);
+    const parts = [];
+    if (byHand.left.length) parts.push(`Left ${byHand.left.join("+")}`);
+    if (byHand.right.length) parts.push(`Right ${byHand.right.join("+")}`);
+    caption.textContent = parts.join(" · ");
   }
 
   function beatsPerMeasure() {
@@ -1256,8 +1270,6 @@ window.ViewLearning = (function () {
       const inPlay = Store.hand === "both" || hand === Store.hand;
       dock.classList.toggle("hidden", !inPlay);
     });
-    const label = document.getElementById("mini-hand-label");
-    if (label) label.textContent = Store.hand === "both" ? "Both" : "Right";
   }
 
   function syncAccompanimentButton() {
@@ -1266,9 +1278,9 @@ window.ViewLearning = (function () {
     // no "other hand" left over to play underneath.
     btn.style.display = Store.hand === "both" ? "none" : "";
     const on = Store.accompaniment;
-    document.getElementById("accompaniment-state").textContent = on ? "On" : "Off";
+    btn.textContent = `Accompaniment: ${on ? "on" : "off"}`;
     btn.setAttribute("aria-pressed", String(on));
-    btn.classList.toggle("on", on);
+    btn.classList.toggle("off", !on);
   }
 
   async function mount() {
@@ -1279,12 +1291,6 @@ window.ViewLearning = (function () {
     document.getElementById("loop-btn").classList.toggle("active", state.loopEnabled);
     document.getElementById("loop-btn").setAttribute("aria-pressed", String(state.loopEnabled));
     syncHandPanels();
-    // The keyboard-mode switch now lives in the persistent app shell (so
-    // it reads as part of the top bar, per feedback) — only relevant
-    // while actually in the Learning view, so it's hidden the rest of
-    // the time rather than shown on every page.
-    document.getElementById("keyboard-mode-switch").classList.remove("hidden");
-    document.getElementById("learning-shell-info").classList.remove("hidden");
 
     // Gameplay hooks on the shared, still-connected BLE instance.
     await PianoBle.ready;
@@ -1300,10 +1306,8 @@ window.ViewLearning = (function () {
       Store.sectionId === "all"
         ? "Whole song"
         : (state.song.sections.find((s) => s.id === Store.sectionId) || {}).label || "Whole song";
-    // Hand is no longer repeated here — the mini-hand label right next to
-    // the hand illustration already says it, right there in the sticky
-    // bar, so this would just be saying the same thing twice.
-    document.getElementById("context-subtitle").textContent = sectionLabel;
+    const handLabel = Store.hand === "both" ? "Both hands" : "Right hand";
+    document.getElementById("context-subtitle").textContent = `${handLabel} — ${sectionLabel}`;
 
     document.getElementById("score-display").textContent = "";
     document.getElementById("next-note-display").textContent = "";
@@ -1352,8 +1356,6 @@ window.ViewLearning = (function () {
     clearExpectedNoteLed();
     closeScoreModal();
     state.loopEnabled = false;
-    document.getElementById("keyboard-mode-switch").classList.add("hidden");
-    document.getElementById("learning-shell-info").classList.add("hidden");
 
     // Detach gameplay only — the BLE connection itself stays up. This is
     // the behaviour the whole SPA conversion was for.
