@@ -1,5 +1,17 @@
-// v2.4
+// v2.5
 // view-learning.js
+// v2.5: the real fix for the "freezes until you release the key" bug —
+// v2.4's markPlayed()-on-press change wasn't enough on its own, because
+// practiceAnimationLoop() had its OWN freeze: it clamped the whole
+// animation clock to the current chord's beat until every key of that
+// chord was released, so a struck-but-still-held note's fall couldn't
+// advance even though it was already marked played. Now the clock stays
+// frozen only while NOTHING has been struck yet (waiting cue keeps
+// pulsing as before); the instant the first key of the chord goes down
+// (state.groupStruckAtMs), the clock is let loose and runs at normal
+// speed, so the note keeps falling/ghosting regardless of how long the
+// key is held.
+//
 // v2.4: two changes.
 //  1. Fixed a fluidity bug: a struck note is now marked played (and
 //     resumes its normal/ghost fall) the INSTANT it's pressed
@@ -205,6 +217,7 @@ window.ViewLearning = (function () {
     practiceBaseMs: 0,
     practiceRealStart: 0,
     practiceRafId: null,
+    groupStruckAtMs: null,
     loopEnabled: false,
     loopRestartTimer: null,
   };
@@ -531,6 +544,7 @@ window.ViewLearning = (function () {
     state.groupPointer = 0;
     state.pressed = new Map();   // note -> press timestamp, current group
     state.released = new Set();  // notes of the current group already scored
+    state.groupStruckAtMs = null;
     state.accompQueue = toAccompanimentTimeline(currentMsPerBeat());
     state.accompPointer = 0;
     state.noteScores = [];
@@ -577,11 +591,15 @@ window.ViewLearning = (function () {
     const group = currentGroup();
     if (!group) return;
     const elapsed = performance.now() - state.practiceRealStart;
-    // Strict freeze on the hit line — same as POP Piano. What keeps it
-    // from looking dead is the waiting cue drawn by the visualizer, not
-    // letting the fall drift past the line. The freeze point is the
-    // chord's own beat, so both hands stop together.
-    const currentMs = Math.min(state.practiceBaseMs + elapsed, leadEntry(group).startMs);
+    // Strict freeze on the hit line — same as POP Piano — but ONLY while
+    // nothing has been struck yet. The moment the first key of the
+    // chord goes down (groupStruckAtMs set in practiceNoteOn), the clock
+    // is let loose so the struck note keeps falling/ghosting at its
+    // normal speed no matter how long the key stays held — it no longer
+    // waits for the whole chord to be released.
+    const currentMs = state.groupStruckAtMs != null
+      ? state.practiceBaseMs + elapsed
+      : Math.min(state.practiceBaseMs + elapsed, leadEntry(group).startMs);
     state.visualizer.draw(currentMs);
     state.practiceRafId = requestAnimationFrame(practiceAnimationLoop);
   }
@@ -595,6 +613,7 @@ window.ViewLearning = (function () {
     state.pressed = new Map();
     state.released = new Set();
     state.currentWrongAttempts = 0;
+    state.groupStruckAtMs = null;
 
     state.visualizer.setWaitingNote(group.map((e) => e.note));
     updateFingerGuide(group);
@@ -834,6 +853,7 @@ window.ViewLearning = (function () {
     // natural spread of fingers landing across a few milliseconds would
     // be scored as lateness.
     if (state.pressed.size === 1) {
+      state.groupStruckAtMs = now;
       const lead = leadEntry(group);
       const fallDurationMs = Math.max(0, lead.startMs - state.practiceBaseMs);
       const freezeRealTime = state.practiceRealStart + fallDurationMs;
