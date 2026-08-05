@@ -1,9 +1,16 @@
-/* v2.3 */
+/* v2.4 */
 /* app.css — SPA-only styles: the persistent app shell (brand + BLE widget
    + profile switch), the show/hide mechanics for the three views, and the
    1-keyboard / 2-linked selector in the Learning view.
    Everything else still comes from style.css / sections.css / learning.css,
    which are loaded unchanged.
+   v2.4: keyboard-mode switch relocated into the app shell itself (top
+   bar, next to the profile switch) — shown/hidden by view-learning.js's
+   mount()/unmount(), not by view. Accompaniment is now a compact
+   dot-toggle (.accompaniment-toggle) instead of a text button. Added
+   .mini-hand-label (small "Right"/"Both" caption next to the mini
+   hands) — the redundant hand mention in .context-subtitle is dropped
+   in view-learning.js accordingly.
    v2.3: song title/subtitle/measure counter/keyboard-mode/accompaniment
    folded into .learning-sticky-bar (.sticky-back, .sticky-song-info,
    .sticky-song-title, .sticky-measure) — the old second row below it is
@@ -639,4 +646,55 @@
    wrap onto a second line on narrow viewports rather than overflow. */
 .learning-sticky-bar {
   row-gap: 8px;
+}
+
+/* ---------- Sticky bar v2.4: keyboard-mode switch relocated to the app
+   shell, compact accompaniment toggle, mini-hand label ---- */
+
+/* Lives in .app-shell-right now — hidden outside the Learning view via
+   view-learning.js's mount()/unmount(), not CSS media queries. */
+.keyboard-mode-switch.hidden { display: none; }
+
+.mini-hand-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  align-self: center;
+}
+
+.accompaniment-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  background: var(--surface-raised);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 7px 12px;
+  border-radius: 999px;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.accompaniment-toggle:hover { color: var(--text); }
+
+.accompaniment-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.accompaniment-toggle.on {
+  color: var(--text);
+  border-color: transparent;
+}
+
+.accompaniment-toggle.on .accompaniment-dot {
+  background: var(--teal);
+  box-shadow: 0 0 8px var(--teal);
 }
