@@ -1,3 +1,17 @@
+// v2.8
+// view-learning.js
+// v2.8: fixed the "late press causes a jump forward" bug. While a note
+// sits frozen waiting to be struck, practiceBaseMs+elapsed keeps growing
+// silently underneath the freeze-clamp — harmless as long as it stays
+// clamped, but the moment you strike LATE and the clamp lifts, that
+// hidden, already-large value is suddenly exposed as a forward jump
+// proportional to how long you waited. practiceNoteOn() now re-anchors
+// practiceBaseMs/practiceRealStart to exactly lead.startMs (where the
+// note was actually frozen) at the moment of striking — AFTER computing
+// the lateness score from the original values — so the free-running
+// phase always starts smoothly from the frozen position, no matter how
+// late the press was.
+//
 // v2.7
 // view-learning.js
 // v2.7: per feedback, v2.6's "always frozen" shared clock was wrong —
@@ -982,7 +996,6 @@ window.ViewLearning = (function () {
     // natural spread of fingers landing across a few milliseconds would
     // be scored as lateness.
     if (state.pressed.size === 1) {
-      state.groupStruckAtMs = now;
       const lead = leadEntry(group);
       const fallDurationMs = Math.max(0, lead.startMs - state.practiceBaseMs);
       const freezeRealTime = state.practiceRealStart + fallDurationMs;
@@ -999,6 +1012,18 @@ window.ViewLearning = (function () {
       // as the player reaches each chord, so it lands with the melody at
       // whatever speed the section is being played.
       flushAccompanimentUpTo(lead.startMs);
+
+      // Re-anchor the clock to EXACTLY where it was frozen (lead.startMs)
+      // before letting it run free. While waiting, practiceBaseMs+elapsed
+      // keeps growing silently underneath the freeze-clamp the whole
+      // time you're late — if we let the free-running phase continue
+      // from that hidden, already-large value instead of resetting it,
+      // the clock jumps forward the instant it unfreezes, by exactly how
+      // long you waited. Doing this AFTER the timing score above is
+      // computed, so lateness is still measured correctly.
+      state.practiceBaseMs = lead.startMs;
+      state.practiceRealStart = now;
+      state.groupStruckAtMs = now;
     }
   }
 
