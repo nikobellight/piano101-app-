@@ -1,24 +1,10 @@
-// v2.4
-// v2.4: architectural fix for the "notes jump/glitch everywhere" bug.
-// Ghost notes (already struck) used to fall based on the SAME shared
-// `currentMs` clock as every other, still-waiting note. Once held notes
-// were allowed to run that clock forward freely (view-learning.js
-// v2.5), a long hold could race currentMs far past OTHER, unrelated
-// future notes' render windows — making them flicker/disappear — and
-// then snap back down when the next group reset the clock. Ghost notes
-// now fall on their OWN independent clock (real wall-time since the
-// exact moment markPlayed() was called for them, see ghostStruckAt),
-// completely decoupled from currentMs. The shared clock, in turn, no
-// longer needs to run freely at all — it can go back to simply staying
-// frozen at the current group's beat while waiting (see
-// view-learning.js's simplified practiceAnimationLoop).
-//
-// v2.3: added clearWaitingNote(note) — removes a single struck note from
-// the waiting cue immediately (called from view-learning.js's
-// practiceNoteOn), instead of the whole chord's cue staying lit at the
-// hit line until every key was released. That leftover halo, stuck at
-// the line while the actual note (already a falling ghost) had visibly
-// moved on, is what looked like a freeze/glitch during a held key.
+// v2.2r
+// v2.2r: reverted to the confirmed-working v2.2 game logic per explicit
+// request — v2.3 (clearWaitingNote) and v2.4 (independent ghost clock)
+// are both undone; neither fully fixed the note-jump glitch and Nico
+// asked to stop digging and restore the last version that worked well,
+// rather than layer on another attempted fix. Bandeau/UI changes made in
+// other files during that time are untouched.
 //
 // v2.2: finger number on not-yet-played falling notes is now plain white
 // (was dark) — quick color tweak requested by Nico, nothing else changed.
@@ -83,7 +69,7 @@ class FallingNotesVisualizer {
     this.color = color || "#f4b942";
     this.leadTimeMs = 3400; // how long a note takes to fall to the hit line — gives more time to get ready before it arrives
     this.notes = [];
-    this.ghostStruckAt = new Map(); // id -> real wall-clock ms when struck (see markPlayed())
+    this.ghostIds = new Set();   // ids of notes already played — see markPlayed()
     this.fallThroughPx = 90;     // extra room below the hit line where a played note keeps visibly falling, greyed out, before it's gone
     this.keyByNote = {};
     for (const k of layout.keys) this.keyByNote[k.note] = k;
@@ -100,16 +86,6 @@ class FallingNotesVisualizer {
   setWaitingNote(notes) {
     if (notes == null) this.waitingNotes = [];
     else this.waitingNotes = Array.isArray(notes) ? notes.slice() : [notes];
-  }
-
-  // Removes a single note from the waiting cue the instant it's struck —
-  // called from practiceNoteOn(), not on release. Previously the whole
-  // chord's cue stayed lit at the hit line until every key was released,
-  // so a struck-but-still-held note's halo stayed glued to the hit line
-  // even while the note itself (now a falling ghost) had already moved
-  // on — looking like a glitch/freeze at the line.
-  clearWaitingNote(note) {
-    this.waitingNotes = this.waitingNotes.filter((n) => n !== note);
   }
 
   // Fires a burst of particles on a key column — called on a correct hit.
@@ -229,7 +205,7 @@ class FallingNotesVisualizer {
   // upstream, so this class doesn't need to know about beats/bpm at all.
   setNotes(notes, color) {
     this.notes = notes;
-    this.ghostStruckAt = new Map();
+    this.ghostIds = new Set();
     if (color) this.color = color;
   }
 
@@ -239,18 +215,8 @@ class FallingNotesVisualizer {
   // special), just rendered as a pale grey ghost with its finger number
   // still legible, until it exits the fall-through buffer below the hit
   // line (see fallThroughPx / ghostFallDurationMs()).
-  //
-  // v2.4: stores the REAL wall-clock moment each note was struck, rather
-  // than just a flag. A ghost note's fall is now driven entirely by this
-  // timestamp (see draw()) instead of the shared `currentMs` clock — so
-  // it always falls at a steady, predictable rate from the instant it's
-  // struck, and can never be affected by (or affect) how the shared
-  // clock behaves for other, still-waiting notes.
   markPlayed(ids) {
-    const now = performance.now();
-    for (const id of ids) {
-      if (!this.ghostStruckAt.has(id)) this.ghostStruckAt.set(id, now);
-    }
+    for (const id of ids) this.ghostIds.add(id);
   }
 
   // How long (ms) a ghost note needs to keep being drawn after its own
@@ -329,24 +295,11 @@ class FallingNotesVisualizer {
       drawBoundary(this.sectionBoundsMs.endMs, "SECTION END");
     }
 
-    const drawWallNow = performance.now();
-
     for (const n of this.notes) {
       const key = this.keyByNote[n.note];
       if (!key) continue;
 
-      const struckAt = this.ghostStruckAt.get(n.id);
-      const isGhost = struckAt != null;
-
-      // Ghost notes use their OWN independent clock — real time elapsed
-      // since the exact moment they were struck, mapped onto the same
-      // "ms since this note's own beat" scale the shared currentMs would
-      // have used. This is what decouples a held note's fall from the
-      // shared clock entirely: it can never be sped up, frozen, or
-      // yanked backward by anything happening to other, still-waiting
-      // notes, no matter how long a key stays down.
-      const effectiveMs = isGhost ? n.startMs + (drawWallNow - struckAt) : currentMs;
-
+      const isGhost = this.ghostIds.has(n.id);
       const spawnMs = n.startMs - this.leadTimeMs;
 
       // A ghost note keeps being drawn until it's fallen all the way
@@ -357,9 +310,9 @@ class FallingNotesVisualizer {
       const visibilityEndMs = isGhost
         ? n.startMs + this.ghostFallDurationMs()
         : n.startMs + n.durationMs + 300;
-      if (effectiveMs < spawnMs - 300 || effectiveMs > visibilityEndMs) continue;
+      if (currentMs < spawnMs - 300 || currentMs > visibilityEndMs) continue;
 
-      const fraction = (effectiveMs - spawnMs) / this.leadTimeMs;
+      const fraction = (currentMs - spawnMs) / this.leadTimeMs;
       const noteHeight = Math.max(16, (n.durationMs / this.leadTimeMs) * hitY);
       const yBottom = fraction * hitY;
       const yTop = yBottom - noteHeight;
@@ -372,7 +325,7 @@ class FallingNotesVisualizer {
         // Flat, pale grey, fading a little as it falls through the
         // buffer — colour is gone, this is no longer "the note to play".
         const ghostProgress = Math.min(1, Math.max(0,
-          (effectiveMs - n.startMs) / this.ghostFallDurationMs()
+          (currentMs - n.startMs) / this.ghostFallDurationMs()
         ));
         ctx.fillStyle = `rgba(210, 214, 226, ${0.32 * (1 - ghostProgress * 0.6)})`;
       } else {
