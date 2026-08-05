@@ -1,3 +1,21 @@
+<!-- Piano 101 — index.html — v2.5 -->
+<!-- v2.5: removed the big .hands-row entirely — Piano 101 header, then
+     the sticky bar (with the mini hands right after Loop), then straight
+     into the stage (canvas + keyboard), no intermediate row at all, per
+     feedback. The mini hands in the sticky bar are the only hand
+     illustration left; syncHandPanels()/updateFingerGuide() need no
+     changes since they already select by class (.hand-dock/.hand-svg),
+     not by which specific instance exists. -->
+<!-- Piano 101 — index.html — v2.4 -->
+<!-- v2.4: consolidated everything into the sticky bar per feedback — the
+     old .learning-topbar / .learning-header / .practice-hud row (back
+     link, song title, hand/section subtitle, measure counter, duplicate
+     "Right hand" caption, keyboard-mode switch, accompaniment toggle)
+     is gone. All of it now lives in .learning-sticky-bar, shrunk down,
+     alongside the existing Start Practice/Play/Restart/tempo/Loop/hands.
+     The redundant #finger-caption text is dropped entirely (removed
+     from view-learning.js too, see v2.7). Requires css/app.css v2.3+ and
+     js/view-learning.js v2.7+. -->
 <!-- Piano 101 — index.html — v2.3 -->
 <!-- v2.3: added mini hand illustrations (reusing .hand-dock/.hand-svg,
      sized down via .hand-dock-mini) to the sticky bar — same finger-guide
@@ -194,6 +212,21 @@
            never a scroll away on tablet. position: sticky, stays pinned
            under the app-shell as the rest of the page scrolls under it. -->
       <div class="learning-sticky-bar">
+        <a id="learning-back-link" class="back-link sticky-back" href="#/">&larr;</a>
+
+        <div class="sticky-song-info">
+          <span id="learning-song-title" class="sticky-song-title">Loading…</span>
+          <span id="context-subtitle" class="context-subtitle"></span>
+          <span class="sticky-measure">
+            <span id="measure-value">–</span><span class="measure-sep">/</span><span id="measure-total">–</span>
+          </span>
+        </div>
+
+        <div id="keyboard-mode-switch" class="keyboard-mode-switch">
+          <button class="kbmode-btn" data-mode="solo">1 keyboard</button>
+          <button class="kbmode-btn" data-mode="duo">2 keyboards</button>
+        </div>
+
         <button id="practice-btn" class="transport-btn primary">Start Practice</button>
         <button id="play-btn" class="transport-btn secondary">Play</button>
         <button id="restart-btn" class="transport-btn secondary">Restart</button>
@@ -258,101 +291,12 @@
             </svg>
           </div>
         </div>
-      </div>
-
-      <div class="learning-topbar">
-        <a id="learning-back-link" class="back-link" href="#/">&larr; Back to sections</a>
-        <div id="keyboard-mode-switch" class="keyboard-mode-switch">
-          <button class="kbmode-btn" data-mode="solo">1 keyboard</button>
-          <button class="kbmode-btn" data-mode="duo">2 keyboards</button>
-        </div>
-      </div>
-
-      <div class="learning-header">
-        <div>
-          <h1 id="learning-song-title">Loading…</h1>
-          <div id="context-subtitle" class="context-subtitle"></div>
-        </div>
-      </div>
-
-      <div class="practice-hud">
-        <div class="measure-pill">
-          <span id="measure-value">–</span>
-          <span class="measure-sep">/</span>
-          <span id="measure-total">–</span>
-          <span class="measure-caption">measure</span>
-        </div>
-
-        <div id="finger-caption" class="finger-caption">Right hand</div>
 
         <button id="accompaniment-btn" class="accompaniment-btn" aria-pressed="true">
           Accompaniment: on
         </button>
       </div>
       <div id="tempo-note" class="tempo-note"></div>
-
-      <!-- Own dedicated row, ABOVE the stage entirely — not between the
-           canvas and the keyboard any more. The canvas now ends exactly
-           at the keyboard, nothing in between. Each finger is drawn as
-           its own elongated shape in the SVG, well separated, with its
-           number written at the SAME coordinates as the finger tip
-           itself — not a guessed overlay — so it can't end up off the
-           finger. -->
-      <div class="hands-row">
-        <div class="hand-dock hand-dock-left">
-          <svg class="hand-svg" data-hand="left" viewBox="0 0 170 230" aria-hidden="true">
-            <rect class="palm" x="10" y="140" width="150" height="80" rx="30" />
-            <g class="finger" data-finger="5">
-              <rect x="22" y="65" width="22" height="82" rx="11" />
-              <text x="33" y="90">5</text>
-            </g>
-            <g class="finger" data-finger="4">
-              <rect x="50" y="38" width="22" height="109" rx="11" />
-              <text x="61" y="63">4</text>
-            </g>
-            <g class="finger" data-finger="3">
-              <rect x="78" y="15" width="22" height="132" rx="11" />
-              <text x="89" y="40">3</text>
-            </g>
-            <g class="finger" data-finger="2">
-              <rect x="106" y="40" width="22" height="107" rx="11" />
-              <text x="117" y="65">2</text>
-            </g>
-            <g class="finger" data-finger="1">
-              <rect x="134" y="95" width="22" height="52" rx="11" />
-              <text x="145" y="120">1</text>
-            </g>
-          </svg>
-          <div class="hand-label">Left</div>
-        </div>
-
-        <div class="hand-dock hand-dock-right">
-          <svg class="hand-svg" data-hand="right" viewBox="0 0 170 230" aria-hidden="true">
-            <rect class="palm" x="10" y="140" width="150" height="80" rx="30" />
-            <g class="finger" data-finger="1">
-              <rect x="14" y="95" width="22" height="52" rx="11" />
-              <text x="25" y="120">1</text>
-            </g>
-            <g class="finger" data-finger="2">
-              <rect x="42" y="40" width="22" height="107" rx="11" />
-              <text x="53" y="65">2</text>
-            </g>
-            <g class="finger" data-finger="3">
-              <rect x="70" y="15" width="22" height="132" rx="11" />
-              <text x="81" y="40">3</text>
-            </g>
-            <g class="finger" data-finger="4">
-              <rect x="98" y="38" width="22" height="109" rx="11" />
-              <text x="109" y="63">4</text>
-            </g>
-            <g class="finger" data-finger="5">
-              <rect x="126" y="65" width="22" height="82" rx="11" />
-              <text x="137" y="90">5</text>
-            </g>
-          </svg>
-          <div class="hand-label">Right</div>
-        </div>
-      </div>
 
       <div class="stage">
         <div class="stage-inner">
