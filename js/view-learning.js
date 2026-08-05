@@ -1,5 +1,20 @@
-// v2.5
+// v2.7
 // view-learning.js
+// v2.7: dropped the #finger-caption text entirely from updateFingerGuide()
+// — it duplicated the "Right hand" / hand-tab info already shown
+// elsewhere and added no information of its own, per feedback. The
+// finger-highlighting behaviour on the hand SVGs is unchanged. Pairs
+// with index.html v2.4 (old .learning-topbar/.learning-header/
+// .practice-hud row removed, contents folded into the sticky bar).
+//
+// v2.6: fixed the "notes jump backward" glitch introduced by v2.5. On
+// release, the clock was re-based on the chord's own nominal beat
+// (lead.startMs) — but since v2.5 lets the clock run freely while a key
+// is held, that snapped the timeline backward whenever a hold lasted
+// past its own beat. Now it re-bases on wherever the clock ACTUALLY is
+// at release (currentPracticeMs(), shared with the animation loop) —
+// no more discontinuity.
+//
 // v2.5: the real fix for the "freezes until you release the key" bug —
 // v2.4's markPlayed()-on-press change wasn't enough on its own, because
 // practiceAnimationLoop() had its OWN freeze: it clamped the whole
@@ -590,18 +605,22 @@ window.ViewLearning = (function () {
     if (!state.practiceActive) return;
     const group = currentGroup();
     if (!group) return;
+    state.visualizer.draw(currentPracticeMs(group));
+    state.practiceRafId = requestAnimationFrame(practiceAnimationLoop);
+  }
+
+  // The visualizer's current position on the timeline: frozen at the
+  // chord's own beat until it's been struck, then running freely at
+  // normal speed. Shared by the animation loop AND by practiceNoteOff
+  // (so the clock is re-based on wherever it ACTUALLY is at release,
+  // instead of snapping back to the chord's nominal beat — that snap
+  // was causing the "note jumps backward" glitch whenever a key was held
+  // past its own beat).
+  function currentPracticeMs(group) {
     const elapsed = performance.now() - state.practiceRealStart;
-    // Strict freeze on the hit line — same as POP Piano — but ONLY while
-    // nothing has been struck yet. The moment the first key of the
-    // chord goes down (groupStruckAtMs set in practiceNoteOn), the clock
-    // is let loose so the struck note keeps falling/ghosting at its
-    // normal speed no matter how long the key stays held — it no longer
-    // waits for the whole chord to be released.
-    const currentMs = state.groupStruckAtMs != null
+    return state.groupStruckAtMs != null
       ? state.practiceBaseMs + elapsed
       : Math.min(state.practiceBaseMs + elapsed, leadEntry(group).startMs);
-    state.visualizer.draw(currentMs);
-    state.practiceRafId = requestAnimationFrame(practiceAnimationLoop);
   }
 
   // Lights every key of the current chord at once, on screen and on the
@@ -648,13 +667,8 @@ window.ViewLearning = (function () {
       f.style.removeProperty("--finger-color");
     });
 
-    const caption = document.getElementById("finger-caption");
     const withFinger = entries.filter((e) => e.finger);
-
-    if (withFinger.length === 0) {
-      caption.textContent = Store.hand === "both" ? "Both hands" : "Right hand";
-      return;
-    }
+    if (withFinger.length === 0) return;
 
     for (const e of withFinger) {
       const hand = e.hand === "left" ? "left" : "right";
@@ -667,14 +681,6 @@ window.ViewLearning = (function () {
         finger.style.setProperty("--finger-color", color);
       }
     }
-
-    // Describe the chord compactly: "Left 5+3+1 · Right 3".
-    const byHand = { left: [], right: [] };
-    for (const e of withFinger) byHand[e.hand === "left" ? "left" : "right"].push(e.finger);
-    const parts = [];
-    if (byHand.left.length) parts.push(`Left ${byHand.left.join("+")}`);
-    if (byHand.right.length) parts.push(`Right ${byHand.right.join("+")}`);
-    caption.textContent = parts.join(" · ");
   }
 
   function beatsPerMeasure() {
@@ -909,8 +915,12 @@ window.ViewLearning = (function () {
     // Gone from the canvas the instant it's validated — no lingering.
     state.visualizer.markPlayed(group.map((e) => e.id));
 
-    const lead = leadEntry(group);
-    state.practiceBaseMs = lead.startMs;
+    // Re-base the clock on wherever it's ACTUALLY at right now — not on
+    // the chord's own nominal beat (lead.startMs). Since the clock has
+    // been running freely (see currentPracticeMs()) for as long as this
+    // chord was held, snapping back to lead.startMs would jump the
+    // timeline backward whenever the hold lasted past that beat.
+    state.practiceBaseMs = currentPracticeMs(group);
     state.practiceRealStart = performance.now();
 
     state.groupPointer++;
@@ -925,9 +935,10 @@ window.ViewLearning = (function () {
   function finishPractice() {
     // Let the last note's ghost visibly finish falling through the
     // buffer below the hit line instead of cutting straight to the score
-    // the instant it's played. state.practiceBaseMs is already the last
-    // note's startMs at this point (set in practiceNoteOff), and it was
-    // already marked played (visualizer.markPlayed()) there too.
+    // the instant it's played. state.practiceBaseMs is the clock's actual
+    // position when the last chord was released (see currentPracticeMs()
+    // in practiceNoteOff) — if it was held past its own ghost-fall
+    // window, this wind-down is mostly a no-op wait, which is harmless.
     cancelAnimationFrame(state.practiceRafId);
     clearExpectedNoteLed();
 
