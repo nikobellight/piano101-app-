@@ -1,9 +1,12 @@
-/* v2.4 */
+/* v2.5 */
 /* app.css — SPA-only styles: the persistent app shell (brand + BLE widget
    + profile switch), the show/hide mechanics for the three views, and the
    1-keyboard / 2-linked selector in the Learning view.
    Everything else still comes from style.css / sections.css / learning.css,
    which are loaded unchanged.
+   v2.5: song info moved into the app shell too (.sticky-song-info now
+   styled for that context); .compact/.icon-btn shrink Practice/Restart
+   so the sticky bar fits one row.
    v2.4: keyboard-mode switch relocated into the app shell itself (top
    bar, next to the profile switch) — shown/hidden by view-learning.js's
    mount()/unmount(), not by view. Accompaniment is now a compact
@@ -697,4 +700,32 @@
 .accompaniment-toggle.on .accompaniment-dot {
   background: var(--teal);
   box-shadow: 0 0 8px var(--teal);
+}
+
+/* ---------- Sticky bar v2.5: song info moved to the app shell, buttons
+   shrunk further so everything fits on one row, per feedback. ---- */
+
+.sticky-song-info.hidden { display: none; }
+
+/* Song title/subtitle/measure, now living in the app shell next to the
+   brand instead of the learning view's own sticky bar. */
+.app-shell .sticky-song-info {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+  margin-right: auto;
+  margin-left: 6px;
+}
+
+.learning-sticky-bar .transport-btn.compact {
+  padding: 9px 16px;
+  font-size: 13px;
+}
+
+.icon-btn {
+  padding: 9px 12px !important;
+  font-size: 16px;
+  line-height: 1;
 }
