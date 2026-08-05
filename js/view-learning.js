@@ -1,5 +1,20 @@
-// v2.6
+// v2.7
 // view-learning.js
+// v2.7: per feedback, v2.6's "always frozen" shared clock was wrong —
+// with it, only the just-struck note moved (via visualizer.js's
+// independent ghost clock) while every OTHER still-waiting note on
+// screen stayed frozen solid, which looked broken (everything should
+// fall together). Restored the "unfreeze once struck" behaviour
+// (state.groupStruckAtMs) so the WHOLE shared clock moves for everyone
+// once the current note is struck — that part was never actually the
+// bug. The real (and only) bug was practiceNoteOff() re-basing the
+// clock to the group's NOMINAL beat (lead.startMs) on release instead
+// of to wherever it actually was — now fixed there (uses
+// currentPracticeMs(group) instead), which is what caused the backward
+// snap after a long hold. visualizer.js's independent ghost clock is
+// reverted too (v2.6) — no longer needed since the shared clock now
+// correctly carries every note along together.
+//
 // v2.6: root cause finally identified — v2.5 (the "confirmed working"
 // version) had the SAME jump bug all along, just not caught by a short
 // test: on release, it re-based the shared clock to the group's nominal
@@ -326,6 +341,7 @@ window.ViewLearning = (function () {
     practiceBaseMs: 0,
     practiceRealStart: 0,
     practiceRafId: null,
+    groupStruckAtMs: null,
     loopEnabled: false,
     loopRestartTimer: null,
   };
@@ -701,17 +717,20 @@ window.ViewLearning = (function () {
     state.practiceRafId = requestAnimationFrame(practiceAnimationLoop);
   }
 
-  // The shared clock, used only to position still-WAITING notes: ALWAYS
-  // frozen at the current group's own beat for as long as we're waiting
-  // on it — it never unfreezes, no matter how long a key is held. That's
-  // what a held note's own falling animation is for (see
-  // visualizer.js's ghostStruckAt) — this clock doesn't need to move to
-  // make that happen, and letting it move is what caused the jump/glitch
-  // bug (a long hold could race it past its own or even future notes'
-  // beats, then release would snap it back).
+  // The shared clock, positioning EVERY note on screen (waiting AND
+  // already-played alike) — frozen at the current group's own beat while
+  // waiting, then let loose to run at normal speed once it's struck, so
+  // every note on screen keeps moving together instead of only the one
+  // just played. The bug this used to have wasn't the unfreezing itself
+  // — it's that practiceNoteOff() re-based this clock to the group's
+  // NOMINAL beat on release, instead of to wherever it actually was,
+  // which is what caused the backward snap after a long hold. That's
+  // fixed there now; this function is otherwise the original design.
   function currentPracticeMs(group) {
     const elapsed = performance.now() - state.practiceRealStart;
-    return Math.min(state.practiceBaseMs + elapsed, leadEntry(group).startMs);
+    return state.groupStruckAtMs != null
+      ? state.practiceBaseMs + elapsed
+      : Math.min(state.practiceBaseMs + elapsed, leadEntry(group).startMs);
   }
 
   // Lights every key of the current chord at once, on screen and on the
@@ -723,6 +742,7 @@ window.ViewLearning = (function () {
     state.pressed = new Map();
     state.released = new Set();
     state.currentWrongAttempts = 0;
+    state.groupStruckAtMs = null;
 
     state.visualizer.setWaitingNote(group.map((e) => e.note));
     updateFingerGuide(group);
@@ -962,6 +982,7 @@ window.ViewLearning = (function () {
     // natural spread of fingers landing across a few milliseconds would
     // be scored as lateness.
     if (state.pressed.size === 1) {
+      state.groupStruckAtMs = now;
       const lead = leadEntry(group);
       const fallDurationMs = Math.max(0, lead.startMs - state.practiceBaseMs);
       const freezeRealTime = state.practiceRealStart + fallDurationMs;
@@ -1017,8 +1038,12 @@ window.ViewLearning = (function () {
     // Gone from the canvas the instant it's validated — no lingering.
     state.visualizer.markPlayed(group.map((e) => e.id));
 
-    const lead = leadEntry(group);
-    state.practiceBaseMs = lead.startMs;
+    // Re-base the clock on wherever it's ACTUALLY at right now — not on
+    // the chord's own nominal beat (lead.startMs). The clock has been
+    // running freely since it was struck (currentPracticeMs()); snapping
+    // back to lead.startMs on release is what caused the backward jump
+    // whenever a hold lasted past that beat.
+    state.practiceBaseMs = currentPracticeMs(group);
     state.practiceRealStart = performance.now();
 
     state.groupPointer++;
