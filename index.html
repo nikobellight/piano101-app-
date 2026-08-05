@@ -1,3 +1,11 @@
+<!-- Piano 101 — index.html — v2.2r -->
+<!-- v2.2r: reverted the whole learning view + app shell back to the
+     confirmed-working v2.2 layout, per explicit request — this is the
+     version live at the moment Nico confirmed the note-hold fix worked
+     ("cest bon"), before any of the later bandeau consolidation, mini
+     hands, keyboard-mode relocation, or battery UI. All of that is
+     undone here; game-logic files (view-learning.js, visualizer.js)
+     were already reverted separately. -->
 <!-- Piano 101 — index.html — v2.8 -->
 <!-- v2.8: reverted button label shortening from v2.7 per feedback — kept
      "Start Practice"/"Play"/"Restart" full text, just smaller via
@@ -147,18 +155,7 @@
       <span class="brand-mark">Piano 101</span>
       <span class="brand-sub">Smart Practice</span>
     </a>
-    <div id="learning-shell-info" class="sticky-song-info hidden">
-      <span id="learning-song-title" class="sticky-song-title">Loading…</span>
-      <span id="context-subtitle" class="context-subtitle"></span>
-      <span class="sticky-measure">
-        <span id="measure-value">–</span><span class="measure-sep">/</span><span id="measure-total">–</span>
-      </span>
-    </div>
     <div class="app-shell-right">
-      <div id="keyboard-mode-switch" class="keyboard-mode-switch hidden">
-        <button class="kbmode-btn" data-mode="solo">1 keyboard</button>
-        <button class="kbmode-btn" data-mode="duo">2 keyboards</button>
-      </div>
       <div id="ble-widget" class="ble-widget"></div>
       <div class="profile-switch">
         <button class="profile-btn" data-profile="1">Nicolas</button>
@@ -245,11 +242,9 @@
            never a scroll away on tablet. position: sticky, stays pinned
            under the app-shell as the rest of the page scrolls under it. -->
       <div class="learning-sticky-bar">
-        <a id="learning-back-link" class="back-link sticky-back" href="#/">&larr;</a>
-
-        <button id="practice-btn" class="transport-btn primary compact">Start Practice</button>
-        <button id="play-btn" class="transport-btn secondary compact">Play</button>
-        <button id="restart-btn" class="transport-btn secondary compact">Restart</button>
+        <button id="practice-btn" class="transport-btn primary">Start Practice</button>
+        <button id="play-btn" class="transport-btn secondary">Play</button>
+        <button id="restart-btn" class="transport-btn secondary">Restart</button>
         <div id="tempo-switch" class="tempo-switch">
           <button class="tempo-btn" data-tempo="0.5">0.5x</button>
           <button class="tempo-btn" data-tempo="0.75">0.75x</button>
@@ -257,69 +252,101 @@
           <button class="tempo-btn" data-tempo="1.25">1.25x</button>
         </div>
         <button id="loop-btn" class="loop-btn" aria-pressed="false">&#8635; Loop</button>
+      </div>
 
-        <div class="mini-hands">
-          <div class="hand-dock hand-dock-left hand-dock-mini">
-            <svg class="hand-svg" data-hand="left" viewBox="0 0 170 230" aria-hidden="true">
-              <rect class="palm" x="10" y="140" width="150" height="80" rx="30" />
-              <g class="finger" data-finger="5">
-                <rect x="22" y="65" width="22" height="82" rx="11" />
-                <text x="33" y="90">5</text>
-              </g>
-              <g class="finger" data-finger="4">
-                <rect x="50" y="38" width="22" height="109" rx="11" />
-                <text x="61" y="63">4</text>
-              </g>
-              <g class="finger" data-finger="3">
-                <rect x="78" y="15" width="22" height="132" rx="11" />
-                <text x="89" y="40">3</text>
-              </g>
-              <g class="finger" data-finger="2">
-                <rect x="106" y="40" width="22" height="107" rx="11" />
-                <text x="117" y="65">2</text>
-              </g>
-              <g class="finger" data-finger="1">
-                <rect x="134" y="95" width="22" height="52" rx="11" />
-                <text x="145" y="120">1</text>
-              </g>
-            </svg>
-          </div>
+      <div class="learning-topbar">
+        <a id="learning-back-link" class="back-link" href="#/">&larr; Back to sections</a>
+        <div id="keyboard-mode-switch" class="keyboard-mode-switch">
+          <button class="kbmode-btn" data-mode="solo">1 keyboard</button>
+          <button class="kbmode-btn" data-mode="duo">2 keyboards</button>
+        </div>
+      </div>
 
-          <div class="hand-dock hand-dock-right hand-dock-mini">
-            <svg class="hand-svg" data-hand="right" viewBox="0 0 170 230" aria-hidden="true">
-              <rect class="palm" x="10" y="140" width="150" height="80" rx="30" />
-              <g class="finger" data-finger="1">
-                <rect x="14" y="95" width="22" height="52" rx="11" />
-                <text x="25" y="120">1</text>
-              </g>
-              <g class="finger" data-finger="2">
-                <rect x="42" y="40" width="22" height="107" rx="11" />
-                <text x="53" y="65">2</text>
-              </g>
-              <g class="finger" data-finger="3">
-                <rect x="70" y="15" width="22" height="132" rx="11" />
-                <text x="81" y="40">3</text>
-              </g>
-              <g class="finger" data-finger="4">
-                <rect x="98" y="38" width="22" height="109" rx="11" />
-                <text x="109" y="63">4</text>
-              </g>
-              <g class="finger" data-finger="5">
-                <rect x="126" y="65" width="22" height="82" rx="11" />
-                <text x="137" y="90">5</text>
-              </g>
-            </svg>
-          </div>
+      <div class="learning-header">
+        <div>
+          <h1 id="learning-song-title">Loading…</h1>
+          <div id="context-subtitle" class="context-subtitle"></div>
+        </div>
+      </div>
 
-          <span id="mini-hand-label" class="mini-hand-label"></span>
+      <div class="practice-hud">
+        <div class="measure-pill">
+          <span id="measure-value">–</span>
+          <span class="measure-sep">/</span>
+          <span id="measure-total">–</span>
+          <span class="measure-caption">measure</span>
         </div>
 
-        <button id="accompaniment-btn" class="accompaniment-toggle" aria-pressed="true" title="Accompaniment">
-          <span class="accompaniment-dot"></span>
-          <span id="accompaniment-state">On</span>
+        <div id="finger-caption" class="finger-caption">Right hand</div>
+
+        <button id="accompaniment-btn" class="accompaniment-btn" aria-pressed="true">
+          Accompaniment: on
         </button>
       </div>
       <div id="tempo-note" class="tempo-note"></div>
+
+      <!-- Own dedicated row, ABOVE the stage entirely — not between the
+           canvas and the keyboard any more. The canvas now ends exactly
+           at the keyboard, nothing in between. Each finger is drawn as
+           its own elongated shape in the SVG, well separated, with its
+           number written at the SAME coordinates as the finger tip
+           itself — not a guessed overlay — so it can't end up off the
+           finger. -->
+      <div class="hands-row">
+        <div class="hand-dock hand-dock-left">
+          <svg class="hand-svg" data-hand="left" viewBox="0 0 170 230" aria-hidden="true">
+            <rect class="palm" x="10" y="140" width="150" height="80" rx="30" />
+            <g class="finger" data-finger="5">
+              <rect x="22" y="65" width="22" height="82" rx="11" />
+              <text x="33" y="90">5</text>
+            </g>
+            <g class="finger" data-finger="4">
+              <rect x="50" y="38" width="22" height="109" rx="11" />
+              <text x="61" y="63">4</text>
+            </g>
+            <g class="finger" data-finger="3">
+              <rect x="78" y="15" width="22" height="132" rx="11" />
+              <text x="89" y="40">3</text>
+            </g>
+            <g class="finger" data-finger="2">
+              <rect x="106" y="40" width="22" height="107" rx="11" />
+              <text x="117" y="65">2</text>
+            </g>
+            <g class="finger" data-finger="1">
+              <rect x="134" y="95" width="22" height="52" rx="11" />
+              <text x="145" y="120">1</text>
+            </g>
+          </svg>
+          <div class="hand-label">Left</div>
+        </div>
+
+        <div class="hand-dock hand-dock-right">
+          <svg class="hand-svg" data-hand="right" viewBox="0 0 170 230" aria-hidden="true">
+            <rect class="palm" x="10" y="140" width="150" height="80" rx="30" />
+            <g class="finger" data-finger="1">
+              <rect x="14" y="95" width="22" height="52" rx="11" />
+              <text x="25" y="120">1</text>
+            </g>
+            <g class="finger" data-finger="2">
+              <rect x="42" y="40" width="22" height="107" rx="11" />
+              <text x="53" y="65">2</text>
+            </g>
+            <g class="finger" data-finger="3">
+              <rect x="70" y="15" width="22" height="132" rx="11" />
+              <text x="81" y="40">3</text>
+            </g>
+            <g class="finger" data-finger="4">
+              <rect x="98" y="38" width="22" height="109" rx="11" />
+              <text x="109" y="63">4</text>
+            </g>
+            <g class="finger" data-finger="5">
+              <rect x="126" y="65" width="22" height="82" rx="11" />
+              <text x="137" y="90">5</text>
+            </g>
+          </svg>
+          <div class="hand-label">Right</div>
+        </div>
+      </div>
 
       <div class="stage">
         <div class="stage-inner">
