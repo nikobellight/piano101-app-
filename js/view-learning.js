@@ -1,5 +1,11 @@
-// v2.7
+// v2.8
 // view-learning.js
+// v2.8: struck notes are now also removed from the waiting cue
+// immediately (visualizer.clearWaitingNote(), see visualizer.js v2.3) —
+// fixes a leftover glitch where a held note's pulsing halo stayed glued
+// to the hit line for the whole hold, even though the note itself had
+// already moved on as a falling ghost.
+//
 // v2.7: dropped the #finger-caption text entirely from updateFingerGuide()
 // — it duplicated the "Right hand" / hand-tab info already shown
 // elsewhere and added no information of its own, per feedback. The
@@ -854,6 +860,11 @@ window.ViewLearning = (function () {
     // struck — previously this only happened on release, which froze the
     // note on the hit line for as long as the key was held down.
     state.visualizer.markPlayed([entry.id]);
+    // Also drop it from the waiting cue right away — otherwise its
+    // pulsing halo stayed glued to the hit line for as long as the key
+    // was held, even though the note itself had already moved on as a
+    // falling ghost (see visualizer.js v2.3).
+    state.visualizer.clearWaitingNote(note);
 
     // Timing is judged once per chord, on its FIRST key — otherwise the
     // natural spread of fingers landing across a few milliseconds would
