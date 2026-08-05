@@ -1,8 +1,4 @@
-// v1.1
-// v1.1: battery test — the pill now shows "Connected: name · 82%" when
-// the GPP-101 exposes the standard Battery Service (see ble.js v1.2's
-// tryReadBattery()). Nothing shown if it doesn't — GPP101.onBatteryLevel
-// simply never fires in that case.
+// v1.0
 // ble-shared.js — SPA version of the old ble-ui.js. Same connect button +
 // status pill, same auto-reconnect attempt on load, BUT it is created ONCE
 // for the whole app lifetime and lives in the persistent app shell.
@@ -33,25 +29,14 @@ window.PianoBle = (function () {
     const btn = container.querySelector("#ble-widget-btn");
     const pill = container.querySelector("#ble-widget-pill");
 
-    let lastName = null;
-    let lastBattery = null;
-
-    function pillText() {
-      const base = lastName ? `Connected: ${lastName}` : "Connected";
-      return lastBattery != null ? `${base} · ${lastBattery}%` : base;
-    }
-
     function setConnected(name) {
-      lastName = name;
-      pill.textContent = pillText();
+      pill.textContent = name ? `Connected: ${name}` : "Connected";
       pill.className = "ble-widget-pill connected";
       btn.textContent = "Disconnect";
       btn.disabled = false;
     }
 
     function setDisconnected(reason) {
-      lastName = null;
-      lastBattery = null;
       pill.textContent = reason || "Disconnected";
       pill.className = "ble-widget-pill disconnected";
       btn.textContent = "Connect Keyboard";
@@ -63,21 +48,11 @@ window.PianoBle = (function () {
       pill.className = "ble-widget-pill pending";
     }
 
-    // Battery test — only ever updates the pill if we're actually showing
-    // "Connected"; harmless no-op otherwise (e.g. GPP-101 doesn't expose
-    // the standard Battery Service, so this is just never called).
-    function setBattery(level) {
-      lastBattery = level;
-      if (pill.classList.contains("connected")) pill.textContent = pillText();
-    }
-
     function watchDevice() {
       if (instance.device) {
         instance.device.addEventListener("gattserverdisconnected", () => setDisconnected());
       }
     }
-
-    instance.onBatteryLevel = (level) => setBattery(level);
 
     btn.addEventListener("click", async () => {
       if (instance.connected) {
@@ -96,7 +71,7 @@ window.PianoBle = (function () {
       }
     });
 
-    return { setConnected, setDisconnected, setPending, watchDevice, setBattery };
+    return { setConnected, setDisconnected, setPending, watchDevice };
   }
 
   const ready = (async function init() {
