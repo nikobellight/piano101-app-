@@ -1,3 +1,15 @@
+<!-- Piano 101 — index.html — v2.6 -->
+<!-- v2.6: three changes per feedback.
+     1. Keyboard-mode switch (1/2 keyboards) moved out of the sticky bar
+        and into the persistent app shell, next to the profile switch —
+        hidden there outside the Learning view (view-learning.js
+        mount()/unmount()).
+     2. Accompaniment is now a small dot toggle (.accompaniment-toggle)
+        instead of a text button.
+     3. Added #mini-hand-label ("Right"/"Both") next to the mini hands;
+        the redundant hand mention in #context-subtitle text is dropped
+        (view-learning.js).
+     Requires css/app.css v2.4+ and js/view-learning.js v2.9+. -->
 <!-- Piano 101 — index.html — v2.5 -->
 <!-- v2.5: removed the big .hands-row entirely — Piano 101 header, then
      the sticky bar (with the mini hands right after Loop), then straight
@@ -126,6 +138,10 @@
       <span class="brand-sub">Smart Practice</span>
     </a>
     <div class="app-shell-right">
+      <div id="keyboard-mode-switch" class="keyboard-mode-switch hidden">
+        <button class="kbmode-btn" data-mode="solo">1 keyboard</button>
+        <button class="kbmode-btn" data-mode="duo">2 keyboards</button>
+      </div>
       <div id="ble-widget" class="ble-widget"></div>
       <div class="profile-switch">
         <button class="profile-btn" data-profile="1">Nicolas</button>
@@ -222,11 +238,6 @@
           </span>
         </div>
 
-        <div id="keyboard-mode-switch" class="keyboard-mode-switch">
-          <button class="kbmode-btn" data-mode="solo">1 keyboard</button>
-          <button class="kbmode-btn" data-mode="duo">2 keyboards</button>
-        </div>
-
         <button id="practice-btn" class="transport-btn primary">Start Practice</button>
         <button id="play-btn" class="transport-btn secondary">Play</button>
         <button id="restart-btn" class="transport-btn secondary">Restart</button>
@@ -290,10 +301,13 @@
               </g>
             </svg>
           </div>
+
+          <span id="mini-hand-label" class="mini-hand-label"></span>
         </div>
 
-        <button id="accompaniment-btn" class="accompaniment-btn" aria-pressed="true">
-          Accompaniment: on
+        <button id="accompaniment-btn" class="accompaniment-toggle" aria-pressed="true" title="Accompaniment">
+          <span class="accompaniment-dot"></span>
+          <span id="accompaniment-state">On</span>
         </button>
       </div>
       <div id="tempo-note" class="tempo-note"></div>
