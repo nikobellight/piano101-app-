@@ -1,3 +1,12 @@
+// v1.3
+// v1.3: added logAvailableServices() — a diagnostic that checks a
+// handful of standard BLE service UUIDs (battery, device info, generic
+// access/attribute) after connecting and logs to the console which ones
+// the GPP-101 actually responds to, plus their characteristics. Web
+// Bluetooth can't list "everything" blindly (privacy restriction) — this
+// only tests named candidates, so it's a lead-gathering tool, not a full
+// inventory.
+//
 // v1.2  
 // v1.2: battery test — tries reading the standard BLE Battery Service
 // (0x180F/0x2A19) after connecting, since the GPP-101's own proprietary
@@ -22,6 +31,19 @@
 const GPP101_SERVICE_UUID = "03b80e5a-ede8-4b33-a751-6ce34ec4c700";
 const GPP101_CHARACTERISTIC_UUID = "7772e5db-3868-4112-a1a9-f2669d106bf3";
 
+// Diagnostic only (see logAvailableServices()) — a handful of STANDARD
+// BLE service UUIDs to test for. Web Bluetooth only allows accessing
+// services listed here in advance (a privacy restriction on the API) —
+// there is no way to ask a device to "list everything" blindly, so this
+// can only report on candidates we already suspect, not a true inventory
+// of whatever the GPP-101 actually exposes.
+const DIAGNOSTIC_SERVICE_CANDIDATES = [
+  "battery_service",
+  "device_information",
+  "generic_access",
+  "generic_attribute",
+];
+
 class GPP101 {
   constructor() {
     this.device = null;
@@ -41,7 +63,7 @@ class GPP101 {
   async connect() {
     this.device = await navigator.bluetooth.requestDevice({
       filters: [{ services: [GPP101_SERVICE_UUID] }],
-      optionalServices: ["battery_service"],
+      optionalServices: DIAGNOSTIC_SERVICE_CANDIDATES,
     });
 
     this.device.addEventListener("gattserverdisconnected", () => {
@@ -60,7 +82,30 @@ class GPP101 {
 
     this.connected = true;
     await this.tryReadBattery(server);
+    await this.logAvailableServices(server);
     return this.device.name || "GPP-101";
+  }
+
+  // Diagnostic — logs to the browser console which of the standard
+  // service candidates above the GPP-101 actually responds to, and
+  // their characteristics, so we have something concrete to look at
+  // if tryReadBattery() comes up empty. Open the console (F12 on
+  // desktop, or remote-debug the tablet) right after connecting to see
+  // the results.
+  async logAvailableServices(server) {
+    console.log("[GPP101] Checking standard service candidates…");
+    for (const uuid of DIAGNOSTIC_SERVICE_CANDIDATES) {
+      try {
+        const service = await server.getPrimaryService(uuid);
+        const chars = await service.getCharacteristics();
+        console.log(
+          `[GPP101] FOUND "${uuid}" — characteristics:`,
+          chars.map((c) => c.uuid)
+        );
+      } catch (err) {
+        console.log(`[GPP101] not present: "${uuid}"`);
+      }
+    }
   }
 
   // Test: the GPP-101's own proprietary protocol has no battery info in
