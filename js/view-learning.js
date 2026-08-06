@@ -1,5 +1,14 @@
-// v3.0
+// v3.1
 // view-learning.js
+// v3.1: fixed the runaway-scroll bug — once a chord's first key was
+// struck, the shared clock (currentPracticeMs()) ran completely
+// unbounded if the rest of the chord was never completed (wrong notes,
+// unreachable stretch), scrolling the entire rest of the song past
+// while the game was actually stuck waiting on that one chord. Now
+// capped at STRUCK_RUNAWAY_CAP_MS (1.5s) past the struck moment —
+// confirmed with a real two-keyboard "linked" range song where some
+// chords span both hands.
+//
 // v3.0: bandeau changes re-integrated (index.html v3.0 / css/app.css
 // v3.0), now that the note-timing bug is confirmed fixed. Game-logic
 // functions (practiceAnimationLoop, currentPracticeMs, showCurrentGroup,
@@ -342,6 +351,16 @@ window.ViewLearning = (function () {
   // top of its already-low timing sub-score. Without this, a very slow
   // but pitch-perfect run could still pass.
   const LATE_MISTAKE_THRESHOLD_MS = 900;
+
+  // Once a chord's first key is struck, the clock runs freely (see
+  // currentPracticeMs()) so the animation doesn't look frozen while the
+  // remaining fingers land. But if the rest of the chord is never
+  // completed (wrong notes, unreachable stretch), nothing used to cap
+  // that free-running clock — it kept climbing forever, scrolling the
+  // whole rest of the song past while the game was actually stuck
+  // waiting on this one incomplete chord. This caps how far past the
+  // struck moment it's allowed to drift before holding still.
+  const STRUCK_RUNAWAY_CAP_MS = 1500;
 
   // Module-wide counter so every toTimeline() call hands out unique ids,
   // even across separate calls (melody vs accompaniment, or a fresh
@@ -765,9 +784,11 @@ window.ViewLearning = (function () {
   // fixed there now; this function is otherwise the original design.
   function currentPracticeMs(group) {
     const elapsed = performance.now() - state.practiceRealStart;
-    return state.groupStruckAtMs != null
-      ? state.practiceBaseMs + elapsed
-      : Math.min(state.practiceBaseMs + elapsed, leadEntry(group).startMs);
+    if (state.groupStruckAtMs != null) {
+      const cappedElapsed = Math.min(elapsed, STRUCK_RUNAWAY_CAP_MS);
+      return state.practiceBaseMs + cappedElapsed;
+    }
+    return Math.min(state.practiceBaseMs + elapsed, leadEntry(group).startMs);
   }
 
   // Lights every key of the current chord at once, on screen and on the
