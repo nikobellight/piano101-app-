@@ -1,5 +1,16 @@
-// v2.9
+// v3.0
 // view-learning.js
+// v3.0: bandeau changes re-integrated (index.html v3.0 / css/app.css
+// v3.0), now that the note-timing bug is confirmed fixed. Game-logic
+// functions (practiceAnimationLoop, currentPracticeMs, showCurrentGroup,
+// practiceNoteOn/Off, finishPractice) are UNTOUCHED from v2.9 — only
+// UI-facing code changed: updateFingerGuide() no longer references
+// #finger-caption (removed from HTML again), syncHandPanels() sets the
+// new #mini-hand-label, syncAccompanimentButton() drives the compact
+// dot-toggle, mount()/unmount() show/hide #keyboard-mode-switch and
+// #learning-shell-info (now in the app shell), and #context-subtitle
+// drops the hand mention (the mini-hand-label already says it).
+//
 // v2.9: v2.8's fix only handled LATE presses correctly — it always
 // re-anchored to lead.startMs, which caused the opposite glitch on an
 // EARLY press (before the note had even reached the line): snapping it
@@ -803,13 +814,8 @@ window.ViewLearning = (function () {
       f.style.removeProperty("--finger-color");
     });
 
-    const caption = document.getElementById("finger-caption");
     const withFinger = entries.filter((e) => e.finger);
-
-    if (withFinger.length === 0) {
-      caption.textContent = Store.hand === "both" ? "Both hands" : "Right hand";
-      return;
-    }
+    if (withFinger.length === 0) return;
 
     for (const e of withFinger) {
       const hand = e.hand === "left" ? "left" : "right";
@@ -823,13 +829,6 @@ window.ViewLearning = (function () {
       }
     }
 
-    // Describe the chord compactly: "Left 5+3+1 · Right 3".
-    const byHand = { left: [], right: [] };
-    for (const e of withFinger) byHand[e.hand === "left" ? "left" : "right"].push(e.finger);
-    const parts = [];
-    if (byHand.left.length) parts.push(`Left ${byHand.left.join("+")}`);
-    if (byHand.right.length) parts.push(`Right ${byHand.right.join("+")}`);
-    caption.textContent = parts.join(" · ");
   }
 
   function beatsPerMeasure() {
@@ -1348,6 +1347,8 @@ window.ViewLearning = (function () {
       const inPlay = Store.hand === "both" || hand === Store.hand;
       dock.classList.toggle("hidden", !inPlay);
     });
+    const label = document.getElementById("mini-hand-label");
+    if (label) label.textContent = Store.hand === "both" ? "Both" : "Right";
   }
 
   function syncAccompanimentButton() {
@@ -1356,9 +1357,9 @@ window.ViewLearning = (function () {
     // no "other hand" left over to play underneath.
     btn.style.display = Store.hand === "both" ? "none" : "";
     const on = Store.accompaniment;
-    btn.textContent = `Accompaniment: ${on ? "on" : "off"}`;
+    document.getElementById("accompaniment-state").textContent = on ? "On" : "Off";
     btn.setAttribute("aria-pressed", String(on));
-    btn.classList.toggle("off", !on);
+    btn.classList.toggle("on", on);
   }
 
   async function mount() {
@@ -1369,6 +1370,11 @@ window.ViewLearning = (function () {
     document.getElementById("loop-btn").classList.toggle("active", state.loopEnabled);
     document.getElementById("loop-btn").setAttribute("aria-pressed", String(state.loopEnabled));
     syncHandPanels();
+    // The keyboard-mode switch and song title/subtitle/measure now live
+    // in the persistent app shell — only relevant while actually in the
+    // Learning view, so hidden the rest of the time.
+    document.getElementById("keyboard-mode-switch").classList.remove("hidden");
+    document.getElementById("learning-shell-info").classList.remove("hidden");
 
     // Gameplay hooks on the shared, still-connected BLE instance.
     await PianoBle.ready;
@@ -1384,8 +1390,10 @@ window.ViewLearning = (function () {
       Store.sectionId === "all"
         ? "Whole song"
         : (state.song.sections.find((s) => s.id === Store.sectionId) || {}).label || "Whole song";
-    const handLabel = Store.hand === "both" ? "Both hands" : "Right hand";
-    document.getElementById("context-subtitle").textContent = `${handLabel} — ${sectionLabel}`;
+    // Hand isn't repeated here — the mini-hand label right next to the
+    // hand illustration already says it, so this would just say the
+    // same thing twice.
+    document.getElementById("context-subtitle").textContent = sectionLabel;
 
     document.getElementById("score-display").textContent = "";
     document.getElementById("next-note-display").textContent = "";
@@ -1434,6 +1442,8 @@ window.ViewLearning = (function () {
     clearExpectedNoteLed();
     closeScoreModal();
     state.loopEnabled = false;
+    document.getElementById("keyboard-mode-switch").classList.add("hidden");
+    document.getElementById("learning-shell-info").classList.add("hidden");
 
     // Detach gameplay only — the BLE connection itself stays up. This is
     // the behaviour the whole SPA conversion was for.
