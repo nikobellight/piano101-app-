@@ -1,3 +1,15 @@
+// v2.9
+// view-learning.js
+// v2.9: v2.8's fix only handled LATE presses correctly — it always
+// re-anchored to lead.startMs, which caused the opposite glitch on an
+// EARLY press (before the note had even reached the line): snapping it
+// forward onto the line instead of letting it keep falling naturally.
+// Now re-anchors to whichever is actually displayed at press time
+// (Math.min of the same clamp used elsewhere) — the frozen line if
+// late, or the true still-falling position if early. Either way, the
+// free-running phase afterward starts exactly where the note visually
+// was, with no snap in either direction.
+//
 // v2.8
 // view-learning.js
 // v2.8: fixed the "late press causes a jump forward" bug. While a note
@@ -1013,15 +1025,18 @@ window.ViewLearning = (function () {
       // whatever speed the section is being played.
       flushAccompanimentUpTo(lead.startMs);
 
-      // Re-anchor the clock to EXACTLY where it was frozen (lead.startMs)
-      // before letting it run free. While waiting, practiceBaseMs+elapsed
-      // keeps growing silently underneath the freeze-clamp the whole
-      // time you're late — if we let the free-running phase continue
-      // from that hidden, already-large value instead of resetting it,
-      // the clock jumps forward the instant it unfreezes, by exactly how
-      // long you waited. Doing this AFTER the timing score above is
-      // computed, so lateness is still measured correctly.
-      state.practiceBaseMs = lead.startMs;
+      // Re-anchor the clock to wherever it's ACTUALLY displayed right
+      // now — NOT unconditionally to lead.startMs. If the press is late,
+      // that's the same thing (the clamp was already holding it there,
+      // and practiceBaseMs+elapsed had kept growing silently underneath
+      // it — resetting to the clamped position avoids exposing that as
+      // a forward jump). But if the press is EARLY — before the note has
+      // even reached the line — the clamp hadn't kicked in yet, so
+      // snapping straight to lead.startMs would skip the rest of its
+      // fall-in, causing the opposite glitch (a forward snap onto the
+      // line). Math.min here picks whichever is correct for each case.
+      const displayedAtPress = Math.min(state.practiceBaseMs + (now - state.practiceRealStart), lead.startMs);
+      state.practiceBaseMs = displayedAtPress;
       state.practiceRealStart = now;
       state.groupStruckAtMs = now;
     }
