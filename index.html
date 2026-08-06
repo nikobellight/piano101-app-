@@ -1,3 +1,7 @@
+<!-- Piano 101 — index.html — v3.1 -->
+<!-- v3.1: added a small "Accomp." label next to the accompaniment toggle
+     (css/app.css v3.1's .accompaniment-label) so the dot+On/Off reads
+     clearly on its own without the button's title tooltip. -->
 <!-- Piano 101 — index.html — v3.0 -->
 <!-- v3.0: bandeau changes re-integrated now that the note-timing bug is
      confirmed fixed (view-learning.js v2.9). Everything moved into the
@@ -331,6 +335,7 @@
         </div>
 
         <button id="accompaniment-btn" class="accompaniment-toggle" aria-pressed="true" title="Accompaniment">
+          <span class="accompaniment-label">Accomp.</span>
           <span class="accompaniment-dot"></span>
           <span id="accompaniment-state">On</span>
         </button>
