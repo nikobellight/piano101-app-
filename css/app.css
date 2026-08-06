@@ -1,6 +1,7 @@
-/* v3.0 */
+/* v3.1 */
 /* app.css — SPA-only styles: the persistent app shell (brand + BLE widget
    + profile switch), the show/hide mechanics for the three views, and the
+   v3.1: added .accompaniment-label for the small "Accomp." caption.
    1-keyboard / 2-linked selector in the Learning view.
    Everything else still comes from style.css / sections.css / learning.css,
    which are loaded unchanged.
@@ -603,6 +604,13 @@
 }
 
 .accompaniment-toggle:hover { color: var(--text); }
+
+.accompaniment-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 400;
+}
 
 .accompaniment-dot {
   width: 8px;
