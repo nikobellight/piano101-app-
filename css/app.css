@@ -1,9 +1,12 @@
-/* v2.1r */
+/* v3.0 */
 /* app.css — SPA-only styles: the persistent app shell (brand + BLE widget
    + profile switch), the show/hide mechanics for the three views, and the
    1-keyboard / 2-linked selector in the Learning view.
    Everything else still comes from style.css / sections.css / learning.css,
    which are loaded unchanged.
+   v3.0: re-integrated the bandeau styles (mini hands, compact
+   accompaniment toggle, song info + keyboard-mode switch in the app
+   shell, standalone back-link) now that the note-timing bug is fixed.
    v2.1r: reverted to the confirmed-working v2.1 per explicit request —
    v2.2 through v2.5 (mini hands, bandeau consolidation, keyboard-mode
    relocation, compact accompaniment/buttons) are all undone. This is the
@@ -549,4 +552,122 @@
   background: linear-gradient(135deg, #ffcf6b, var(--amber));
   color: #2a1a04;
   border-color: transparent;
+}
+
+/* ---------- v3.0: mini hands, compact accompaniment toggle, song info
+   + keyboard-mode switch in the app shell, standalone back-link ---- */
+
+.mini-hands {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: 8px;
+  pointer-events: none;
+}
+
+.hand-dock-mini {
+  width: 46px;
+  gap: 0;
+}
+
+.hand-dock-mini.hand-dock-right {
+  margin-left: 0;
+}
+
+.hand-dock-mini .hand-svg {
+  height: 54px;
+}
+
+.mini-hand-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  align-self: center;
+}
+
+.accompaniment-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  background: var(--surface-raised);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 7px 12px;
+  border-radius: 999px;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.accompaniment-toggle:hover { color: var(--text); }
+
+.accompaniment-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.accompaniment-toggle.on {
+  color: var(--text);
+  border-color: transparent;
+}
+
+.accompaniment-toggle.on .accompaniment-dot {
+  background: var(--teal);
+  box-shadow: 0 0 8px var(--teal);
+}
+
+.sticky-song-info.hidden { display: none; }
+.keyboard-mode-switch.hidden { display: none; }
+
+.app-shell .sticky-song-info {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+  margin-right: auto;
+  margin-left: 6px;
+}
+
+.sticky-song-title {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.app-shell .sticky-song-info .context-subtitle {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.sticky-measure {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--amber);
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px 10px;
+  white-space: nowrap;
+}
+
+.sticky-measure .measure-sep {
+  color: var(--muted);
+  font-weight: 400;
+  margin: 0 1px;
+}
+
+.learning-back-link-standalone {
+  display: block;
+  margin: 14px 0 0;
 }
