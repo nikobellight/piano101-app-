@@ -1,3 +1,16 @@
+// v1.4
+// v1.4: real battery reading, from a fresh BLE capture of POP Piano
+// (analyzed byte-by-byte — see chat). The GPP-101's GATT structure has
+// only 2 services total (Generic Access + our one proprietary service),
+// confirmed by 3 independent captures — no separate battery service
+// exists. But POP Piano queries battery through the SAME proprietary
+// characteristic we already use for notes/LEDs: a literal "get" command
+// (requestBatteryLevel()), replied to with an f0 0d <value> notification
+// (now parsed in handleNotification()). <value> was 0x64 (100) in every
+// capture — consistent with a full battery, though never seen at any
+// other level yet to fully confirm the byte position. Replaces v1.2/v1.3's
+// standard-BLE-service attempt, which found nothing (removed).
+//
 // v1.3
 // v1.3: added logAvailableServices() — a diagnostic that checks a
 // handful of standard BLE service UUIDs (battery, device info, generic
@@ -31,19 +44,6 @@
 const GPP101_SERVICE_UUID = "03b80e5a-ede8-4b33-a751-6ce34ec4c700";
 const GPP101_CHARACTERISTIC_UUID = "7772e5db-3868-4112-a1a9-f2669d106bf3";
 
-// Diagnostic only (see logAvailableServices()) — a handful of STANDARD
-// BLE service UUIDs to test for. Web Bluetooth only allows accessing
-// services listed here in advance (a privacy restriction on the API) —
-// there is no way to ask a device to "list everything" blindly, so this
-// can only report on candidates we already suspect, not a true inventory
-// of whatever the GPP-101 actually exposes.
-const DIAGNOSTIC_SERVICE_CANDIDATES = [
-  "battery_service",
-  "device_information",
-  "generic_access",
-  "generic_attribute",
-];
-
 class GPP101 {
   constructor() {
     this.device = null;
@@ -63,7 +63,6 @@ class GPP101 {
   async connect() {
     this.device = await navigator.bluetooth.requestDevice({
       filters: [{ services: [GPP101_SERVICE_UUID] }],
-      optionalServices: DIAGNOSTIC_SERVICE_CANDIDATES,
     });
 
     this.device.addEventListener("gattserverdisconnected", () => {
@@ -81,57 +80,28 @@ class GPP101 {
     });
 
     this.connected = true;
-    await this.tryReadBattery(server);
-    await this.logAvailableServices(server);
+    await this.requestBatteryLevel();
     return this.device.name || "GPP-101";
   }
 
-  // Diagnostic — logs to the browser console which of the standard
-  // service candidates above the GPP-101 actually responds to, and
-  // their characteristics, so we have something concrete to look at
-  // if tryReadBattery() comes up empty. Open the console (F12 on
-  // desktop, or remote-debug the tablet) right after connecting to see
-  // the results.
-  async logAvailableServices(server) {
-    console.log("[GPP101] Checking standard service candidates…");
-    for (const uuid of DIAGNOSTIC_SERVICE_CANDIDATES) {
-      try {
-        const service = await server.getPrimaryService(uuid);
-        const chars = await service.getCharacteristics();
-        console.log(
-          `[GPP101] FOUND "${uuid}" — characteristics:`,
-          chars.map((c) => c.uuid)
-        );
-      } catch (err) {
-        console.log(`[GPP101] not present: "${uuid}"`);
-      }
-    }
-  }
-
-  // Test: the GPP-101's own proprietary protocol has no battery info in
-  // anything reverse-engineered so far — this tries the STANDARD BLE
-  // Battery Service (0x180F / battery_level 0x2A19) instead, which many
-  // devices expose as a secondary service alongside their own. Fails
-  // silently (this.batteryLevel stays null) if the GPP-101 doesn't have
-  // it — that's the answer to "does this work at all", not an error.
-  async tryReadBattery(server) {
-    this.batteryLevel = null;
+  // Reverse-engineered from a fresh BLE capture of POP Piano (see chat):
+  // right after connecting, the app writes a literal "get" command
+  // (ASCII bytes, params 01 06 00) — UNLIKE every other frame we know,
+  // this one is NOT wrapped in the usual 0x80 0x80 prefix, captured
+  // exactly as sent. The keyboard immediately replies with a
+  // notification whose payload is f0 0d <value> — <value> was 0x64
+  // (100) in every single capture taken so far, which strongly suggests
+  // a full battery reading, though it's never been seen at any other
+  // level yet to confirm the byte position for certain.
+  async requestBatteryLevel() {
+    if (!this.characteristic) return;
     try {
-      const batteryService = await server.getPrimaryService("battery_service");
-      const batteryChar = await batteryService.getCharacteristic("battery_level");
-      const value = await batteryChar.readValue();
-      this.batteryLevel = value.getUint8(0);
-      if (this.onBatteryLevel) this.onBatteryLevel(this.batteryLevel);
-
-      if (batteryChar.properties && batteryChar.properties.notify) {
-        await batteryChar.startNotifications();
-        batteryChar.addEventListener("characteristicvaluechanged", (event) => {
-          this.batteryLevel = event.target.value.getUint8(0);
-          if (this.onBatteryLevel) this.onBatteryLevel(this.batteryLevel);
-        });
-      }
+      await this.characteristic.writeValueWithResponse(
+        new Uint8Array([0xf0, 0x00, 0x67, 0x65, 0x74, 0x01, 0x06, 0x00, 0xf7])
+      );
     } catch (err) {
-      this.batteryLevel = null;
+      // Nothing to do — battery level just stays whatever it last was
+      // (null if this is the first attempt).
     }
   }
 
@@ -153,6 +123,10 @@ class GPP101 {
       this.onNoteOn(note);
     } else if (opcode === 0x80 && this.onNoteOff) {
       this.onNoteOff(note);
+    } else if (opcode === 0xf0 && bytes[3] === 0x0d) {
+      // Reply to requestBatteryLevel()'s "get" command — see its comment.
+      this.batteryLevel = bytes[4];
+      if (this.onBatteryLevel) this.onBatteryLevel(this.batteryLevel);
     }
   }
 
