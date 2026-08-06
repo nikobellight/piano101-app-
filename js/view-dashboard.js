@@ -1,5 +1,12 @@
-// v1.1
+// v1.2
 // view-dashboard.js
+// v1.2: fixed the profile switch never getting its active/amber state
+// (or click handlers) unless the Dashboard specifically was the first
+// view visited — that wiring was stuck inside mount(), which only runs
+// when the Dashboard is actually mounted. It's now wired immediately
+// when this script loads, regardless of starting route, since the
+// profile switch lives in the persistent app shell, not just here.
+//
 // v1.1: the three real profiles (Nicolas / Mia / Tenzin) replace the
 // Profile 1 / Profile 2 placeholders, and the greeting now uses the
 // active profile's name. Tenzin starts empty, which also exercises the
@@ -43,7 +50,7 @@ window.ViewDashboard = (function () {
     },
   };
 
-  let initialized = false;
+  let dashboardInitialized = false;
 
   function renderStats(profile) {
     document.getElementById("stat-hours").textContent = profile.hoursPracticed.toFixed(1);
@@ -126,17 +133,22 @@ window.ViewDashboard = (function () {
     }
   }
 
+  // Wired IMMEDIATELY when this script runs — not inside mount(). The
+  // profile switch lives in the persistent app shell, visible on every
+  // view, so it can't wait for the Dashboard specifically to be visited
+  // first. Previously it only got wired/highlighted inside mount(), so
+  // landing directly on Sections or Learning (as most navigation does)
+  // meant no profile button ever got its active/amber state at all.
+  document.querySelectorAll(".profile-btn").forEach((btn) => {
+    btn.addEventListener("click", () => setActiveProfile(Number(btn.dataset.profile)));
+  });
+  setActiveProfile(DEMO_STATE.activeProfile);
+
   async function mount() {
-    if (initialized) return;
-    initialized = true;
+    if (dashboardInitialized) return;
+    dashboardInitialized = true;
 
     spawnMarqueeNotes();
-
-    document.querySelectorAll(".profile-btn").forEach((btn) => {
-      btn.addEventListener("click", () => setActiveProfile(Number(btn.dataset.profile)));
-    });
-
-    setActiveProfile(DEMO_STATE.activeProfile);
 
     try {
       const res = await fetch("data/songs.json");
