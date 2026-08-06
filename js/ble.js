@@ -1,3 +1,10 @@
+// v1.2
+// v1.2: battery test — tries reading the standard BLE Battery Service
+// (0x180F/0x2A19) after connecting, since the GPP-101's own proprietary
+// protocol has nothing battery-related in it that's been reverse
+// -engineered so far. Fails silently if unsupported (this.batteryLevel
+// stays null) — see tryReadBattery(). Subscribes to notifications too,
+// if the characteristic supports it, so the % stays live.
 // v1.1
 // ble.js — Web Bluetooth wrapper for the GPP-101, using the protocol we
 // v1.1: sendLedOn/Off now use writeValueWithoutResponse when available —
@@ -23,6 +30,8 @@ class GPP101 {
     this.onNoteOn = null;   // (note) => {}
     this.onNoteOff = null;  // (note) => {}
     this.onDisconnected = null;
+    this.batteryLevel = null;   // 0-100, or null if unavailable
+    this.onBatteryLevel = null; // (percent) => {}
   }
 
   buildFrame(bytes) {
@@ -32,6 +41,7 @@ class GPP101 {
   async connect() {
     this.device = await navigator.bluetooth.requestDevice({
       filters: [{ services: [GPP101_SERVICE_UUID] }],
+      optionalServices: ["battery_service"],
     });
 
     this.device.addEventListener("gattserverdisconnected", () => {
@@ -49,7 +59,35 @@ class GPP101 {
     });
 
     this.connected = true;
+    await this.tryReadBattery(server);
     return this.device.name || "GPP-101";
+  }
+
+  // Test: the GPP-101's own proprietary protocol has no battery info in
+  // anything reverse-engineered so far — this tries the STANDARD BLE
+  // Battery Service (0x180F / battery_level 0x2A19) instead, which many
+  // devices expose as a secondary service alongside their own. Fails
+  // silently (this.batteryLevel stays null) if the GPP-101 doesn't have
+  // it — that's the answer to "does this work at all", not an error.
+  async tryReadBattery(server) {
+    this.batteryLevel = null;
+    try {
+      const batteryService = await server.getPrimaryService("battery_service");
+      const batteryChar = await batteryService.getCharacteristic("battery_level");
+      const value = await batteryChar.readValue();
+      this.batteryLevel = value.getUint8(0);
+      if (this.onBatteryLevel) this.onBatteryLevel(this.batteryLevel);
+
+      if (batteryChar.properties && batteryChar.properties.notify) {
+        await batteryChar.startNotifications();
+        batteryChar.addEventListener("characteristicvaluechanged", (event) => {
+          this.batteryLevel = event.target.value.getUint8(0);
+          if (this.onBatteryLevel) this.onBatteryLevel(this.batteryLevel);
+        });
+      }
+    } catch (err) {
+      this.batteryLevel = null;
+    }
   }
 
   disconnect() {
