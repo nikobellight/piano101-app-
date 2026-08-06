@@ -1,4 +1,4 @@
-// v1.2
+// v1.2  
 // v1.2: battery test — tries reading the standard BLE Battery Service
 // (0x180F/0x2A19) after connecting, since the GPP-101's own proprietary
 // protocol has nothing battery-related in it that's been reverse
