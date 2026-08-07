@@ -1,5 +1,17 @@
-// v3.2
+// v3.3
 // view-learning.js
+// v3.3: removed the "let loose once struck" behaviour entirely instead
+// of trying to cap it again — v3.2's fix (cap only while genuinely
+// incomplete) still let the display scroll continuously for as long as
+// a note was held before the rest of the chord was completed, which is
+// exactly what looked broken: notes kept falling non-stop while a key
+// was held, only stopping — and landing one note too far — on release.
+// currentPracticeMs() now just stays clamped to the current group's own
+// beat, full stop, for as long as that group is active. No unfreezing,
+// no runaway, no cap. Visually static while placing fingers on a chord;
+// only moves again once the group is actually completed and
+// practiceNoteOff() advances to the next one.
+//
 // v3.2: v3.1's STRUCK_RUNAWAY_CAP_MS applied unconditionally, which broke
 // any legitimately long hold — a whole-note left-hand chord held past
 // 1.5s froze the clock mid-hold, and releasing it then jumped the
@@ -363,16 +375,6 @@ window.ViewLearning = (function () {
   // top of its already-low timing sub-score. Without this, a very slow
   // but pitch-perfect run could still pass.
   const LATE_MISTAKE_THRESHOLD_MS = 900;
-
-  // Once a chord's first key is struck, the clock runs freely (see
-  // currentPracticeMs()) so the animation doesn't look frozen while the
-  // remaining fingers land. But if the rest of the chord is never
-  // completed (wrong notes, unreachable stretch), nothing used to cap
-  // that free-running clock — it kept climbing forever, scrolling the
-  // whole rest of the song past while the game was actually stuck
-  // waiting on this one incomplete chord. This caps how far past the
-  // struck moment it's allowed to drift before holding still.
-  const STRUCK_RUNAWAY_CAP_MS = 1500;
 
   // Module-wide counter so every toTimeline() call hands out unique ids,
   // even across separate calls (melody vs accompaniment, or a fresh
@@ -786,37 +788,24 @@ window.ViewLearning = (function () {
   }
 
   // The shared clock, positioning EVERY note on screen (waiting AND
-  // already-played alike) — frozen at the current group's own beat while
-  // waiting, then let loose to run at normal speed once it's struck, so
-  // every note on screen keeps moving together instead of only the one
-  // just played. The bug this used to have wasn't the unfreezing itself
-  // — it's that practiceNoteOff() re-based this clock to the group's
-  // NOMINAL beat on release, instead of to wherever it actually was,
-  // which is what caused the backward snap after a long hold. That's
-  // fixed there now; this function is otherwise the original design.
+  // already-played alike). It USED to unfreeze and run at real-time speed
+  // the instant a chord's first key was struck, so the animation didn't
+  // look frozen while the rest of the fingers landed. That "let loose"
+  // behaviour was the actual bug, not just its cap: pressing one note of
+  // an unreachable/mistaken chord let the WHOLE display keep scrolling
+  // for as long as you held it, and released it into a jump past the
+  // real next note the instant you let go. Confirmed on video — holding
+  // a note kept everything falling continuously, release snapped two
+  // notes ahead instead of one.
   //
-  // STRUCK_RUNAWAY_CAP_MS only kicks in while the group is genuinely
-  // INCOMPLETE — at least one required note never pressed at all. The
-  // very first version of this cap applied unconditionally, which broke
-  // any legitimately long hold (e.g. a whole-note left-hand chord held
-  // past 1.5s): the clock would freeze mid-hold, and releasing it then
-  // re-anchored practiceNoteOff() to that stale frozen position, jumping
-  // the display forward past the next note or two the instant you let
-  // go. A group with every note already pressed (even if not yet
-  // released) is "fully engaged" and must keep tracking real time
-  // uncapped, exactly like before this fix existed.
+  // Now it simply stays clamped to the current group's own beat for as
+  // long as that group is active, full stop — no unfreezing, no runaway,
+  // no cap needed. It only moves again once practiceNoteOff() advances
+  // to the next group and re-bases practiceBaseMs there. Visually static
+  // while you're placing fingers on a chord, but nothing scrolls or
+  // jumps out from under you.
   function currentPracticeMs(group) {
     const elapsed = performance.now() - state.practiceRealStart;
-    if (state.groupStruckAtMs != null) {
-      const stillMissing = group.some(
-        (e) => !state.pressed.has(e.note) && !state.released.has(e.note)
-      );
-      if (!stillMissing) {
-        return state.practiceBaseMs + elapsed;
-      }
-      const cappedElapsed = Math.min(elapsed, STRUCK_RUNAWAY_CAP_MS);
-      return state.practiceBaseMs + cappedElapsed;
-    }
     return Math.min(state.practiceBaseMs + elapsed, leadEntry(group).startMs);
   }
 
