@@ -1,11 +1,11 @@
-// v3.5
+// v3.4
 // view-learning.js
-// v3.5: the too-long-hold cap added in v3.4 landed exactly on the next
-// group's startMs, which satisfied the visualizer's own `currentMs >=
-// n.startMs` "hit" check and painted that next, not-yet-played note
-// white — as if it were actively being struck, both in one-hand and
-// two-hand mode. Capped 1ms short of it instead, so the display parks
-// right at the line without ever equalling the next note's own onset.
+// v3.4 (re-confirmed): v3.5's 1ms cap adjustment reverted for testing —
+// Nico reported notes sometimes not registering (or registering as
+// wrong) on the first press, needing a second press to count, and
+// wanted to isolate whether that predates the 1ms change or not. This
+// build is byte-for-byte v3.4's game logic again; only the changelog
+// entry differs.
 //
 // v3.4: the previous "no unfreezing ever" (v3.3) fixed the runaway
 // scroll, but on a single sustained note it also meant the display sat
@@ -823,16 +823,11 @@ window.ViewLearning = (function () {
   // there, waiting for you to release (too-long hold) before anything
   // moves again. It can never run further ahead than "the next thing
   // you're expected to play," so nothing scrolls past unplayed material.
-  //
-  // The cap sits 1ms BEFORE the next group's startMs, not exactly on it
-  // — landing exactly on it satisfies the visualizer's own `currentMs >=
-  // n.startMs` "hit" check (visualizer.js), painting the next note white
-  // as if it were actually being played while it's only being awaited.
   function currentPracticeMs(group) {
     const elapsed = performance.now() - state.practiceRealStart;
     if (state.groupStruckAtMs != null) {
       const nextGroup = state.groups[state.groupPointer + 1];
-      const cap = nextGroup ? leadEntry(nextGroup).startMs - 1 : Infinity;
+      const cap = nextGroup ? leadEntry(nextGroup).startMs : Infinity;
       return Math.min(state.practiceBaseMs + elapsed, cap);
     }
     return Math.min(state.practiceBaseMs + elapsed, leadEntry(group).startMs);
