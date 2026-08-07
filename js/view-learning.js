@@ -1,5 +1,20 @@
-// v3.4
+// v3.5
 // view-learning.js
+// v3.5: re-confirmed the 1ms cap fix (Nico saw the white flash on the
+// next note, staying white until release — matches the visualizer's
+// `currentMs >= n.startMs` "hit" check exactly), so it's back in.
+//
+// Separately, an intermittent bug where a correctly-timed physical key
+// press on the GPP-101 gets rejected as wrong (confirmed: real red
+// flash, not just a silent miss — audio plays through the WRONG branch
+// too, which is why it sounded "detected" even when rejected) has no
+// found cause yet after reading ble.js/ble-shared.js/currentGroup() —
+// no duplicate BLE listeners, no stale group reference found by
+// inspection. Added a temporary console.warn in practiceNoteOn's reject
+// branch (search "TEMP DIAGNOSTIC") printing the expected note(s) vs
+// what arrived, to get real data instead of guessing a 4th time. Remove
+// once the cause is found.
+//
 // v3.4 (re-confirmed): v3.5's 1ms cap adjustment reverted for testing —
 // Nico reported notes sometimes not registering (or registering as
 // wrong) on the first press, needing a second press to count, and
@@ -827,7 +842,7 @@ window.ViewLearning = (function () {
     const elapsed = performance.now() - state.practiceRealStart;
     if (state.groupStruckAtMs != null) {
       const nextGroup = state.groups[state.groupPointer + 1];
-      const cap = nextGroup ? leadEntry(nextGroup).startMs : Infinity;
+      const cap = nextGroup ? leadEntry(nextGroup).startMs - 1 : Infinity;
       return Math.min(state.practiceBaseMs + elapsed, cap);
     }
     return Math.min(state.practiceBaseMs + elapsed, leadEntry(group).startMs);
@@ -1044,6 +1059,19 @@ window.ViewLearning = (function () {
     if (!group) return;
 
     const entry = group.find((e) => e.note === note);
+
+    // TEMP DIAGNOSTIC (remove once the intermittent-rejection bug is
+    // found) — prints exactly what the game expected vs what arrived,
+    // and why this specific press was rejected.
+    if (!entry || state.pressed.has(note) || state.released.has(note)) {
+      console.warn(
+        "[Piano101 diag] rejected note", note,
+        "| expected one of:", group.map((e) => e.note),
+        "| groupPointer:", state.groupPointer, "/", state.groups.length,
+        "| already pressed:", state.pressed.has(note),
+        "| already released:", state.released.has(note)
+      );
+    }
 
     // Not part of this chord, or a key already down — either way it's a
     // wrong press. Notes of the chord may be struck in ANY order.
