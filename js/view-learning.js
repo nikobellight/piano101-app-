@@ -1,5 +1,17 @@
-// v3.1
+// v3.2
 // view-learning.js
+// v3.2: v3.1's STRUCK_RUNAWAY_CAP_MS applied unconditionally, which broke
+// any legitimately long hold — a whole-note left-hand chord held past
+// 1.5s froze the clock mid-hold, and releasing it then jumped the
+// display forward past the next note or two (practiceNoteOff() re-
+// anchoring to that stale frozen position). Confirmed by video: holding
+// a note kept the display scrolling, and releasing it snapped ahead to
+// the note AFTER the one right after the held one. currentPracticeMs()
+// now only applies the cap while the group is genuinely incomplete (at
+// least one required note never pressed) — a fully-engaged group (every
+// note down, just sustaining) tracks real time uncapped again, like
+// before v3.1.
+//
 // v3.1: fixed the runaway-scroll bug — once a chord's first key was
 // struck, the shared clock (currentPracticeMs()) ran completely
 // unbounded if the rest of the chord was never completed (wrong notes,
@@ -782,9 +794,26 @@ window.ViewLearning = (function () {
   // NOMINAL beat on release, instead of to wherever it actually was,
   // which is what caused the backward snap after a long hold. That's
   // fixed there now; this function is otherwise the original design.
+  //
+  // STRUCK_RUNAWAY_CAP_MS only kicks in while the group is genuinely
+  // INCOMPLETE — at least one required note never pressed at all. The
+  // very first version of this cap applied unconditionally, which broke
+  // any legitimately long hold (e.g. a whole-note left-hand chord held
+  // past 1.5s): the clock would freeze mid-hold, and releasing it then
+  // re-anchored practiceNoteOff() to that stale frozen position, jumping
+  // the display forward past the next note or two the instant you let
+  // go. A group with every note already pressed (even if not yet
+  // released) is "fully engaged" and must keep tracking real time
+  // uncapped, exactly like before this fix existed.
   function currentPracticeMs(group) {
     const elapsed = performance.now() - state.practiceRealStart;
     if (state.groupStruckAtMs != null) {
+      const stillMissing = group.some(
+        (e) => !state.pressed.has(e.note) && !state.released.has(e.note)
+      );
+      if (!stillMissing) {
+        return state.practiceBaseMs + elapsed;
+      }
       const cappedElapsed = Math.min(elapsed, STRUCK_RUNAWAY_CAP_MS);
       return state.practiceBaseMs + cappedElapsed;
     }
