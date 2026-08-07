@@ -1,5 +1,23 @@
-// v3.3
+// v3.4
 // view-learning.js
+// v3.4: the previous "no unfreezing ever" (v3.3) fixed the runaway
+// scroll, but on a single sustained note it also meant the display sat
+// completely still while held, even correctly — confirmed by Nico this
+// isn't what he wants. The real rule (same for one hand or two): stay
+// frozen at the current group's own beat until it's genuinely COMPLETE
+// (every required key down — for a chord that's all of them, hands
+// included, not just the first), THEN let the clock run forward again
+// in real time. The one guard that was missing before (and caused the
+// original jump bug) is now a cap on WHERE it's allowed to run to: never
+// past the next group's own beat. If a hold runs long enough to reach
+// that point, the display parks right there and waits for release
+// before anything moves again — it can never scroll past unplayed
+// material. Advancement itself still only happens on release (unchanged
+// from v3.3/pre-v3.1), so duration scoring keeps measuring a real hold
+// as before. Timing scoring moved from "first key down" to "chord fully
+// down," since that's the true onset now that nothing unfreezes before
+// then.
+//
 // v3.3: removed the "let loose once struck" behaviour entirely instead
 // of trying to cap it again — v3.2's fix (cap only while genuinely
 // incomplete) still let the display scroll continuously for as long as
@@ -788,24 +806,23 @@ window.ViewLearning = (function () {
   }
 
   // The shared clock, positioning EVERY note on screen (waiting AND
-  // already-played alike). It USED to unfreeze and run at real-time speed
-  // the instant a chord's first key was struck, so the animation didn't
-  // look frozen while the rest of the fingers landed. That "let loose"
-  // behaviour was the actual bug, not just its cap: pressing one note of
-  // an unreachable/mistaken chord let the WHOLE display keep scrolling
-  // for as long as you held it, and released it into a jump past the
-  // real next note the instant you let go. Confirmed on video — holding
-  // a note kept everything falling continuously, release snapped two
-  // notes ahead instead of one.
-  //
-  // Now it simply stays clamped to the current group's own beat for as
-  // long as that group is active, full stop — no unfreezing, no runaway,
-  // no cap needed. It only moves again once practiceNoteOff() advances
-  // to the next group and re-bases practiceBaseMs there. Visually static
-  // while you're placing fingers on a chord, but nothing scrolls or
-  // jumps out from under you.
+  // already-played alike). Frozen at the current group's own beat while
+  // it's still incomplete (some required key not yet down) — same as
+  // v3.3. Once the group is FULLY struck (every key down, chord or
+  // single note alike), it lets go and runs at real time again, but
+  // capped at the NEXT group's own beat rather than an arbitrary time
+  // budget: if you keep holding past where the next note would arrive,
+  // the display advances right up to that next note's line and parks
+  // there, waiting for you to release (too-long hold) before anything
+  // moves again. It can never run further ahead than "the next thing
+  // you're expected to play," so nothing scrolls past unplayed material.
   function currentPracticeMs(group) {
     const elapsed = performance.now() - state.practiceRealStart;
+    if (state.groupStruckAtMs != null) {
+      const nextGroup = state.groups[state.groupPointer + 1];
+      const cap = nextGroup ? leadEntry(nextGroup).startMs : Infinity;
+      return Math.min(state.practiceBaseMs + elapsed, cap);
+    }
     return Math.min(state.practiceBaseMs + elapsed, leadEntry(group).startMs);
   }
 
@@ -1042,10 +1059,14 @@ window.ViewLearning = (function () {
     // note on the hit line for as long as the key was held down.
     state.visualizer.markPlayed([entry.id]);
 
-    // Timing is judged once per chord, on its FIRST key — otherwise the
-    // natural spread of fingers landing across a few milliseconds would
-    // be scored as lateness.
-    if (state.pressed.size === 1) {
+    // The chord is "struck" once EVERY required key is down — for a
+    // single-note group that's still just this one press, so nothing
+    // changes there. For a real chord, timing is judged at the moment
+    // it's actually complete (not on its first, partial key), since
+    // that's the true onset now that the display stays frozen until
+    // then anyway.
+    const allPressed = group.every((e) => state.pressed.has(e.note));
+    if (allPressed) {
       const lead = leadEntry(group);
       const fallDurationMs = Math.max(0, lead.startMs - state.practiceBaseMs);
       const freezeRealTime = state.practiceRealStart + fallDurationMs;
