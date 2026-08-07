@@ -13,7 +13,7 @@
   },
   {
     "id": "fur-elise",
-    "title": "Für Elise (excerpt)",
+    "title": "F\u00fcr Elise (excerpt)",
     "difficulty": "Intermediate",
     "notesColor": "#c9a227"
   },
@@ -22,5 +22,365 @@
     "title": "Clair de lune",
     "difficulty": "Advanced",
     "notesColor": "#c1584b"
+  },
+  {
+    "id": "12-variations-of-twinkle-twinkle-little-star",
+    "title": "12 Variations of Twinkle Twinkle Little Star",
+    "difficulty": "Auto-imported",
+    "notesColor": "#4f9c8a"
+  },
+  {
+    "id": "arabesque-l-66-no-1-in-e-major",
+    "title": "Arabesque L. 66 No. 1 in E Major",
+    "difficulty": "Auto-imported",
+    "notesColor": "#c9a227"
+  },
+  {
+    "id": "ave-maria-d839-schubert-solo-piano-arrg",
+    "title": "Ave Maria D839 - Schubert - Solo Piano Arrg.",
+    "difficulty": "Auto-imported",
+    "notesColor": "#c1584b"
+  },
+  {
+    "id": "bach-minuet-in-g-major-bwv-anh-114",
+    "title": "Bach Minuet in G Major BWV Anh. 114",
+    "difficulty": "Auto-imported",
+    "notesColor": "#5a9bd8"
+  },
+  {
+    "id": "beethoven-symphony-no-5-1st-movement-piano-solo",
+    "title": "Beethoven Symphony No. 5 1st movement Piano solo",
+    "difficulty": "Auto-imported",
+    "notesColor": "#9d6fd6"
+  },
+  {
+    "id": "bella-ciao-la-casa-de-papel",
+    "title": "Bella Ciao - La Casa de Papel",
+    "difficulty": "Auto-imported",
+    "notesColor": "#d68a4f"
+  },
+  {
+    "id": "bella-ciao",
+    "title": "Bella Ciao",
+    "difficulty": "Auto-imported",
+    "notesColor": "#4fb0a5"
+  },
+  {
+    "id": "canon-in-d-3",
+    "title": "Canon in D 3",
+    "difficulty": "Auto-imported",
+    "notesColor": "#c05a8a"
+  },
+  {
+    "id": "canon-in-d-easy",
+    "title": "Canon in D easy",
+    "difficulty": "Auto-imported",
+    "notesColor": "#d68a4f"
+  },
+  {
+    "id": "canon-in-d",
+    "title": "Canon in D",
+    "difficulty": "Auto-imported",
+    "notesColor": "#7a9e4f"
+  },
+  {
+    "id": "carol-of-the-bells-easy-piano",
+    "title": "Carol of the Bells easy piano",
+    "difficulty": "Auto-imported",
+    "notesColor": "#4f9c8a"
+  },
+  {
+    "id": "carol-of-the-bells",
+    "title": "Carol of the Bells",
+    "difficulty": "Auto-imported",
+    "notesColor": "#5a7fd6"
+  },
+  {
+    "id": "chopin-nocturne-op-9-no-1",
+    "title": "Chopin - Nocturne Op. 9 No. 1",
+    "difficulty": "Auto-imported",
+    "notesColor": "#c9a227"
+  },
+  {
+    "id": "chopin-nocturne-op-9-no-2-e-flat-major",
+    "title": "Chopin - Nocturne Op 9 No 2 E Flat Major",
+    "difficulty": "Auto-imported",
+    "notesColor": "#4f9c8a"
+  },
+  {
+    "id": "chopin-spring-waltz",
+    "title": "Chopin - Spring Waltz",
+    "difficulty": "Auto-imported",
+    "notesColor": "#c9a227"
+  },
+  {
+    "id": "clair-de-lune-claude-debussy",
+    "title": "Clair de lune - Claude Debussy",
+    "difficulty": "Auto-imported",
+    "notesColor": "#5a9bd8"
+  },
+  {
+    "id": "clair-de-lune-debussy",
+    "title": "Clair de Lune Debussy",
+    "difficulty": "Auto-imported",
+    "notesColor": "#c1584b"
+  },
+  {
+    "id": "dance-of-the-sugar-plum-fairy",
+    "title": "Dance of the sugar plum fairy",
+    "difficulty": "Auto-imported",
+    "notesColor": "#4fb0a5"
+  },
+  {
+    "id": "danse-villageoise-beethoven",
+    "title": "DANSE VILLAGEOISE Beethoven",
+    "difficulty": "Auto-imported",
+    "notesColor": "#9d6fd6"
+  },
+  {
+    "id": "erik-satie-gymnopedie-no-1",
+    "title": "Erik Satie - Gymnopedie No.1",
+    "difficulty": "Auto-imported",
+    "notesColor": "#d68a4f"
+  },
+  {
+    "id": "flight-of-the-bumblebee",
+    "title": "Flight of the Bumblebee",
+    "difficulty": "Auto-imported",
+    "notesColor": "#7a9e4f"
+  },
+  {
+    "id": "fur-elise-beethoven-for-beginner-piano",
+    "title": "Fur Elise - Beethoven - for beginner piano",
+    "difficulty": "Auto-imported",
+    "notesColor": "#c05a8a"
+  },
+  {
+    "id": "fur-elise-easy-piano",
+    "title": "Fur Elise Easy Piano",
+    "difficulty": "Auto-imported",
+    "notesColor": "#5a7fd6"
+  },
+  {
+    "id": "g-minor-bach-original",
+    "title": "G Minor Bach Original",
+    "difficulty": "Auto-imported",
+    "notesColor": "#c9a227"
+  },
+  {
+    "id": "g-minor-bach",
+    "title": "G Minor Bach",
+    "difficulty": "Auto-imported",
+    "notesColor": "#4f9c8a"
+  },
+  {
+    "id": "gnossienne-no-1",
+    "title": "Gnossienne No. 1",
+    "difficulty": "Auto-imported",
+    "notesColor": "#c1584b"
+  },
+  {
+    "id": "greensleeves-for-piano-easy-and-beautiful",
+    "title": "Greensleeves for Piano easy and beautiful",
+    "difficulty": "Auto-imported",
+    "notesColor": "#5a9bd8"
+  },
+  {
+    "id": "gymnopdie-no-1-satie",
+    "title": "Gymnopdie No. 1 Satie",
+    "difficulty": "Auto-imported",
+    "notesColor": "#5a9bd8"
+  },
+  {
+    "id": "happy-birthday-to-you-c-major",
+    "title": "Happy Birthday To You C Major",
+    "difficulty": "Auto-imported",
+    "notesColor": "#9d6fd6"
+  },
+  {
+    "id": "happy-birthday-to-you-piano",
+    "title": "Happy Birthday To You Piano",
+    "difficulty": "Auto-imported",
+    "notesColor": "#4fb0a5"
+  },
+  {
+    "id": "hungarian-dance-no-5-in-g-minor",
+    "title": "Hungarian Dance No 5 in G Minor",
+    "difficulty": "Auto-imported",
+    "notesColor": "#d68a4f"
+  },
+  {
+    "id": "hungarian-sonata",
+    "title": "Hungarian Sonata",
+    "difficulty": "Auto-imported",
+    "notesColor": "#7a9e4f"
+  },
+  {
+    "id": "j-s-bach-air-on-the-g-string-piano-arrangement",
+    "title": "J. S. Bach - Air on the G String Piano arrangement",
+    "difficulty": "Auto-imported",
+    "notesColor": "#c05a8a"
+  },
+  {
+    "id": "lacrimosa-requiem",
+    "title": "Lacrimosa - Requiem",
+    "difficulty": "Auto-imported",
+    "notesColor": "#5a7fd6"
+  },
+  {
+    "id": "liebestraum-no-3-in-a-major",
+    "title": "Liebestraum No. 3 in A Major",
+    "difficulty": "Auto-imported",
+    "notesColor": "#4f9c8a"
+  },
+  {
+    "id": "maple-leaf-rag-scott-joplin",
+    "title": "Maple Leaf Rag Scott Joplin",
+    "difficulty": "Auto-imported",
+    "notesColor": "#c9a227"
+  },
+  {
+    "id": "mariage-damour",
+    "title": "Mariage dAmour",
+    "difficulty": "Auto-imported",
+    "notesColor": "#5a9bd8"
+  },
+  {
+    "id": "minuet-in-g-major-bach",
+    "title": "Minuet in G Major Bach",
+    "difficulty": "Auto-imported",
+    "notesColor": "#c1584b"
+  },
+  {
+    "id": "mozart-piano-sonata-no-16-allegro",
+    "title": "Mozart - Piano Sonata No. 16 - Allegro",
+    "difficulty": "Auto-imported",
+    "notesColor": "#5a9bd8"
+  },
+  {
+    "id": "nocturne-in-c-sharp-minor",
+    "title": "Nocturne in C sharp Minor",
+    "difficulty": "Auto-imported",
+    "notesColor": "#4fb0a5"
+  },
+  {
+    "id": "nocturne-in-e-flat-major-op-9-no-2-easy",
+    "title": "Nocturne in E-flat Major Op. 9 No. 2 Easy",
+    "difficulty": "Auto-imported",
+    "notesColor": "#d68a4f"
+  },
+  {
+    "id": "nocturne-no-20-in-c-minor",
+    "title": "Nocturne No. 20 in C Minor",
+    "difficulty": "Auto-imported",
+    "notesColor": "#9d6fd6"
+  },
+  {
+    "id": "ode-to-joy-easy-variation",
+    "title": "Ode to Joy Easy variation",
+    "difficulty": "Auto-imported",
+    "notesColor": "#7a9e4f"
+  },
+  {
+    "id": "passacaglia",
+    "title": "Passacaglia",
+    "difficulty": "Auto-imported",
+    "notesColor": "#4f9c8a"
+  },
+  {
+    "id": "passacaglia2",
+    "title": "Passacaglia2",
+    "difficulty": "Auto-imported",
+    "notesColor": "#c9a227"
+  },
+  {
+    "id": "prelude-i-in-c-major-bwv-846-well-tempered-clavier-first-book",
+    "title": "Prelude I in C major BWV 846 - Well Tempered Clavier First Book",
+    "difficulty": "Auto-imported",
+    "notesColor": "#c05a8a"
+  },
+  {
+    "id": "prelude-no-2-bwv-847-in-c-minor",
+    "title": "Prelude No. 2 BWV 847 in C Minor",
+    "difficulty": "Auto-imported",
+    "notesColor": "#5a7fd6"
+  },
+  {
+    "id": "prlude-no-4-in-e-minor-op-28-frdric-chopin",
+    "title": "Prlude No. 4 in E Minor Op. 28 - Frdric Chopin",
+    "difficulty": "Auto-imported",
+    "notesColor": "#4f9c8a"
+  },
+  {
+    "id": "prlude-opus-28-no-4-in-e-minor-chopin",
+    "title": "Prlude Opus 28 No. 4 in E Minor Chopin",
+    "difficulty": "Auto-imported",
+    "notesColor": "#c9a227"
+  },
+  {
+    "id": "schubert-serenade-standchen-by-lizst",
+    "title": "Schubert Serenade - Standchen - By Lizst",
+    "difficulty": "Auto-imported",
+    "notesColor": "#c1584b"
+  },
+  {
+    "id": "sonata-no-16-1st-movement-k-545",
+    "title": "Sonata No. 16 1st Movement K. 545",
+    "difficulty": "Auto-imported",
+    "notesColor": "#7a9e4f"
+  },
+  {
+    "id": "sonate-no-14-moonlight-1st-movement",
+    "title": "Sonate No. 14 Moonlight 1st Movement",
+    "difficulty": "Auto-imported",
+    "notesColor": "#5a9bd8"
+  },
+  {
+    "id": "sonate-no-8-pathetique-2nd-movement",
+    "title": "Sonate No. 8 Pathetique 2nd Movement",
+    "difficulty": "Auto-imported",
+    "notesColor": "#5a7fd6"
+  },
+  {
+    "id": "spring-waltz-mariage-damour-chopin",
+    "title": "Spring Waltz Mariage dAmour - Chopin",
+    "difficulty": "Auto-imported",
+    "notesColor": "#4f9c8a"
+  },
+  {
+    "id": "swan-lake",
+    "title": "Swan Lake",
+    "difficulty": "Auto-imported",
+    "notesColor": "#9d6fd6"
+  },
+  {
+    "id": "the-entertainer-scott-joplin-1902",
+    "title": "The Entertainer - Scott Joplin - 1902",
+    "difficulty": "Auto-imported",
+    "notesColor": "#4fb0a5"
+  },
+  {
+    "id": "the-entertainer-scott-joplin",
+    "title": "The Entertainer - Scott Joplin",
+    "difficulty": "Auto-imported",
+    "notesColor": "#c1584b"
+  },
+  {
+    "id": "waltz-in-a-minorchopin",
+    "title": "Waltz in A MinorChopin",
+    "difficulty": "Auto-imported",
+    "notesColor": "#4fb0a5"
+  },
+  {
+    "id": "waltz-of-the-flowers",
+    "title": "Waltz of the Flowers",
+    "difficulty": "Auto-imported",
+    "notesColor": "#7a9e4f"
+  },
+  {
+    "id": "waltz-opus-64-no-2-in-c-minor",
+    "title": "Waltz Opus 64 No. 2 in C Minor",
+    "difficulty": "Auto-imported",
+    "notesColor": "#d68a4f"
   }
 ]
