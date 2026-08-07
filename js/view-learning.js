@@ -1,5 +1,50 @@
-// v3.6
+// v3.7
 // view-learning.js
+// v3.7: ROOT CAUSE of both the white-flash and the rejected-correct-note
+// bugs, and they turn out to be the same defect seen from two sides —
+// v3.4's cap in currentPracticeMs().
+//
+// That cap let the clock run, once a group was struck, all the way to
+// the NEXT group's startMs, while the pointer still waited on the
+// CURRENT group's release. Display and expectation therefore sat exactly
+// one note apart, which produced:
+//   (a) the white flash — visualizer.js paints a note white when
+//       `currentMs >= n.startMs` and it isn't in waitingNotes. Parking
+//       the clock on the next note's startMs met both conditions, so it
+//       went white and STAYED white for as long as the key was held.
+//   (b) the rejections — the player, quite reasonably, plays the note
+//       sitting on the hit line; the game is still expecting the
+//       previous one, so it's scored as a wrong key.
+// Only reachable by holding a key longer than the gap to the next note
+// (429ms at this song's 140bpm) — i.e. exactly the slow, sustained
+// playing Nico reported, and never when playing fast. Confirmed against
+// the diagnostic logs: every rejected note was the song's NEXT note, and
+// the game's own note list and pointer were verified correct throughout.
+//
+// The fix removes the cap entirely rather than tuning it, by making the
+// pointer advance on full STRIKE instead of full release. The current
+// group is then always the note on the line, so the clamp target moves
+// forward on its own and the display keeps falling — no cap needed, and
+// the desync is impossible by construction.
+//
+//   - currentPracticeMs(): back to a plain clamp on the current group's
+//     own beat. No unfreeze branch, no cap. groupStruckAtMs is gone.
+//   - practiceNoteOn(): completes the group once every note has been
+//     STRUCK ("struck at some point during this group", not "down right
+//     now" — on a chord you may release one key before the last lands,
+//     and that's still a played chord). A key already physically down is
+//     ignored rather than scored wrong, which also stops a repeated note
+//     (71 71) being validated twice by one press.
+//   - completeCurrentGroup(): scores timing, stamps the group's final
+//     pitch/timing marks onto its still-held notes, advances.
+//   - practiceNoteOff()/state.sustaining: releases no longer drive
+//     progress, they only measure the real hold — deliberately tracked
+//     across group boundaries, since a key is often let go several
+//     groups after its own. Duration scoring is fully preserved.
+//   - flushSustainingNotes(): the section now ends on the last note's
+//     press, so anything still held is scored before finalPercent().
+//   - v3.5/v3.6's temporary console diagnostics removed.
+//
 // v3.6: v3.5's diagnostic log showed a clear pattern — every rejected
 // note WAS the correct next note in the song, just compared against a
 // stale expectation (groupPointer hadn't advanced past the previous
@@ -447,8 +492,16 @@ window.ViewLearning = (function () {
     waitQueue: [],
     groups: [],           // notes grouped by beat — a chord is one event
     groupPointer: 0,
-    pressed: new Map(),   // note -> press timestamp, within current group
-    released: new Set(),  // notes of the current group already scored
+    // Notes of the CURRENT group that have been struck at least once.
+    // Entries are never removed on release — a chord where one key is
+    // let go before the others land is still a completed chord.
+    struck: new Set(),
+    // Keys physically held RIGHT NOW, across group boundaries:
+    // note -> { pressedAt, entry, pitchScore, timingScore }.
+    // Independent of groupPointer on purpose — a note can (and often
+    // does) stay held after its group has already advanced, and its real
+    // hold duration must still be measurable when it's finally released.
+    sustaining: new Map(),
     accompQueue: [],
     accompPointer: 0,
     noteScores: [],
@@ -461,7 +514,6 @@ window.ViewLearning = (function () {
     practiceBaseMs: 0,
     practiceRealStart: 0,
     practiceRafId: null,
-    groupStruckAtMs: null,
     loopEnabled: false,
     loopRestartTimer: null,
   };
@@ -786,8 +838,8 @@ window.ViewLearning = (function () {
     state.waitQueue = toTimeline(getActiveNotes(), currentMsPerBeat());
     state.groups = buildGroups(state.waitQueue);
     state.groupPointer = 0;
-    state.pressed = new Map();   // note -> press timestamp, current group
-    state.released = new Set();  // notes of the current group already scored
+    state.struck = new Set();     // notes of the current group already hit
+    state.sustaining = new Map(); // keys physically held right now
     state.accompQueue = toAccompanimentTimeline(currentMsPerBeat());
     state.accompPointer = 0;
     state.noteScores = [];
@@ -817,6 +869,10 @@ window.ViewLearning = (function () {
 
   function stopPractice() {
     state.practiceActive = false;
+    // Dropped, not scored: a section abandoned half-way shouldn't feed
+    // partial holds into the next run's noteScores.
+    state.sustaining = new Map();
+    state.struck = new Set();
     cancelAnimationFrame(state.practiceRafId);
     if (state.loopRestartTimer) {
       clearTimeout(state.loopRestartTimer);
@@ -838,23 +894,22 @@ window.ViewLearning = (function () {
   }
 
   // The shared clock, positioning EVERY note on screen (waiting AND
-  // already-played alike). Frozen at the current group's own beat while
-  // it's still incomplete (some required key not yet down) — same as
-  // v3.3. Once the group is FULLY struck (every key down, chord or
-  // single note alike), it lets go and runs at real time again, but
-  // capped at the NEXT group's own beat rather than an arbitrary time
-  // budget: if you keep holding past where the next note would arrive,
-  // the display advances right up to that next note's line and parks
-  // there, waiting for you to release (too-long hold) before anything
-  // moves again. It can never run further ahead than "the next thing
-  // you're expected to play," so nothing scrolls past unplayed material.
+  // already-played alike). It simply runs forward in real time, clamped
+  // to the CURRENT group's own beat — the note being waited for reaches
+  // the hit line and holds there, and nothing on screen ever gets ahead
+  // of it.
+  //
+  // There is no "unfreeze once struck" branch any more, and no cap: the
+  // group pointer now advances the moment a group is fully struck (see
+  // completeCurrentGroup), so the clamp target itself moves forward and
+  // the display keeps falling naturally. That's what removes the v3.4
+  // desync — the clamp used to sit on the NEXT group's startMs while the
+  // pointer still waited on the current one, so (a) the next note met
+  // visualizer.js's `hit` test and went white while it wasn't the
+  // waiting note, and (b) the player, quite reasonably, played the note
+  // sitting on the line and got it rejected. Both symptoms, one cause.
   function currentPracticeMs(group) {
     const elapsed = performance.now() - state.practiceRealStart;
-    if (state.groupStruckAtMs != null) {
-      const nextGroup = state.groups[state.groupPointer + 1];
-      const cap = nextGroup ? leadEntry(nextGroup).startMs - 1 : Infinity;
-      return Math.min(state.practiceBaseMs + elapsed, cap);
-    }
     return Math.min(state.practiceBaseMs + elapsed, leadEntry(group).startMs);
   }
 
@@ -864,10 +919,8 @@ window.ViewLearning = (function () {
   function showCurrentGroup() {
     const group = currentGroup();
     if (!group) return;
-    state.pressed = new Map();
-    state.released = new Set();
+    state.struck = new Set();
     state.currentWrongAttempts = 0;
-    state.groupStruckAtMs = null;
 
     state.visualizer.setWaitingNote(group.map((e) => e.note));
     updateFingerGuide(group);
@@ -1068,24 +1121,19 @@ window.ViewLearning = (function () {
     const group = currentGroup();
     if (!group) return;
 
+    // A key that is already physically down cannot be pressed again, so
+    // a second noteOn for it is a stray duplicate from the link, not a
+    // real strike. Ignoring it silently (rather than scoring it as a
+    // wrong note) also stops a repeated note in the score — 71 71 — from
+    // being validated twice by a single physical press.
+    if (state.sustaining.has(note)) return;
+
     const entry = group.find((e) => e.note === note);
 
-    // TEMP DIAGNOSTIC (remove once the intermittent-rejection bug is
-    // found) — prints exactly what the game expected vs what arrived,
-    // and why this specific press was rejected.
-    if (!entry || state.pressed.has(note) || state.released.has(note)) {
-      console.warn(
-        "[Piano101 diag] rejected note", note,
-        "| expected one of:", group.map((e) => e.note),
-        "| groupPointer:", state.groupPointer, "/", state.groups.length,
-        "| already pressed:", state.pressed.has(note),
-        "| already released:", state.released.has(note)
-      );
-    }
-
-    // Not part of this chord, or a key already down — either way it's a
-    // wrong press. Notes of the chord may be struck in ANY order.
-    if (!entry || state.pressed.has(note) || state.released.has(note)) {
+    // Not part of this chord, or a note of it already struck during this
+    // group — either way it's a wrong press. Notes of a chord may be
+    // struck in ANY order.
+    if (!entry || state.struck.has(note)) {
       state.currentWrongAttempts++;
       state.totalWrongAttempts++;
       state.audio.playNote(note, 0.3);
@@ -1094,7 +1142,13 @@ window.ViewLearning = (function () {
     }
 
     const now = performance.now();
-    state.pressed.set(note, now);
+    state.struck.add(note);
+    state.sustaining.set(note, {
+      pressedAt: now,
+      entry,
+      pitchScore: null,
+      timingScore: null,
+    });
 
     state.audio.playNote(note, entry.durationMs / 1000);
     highlightKey(note, entry.durationMs, colorForNote(note));
@@ -1104,45 +1158,69 @@ window.ViewLearning = (function () {
     // note on the hit line for as long as the key was held down.
     state.visualizer.markPlayed([entry.id]);
 
-    // The chord is "struck" once EVERY required key is down — for a
-    // single-note group that's still just this one press, so nothing
-    // changes there. For a real chord, timing is judged at the moment
-    // it's actually complete (not on its first, partial key), since
-    // that's the true onset now that the display stays frozen until
-    // then anyway.
-    const allPressed = group.every((e) => state.pressed.has(e.note));
-    if (allPressed) {
-      const lead = leadEntry(group);
-      const fallDurationMs = Math.max(0, lead.startMs - state.practiceBaseMs);
-      const freezeRealTime = state.practiceRealStart + fallDurationMs;
-      const deltaMs = now - freezeRealTime;
-      state.currentTimingScore = timingScoreFromDelta(deltaMs);
-      // A note struck way after its freeze point counts toward its own,
-      // softer penalty (LATE_PENALTY) — separate from wrong-key mistakes
-      // — so consistently slow-but-correct playing scores lower without
-      // being treated as harshly as a wrong note.
-      if (Math.abs(deltaMs) > LATE_MISTAKE_THRESHOLD_MS) {
-        state.totalLateHits++;
-      }
-      // Wait Mode has no continuous clock — the accompaniment is released
-      // as the player reaches each chord, so it lands with the melody at
-      // whatever speed the section is being played.
-      flushAccompanimentUpTo(lead.startMs);
+    // A group is complete once every one of its notes has been STRUCK —
+    // not "is down right now": on a chord you may well let one key go
+    // before the last one lands, and that is still a played chord.
+    //
+    // Crucially, completion no longer waits for release. The pointer
+    // moves on immediately, so what sits on the hit line is always what
+    // the game is asking for. Holding a key past its beat then simply
+    // means "held too long": the display runs on to the next note and
+    // waits there for you to play it.
+    if (group.every((e) => state.struck.has(e.note))) {
+      completeCurrentGroup(group, now);
+    }
+  }
 
-      // Re-anchor the clock to wherever it's ACTUALLY displayed right
-      // now — NOT unconditionally to lead.startMs. If the press is late,
-      // that's the same thing (the clamp was already holding it there,
-      // and practiceBaseMs+elapsed had kept growing silently underneath
-      // it — resetting to the clamped position avoids exposing that as
-      // a forward jump). But if the press is EARLY — before the note has
-      // even reached the line — the clamp hadn't kicked in yet, so
-      // snapping straight to lead.startMs would skip the rest of its
-      // fall-in, causing the opposite glitch (a forward snap onto the
-      // line). Math.min here picks whichever is correct for each case.
-      const displayedAtPress = Math.min(state.practiceBaseMs + (now - state.practiceRealStart), lead.startMs);
-      state.practiceBaseMs = displayedAtPress;
-      state.practiceRealStart = now;
-      state.groupStruckAtMs = now;
+  // Scores a completed group's timing, releases any accompaniment due by
+  // then, re-anchors the clock and moves on to the next group.
+  function completeCurrentGroup(group, now) {
+    const lead = leadEntry(group);
+    const fallDurationMs = Math.max(0, lead.startMs - state.practiceBaseMs);
+    const freezeRealTime = state.practiceRealStart + fallDurationMs;
+    const deltaMs = now - freezeRealTime;
+    state.currentTimingScore = timingScoreFromDelta(deltaMs);
+    // A note struck way after its freeze point counts toward its own,
+    // softer penalty (LATE_PENALTY) — separate from wrong-key mistakes —
+    // so consistently slow-but-correct playing scores lower without
+    // being treated as harshly as a wrong note.
+    if (Math.abs(deltaMs) > LATE_MISTAKE_THRESHOLD_MS) {
+      state.totalLateHits++;
+    }
+
+    // Stamp this group's pitch/timing marks onto every one of its notes
+    // that is still held. They are final now, but the key may not be let
+    // go until several groups later — by which point currentWrongAttempts
+    // and currentTimingScore describe a different group entirely.
+    const pitchScore = pitchScoreFromAttempts(state.currentWrongAttempts);
+    for (const e of group) {
+      const held = state.sustaining.get(e.note);
+      if (held) {
+        held.pitchScore = pitchScore;
+        held.timingScore = state.currentTimingScore;
+      }
+    }
+
+    // Wait Mode has no continuous clock — the accompaniment is released
+    // as the player reaches each chord, so it lands with the melody at
+    // whatever speed the section is being played.
+    flushAccompanimentUpTo(lead.startMs);
+
+    // Gone from the canvas the instant it's validated — no lingering.
+    state.visualizer.markPlayed(group.map((e) => e.id));
+
+    // Re-anchor the clock to wherever it is ACTUALLY displayed right now,
+    // not to the group's nominal beat: an early press must not snap the
+    // note forward onto the line, and a late one must not snap it back.
+    state.practiceBaseMs = currentPracticeMs(group);
+    state.practiceRealStart = performance.now();
+
+    state.groupPointer++;
+    if (state.groupPointer >= state.groups.length) {
+      state.visualizer.setWaitingNote(null);
+      finishPractice();
+    } else {
+      showCurrentGroup();
     }
   }
 
@@ -1157,57 +1235,46 @@ window.ViewLearning = (function () {
     }
   }
 
+  // Releases drive nothing now — they exist purely to measure how long a
+  // note was really held, which is what its duration score is built on.
+  // Deliberately independent of groupPointer: by the time a key is let
+  // go, its group may be several notes back.
   function practiceNoteOff(note) {
-    const group = currentGroup();
-    if (!group) {
-      console.warn("[Piano101 diag] noteOff ignored (no active group) — note:", note);
-      return;
-    }
+    const held = state.sustaining.get(note);
+    // No matching press on record: a duplicate noteOff from the link, or
+    // the tail of a press that was rejected as a wrong note. Nothing to
+    // score, and nothing waiting on it.
+    if (!held) return;
 
-    const pressedAt = state.pressed.get(note);
-    if (pressedAt == null) {
-      console.warn(
-        "[Piano101 diag] noteOff SILENTLY DROPPED — note:", note,
-        "| not found in state.pressed. Currently pressed:", [...state.pressed.keys()],
-        "| groupPointer:", state.groupPointer, "/", state.groups.length,
-        "| current group expects:", group.map((e) => e.note)
-      );
-      return;
-    }
+    state.sustaining.delete(note);
+    scoreHeldNote(held, performance.now());
+  }
 
-    const entry = group.find((e) => e.note === note);
-    state.pressed.delete(note);
-    state.released.add(note);
+  // Turns one finished hold into a note score. pitch/timing were frozen
+  // when the note's group completed (completeCurrentGroup); the fallbacks
+  // only ever apply to a key let go before its group was finished.
+  function scoreHeldNote(held, releasedAt) {
+    const heldMs = releasedAt - held.pressedAt;
+    const durationScore = durationScoreFromRatio(heldMs / held.entry.durationMs);
+    const pitchScore = held.pitchScore != null
+      ? held.pitchScore
+      : pitchScoreFromAttempts(state.currentWrongAttempts);
+    const timingScore = held.timingScore != null
+      ? held.timingScore
+      : state.currentTimingScore;
 
-    const heldMs = performance.now() - pressedAt;
-    const durationScore = durationScoreFromRatio(heldMs / entry.durationMs);
-    const pitchScore = pitchScoreFromAttempts(state.currentWrongAttempts);
     // Pitch dominates: timing and duration can polish a note's score but
     // can no longer rescue one that was played wrong.
-    state.noteScores.push(pitchScore * 0.75 + state.currentTimingScore * 0.15 + durationScore * 0.10);
+    state.noteScores.push(pitchScore * 0.75 + timingScore * 0.15 + durationScore * 0.10);
+  }
 
-    // The chord only counts as done once every one of its keys has been
-    // struck AND let go.
-    if (state.released.size < group.length) return;
-
-    // Gone from the canvas the instant it's validated — no lingering.
-    state.visualizer.markPlayed(group.map((e) => e.id));
-
-    // Re-base the clock on wherever it's ACTUALLY at right now — not on
-    // the chord's own nominal beat (lead.startMs). The clock has been
-    // running freely since it was struck (currentPracticeMs()); snapping
-    // back to lead.startMs on release is what caused the backward jump
-    // whenever a hold lasted past that beat.
-    state.practiceBaseMs = currentPracticeMs(group);
-    state.practiceRealStart = performance.now();
-
-    state.groupPointer++;
-    if (state.groupPointer >= state.groups.length) {
-      state.visualizer.setWaitingNote(null);
-      finishPractice();
-    } else {
-      showCurrentGroup();
-    }
+  // Any key still down when the section ends still deserves its duration
+  // score — without this, the last note of a section would score nothing
+  // at all, since the section now finishes on its PRESS, not its release.
+  function flushSustainingNotes() {
+    const now = performance.now();
+    for (const held of state.sustaining.values()) scoreHeldNote(held, now);
+    state.sustaining = new Map();
   }
 
   function finishPractice() {
@@ -1238,6 +1305,12 @@ window.ViewLearning = (function () {
 
   function showFinalScore() {
     state.visualizer.draw(-state.visualizer.leadTimeMs);
+
+    // The section now ends on the last note's PRESS, so that note (and
+    // any other key still down) hasn't been scored yet. Do it before
+    // finalPercent() reads noteScores. Holding through the wind-down
+    // means heldMs is still a fair measure of the real hold.
+    flushSustainingNotes();
 
     const pct = finalPercent();
     const passed = pct >= PASS_THRESHOLD;
