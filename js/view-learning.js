@@ -1,5 +1,15 @@
-// v3.5
+// v3.6
 // view-learning.js
+// v3.6: v3.5's diagnostic log showed a clear pattern — every rejected
+// note WAS the correct next note in the song, just compared against a
+// stale expectation (groupPointer hadn't advanced past the previous
+// one). Points at practiceNoteOff()'s silent `if (pressedAt == null)
+// return;` — if a release is ever dropped there, the group never
+// advances and the following press gets compared to the wrong group.
+// Added a matching console.warn there (search "SILENTLY DROPPED") to
+// catch it happening in real time and see exactly what state.pressed
+// contained when it did.
+//
 // v3.5: re-confirmed the 1ms cap fix (Nico saw the white flash on the
 // next note, staying white until release — matches the visualizer's
 // `currentMs >= n.startMs` "hit" check exactly), so it's back in.
@@ -1149,10 +1159,21 @@ window.ViewLearning = (function () {
 
   function practiceNoteOff(note) {
     const group = currentGroup();
-    if (!group) return;
+    if (!group) {
+      console.warn("[Piano101 diag] noteOff ignored (no active group) — note:", note);
+      return;
+    }
 
     const pressedAt = state.pressed.get(note);
-    if (pressedAt == null) return;
+    if (pressedAt == null) {
+      console.warn(
+        "[Piano101 diag] noteOff SILENTLY DROPPED — note:", note,
+        "| not found in state.pressed. Currently pressed:", [...state.pressed.keys()],
+        "| groupPointer:", state.groupPointer, "/", state.groups.length,
+        "| current group expects:", group.map((e) => e.note)
+      );
+      return;
+    }
 
     const entry = group.find((e) => e.note === note);
     state.pressed.delete(note);
