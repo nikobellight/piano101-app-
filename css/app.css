@@ -1,4 +1,8 @@
-/* v3.1 */
+/* v3.2 */
+/* v3.2: styles for the new #/browse view (js/view-browse.js) — search
+   input and result count. Everything else on that page (song rows,
+   difficulty tabs) reuses .song-row from style.css and .hand-tab(s)
+   from sections.css as-is. */
 /* app.css — SPA-only styles: the persistent app shell (brand + BLE widget
    + profile switch), the show/hide mechanics for the three views, and the
    v3.1: added .accompaniment-label for the small "Accomp." caption.
@@ -678,4 +682,45 @@
 .learning-back-link-standalone {
   display: block;
   margin: 14px 0 0;
+}
+
+/* ---------- Browse view ---------- */
+
+.browse-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.browse-search {
+  width: 100%;
+  max-width: 420px;
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 16px;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 15px;
+}
+
+.browse-search::placeholder { color: var(--muted); }
+
+.browse-search:focus {
+  outline: none;
+  border-color: var(--amber);
+}
+
+.browse-count {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+.browse-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
