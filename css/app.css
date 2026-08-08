@@ -1,4 +1,10 @@
-/* v3.2 */
+/* v3.3 */
+/* v3.3: bigger/bolder "Browse" link (.browse-link) so it reads as a real
+   entry point, not a small text link like "See all". New
+   .keyboard-requirement-badge for the Sections page, shown when a song's
+   own keyboardMode needs 2 linked keyboards (view-sections.js v1.1) —
+   previously the only sign of this was the song silently failing to play
+   properly, which looked like a bug. */
 /* v3.2: styles for the new #/browse view (js/view-browse.js) — search
    input and result count. Everything else on that page (song rows,
    difficulty tabs) reuses .song-row from style.css and .hand-tab(s)
@@ -723,4 +729,37 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+
+/* ---------- Bigger "Browse" entry point on the dashboard ---------- */
+
+.browse-link {
+  font-family: var(--font-body) !important;
+  font-size: 15px !important;
+  font-weight: 800 !important;
+  padding: 8px 18px !important;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #ffcf6b, var(--amber));
+  color: #2a1a04 !important;
+  text-decoration: none;
+  transition: transform 0.12s ease;
+}
+
+.browse-link:hover {
+  background: linear-gradient(135deg, #ffcf6b, var(--amber)) !important;
+  transform: translateY(-1px);
+}
+
+/* ---------- "Needs 2 keyboards" badge (Sections page) ---------- */
+
+.keyboard-requirement-badge {
+  display: inline-block;
+  margin: 4px 0 20px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  background: var(--coral-soft);
+  border: 1px solid rgba(255, 122, 110, 0.4);
+  color: var(--coral);
+  font-family: var(--font-mono);
+  font-size: 13px;
 }
