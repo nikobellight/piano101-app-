@@ -1,10 +1,14 @@
-// v1.0
-// router.js — Minimal hash router. Shows/hides the three view sections and
+// v1.1
+// router.js — Minimal hash router. Shows/hides the four view sections and
 // calls mount()/unmount() on the matching view module. No page is ever
 // reloaded, which is what keeps the Bluetooth connection alive.
 //
+// v1.1: added #/browse (js/view-browse.js) — the dashboard's "Browse"
+// link had nowhere real to go before.
+//
 // Routes:
 //   #/                                  -> Dashboard
+//   #/browse                            -> Browse (full library)
 //   #/song/<songId>                     -> Sections
 //   #/song/<songId>/<sectionId>         -> Learning
 //
@@ -14,6 +18,7 @@
 window.Router = (function () {
   const views = {
     dashboard: { el: null, module: null },
+    browse: { el: null, module: null },
     sections: { el: null, module: null },
     learning: { el: null, module: null },
   };
@@ -31,6 +36,9 @@ window.Router = (function () {
         return { name: "learning", songId, sectionId: decodeURIComponent(parts[2]) };
       }
       return { name: "sections", songId };
+    }
+    if (parts[0] === "browse") {
+      return { name: "browse" };
     }
     return { name: "dashboard" };
   }
@@ -61,6 +69,8 @@ window.Router = (function () {
         Store.songId = route.songId;
         Store.sectionId = route.sectionId;
         await views.learning.module.mount();
+      } else if (route.name === "browse") {
+        await views.browse.module.mount();
       } else {
         await views.dashboard.module.mount();
       }
@@ -79,10 +89,12 @@ window.Router = (function () {
 
   function start() {
     views.dashboard.el = document.getElementById("view-dashboard");
+    views.browse.el = document.getElementById("view-browse");
     views.sections.el = document.getElementById("view-sections");
     views.learning.el = document.getElementById("view-learning");
 
     views.dashboard.module = window.ViewDashboard;
+    views.browse.module = window.ViewBrowse;
     views.sections.module = window.ViewSections;
     views.learning.module = window.ViewLearning;
 
