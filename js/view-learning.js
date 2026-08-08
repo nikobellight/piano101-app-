@@ -1,3 +1,14 @@
+// v3.9
+// view-learning.js
+// v3.9: toTimeline() now prefers a note's fingerSolo over finger when
+// practising a single hand (Store.hand !== "both") — see import_song.py's
+// generate_solo_fingering(). The old shared "finger" was always computed
+// with both hands playing together, which can pick a stretch or a note
+// only reachable with the other hand's help — impossible to actually
+// play when isolating one hand (reported on Clair de lune: finger 2 on a
+// note that needs the left hand). Falls back to the two-hand finger for
+// any note missing a solo one.
+//
 // v3.8
 // view-learning.js
 // v3.8: safety-net sync of Store.keyboardMode from the song's own
@@ -618,7 +629,14 @@ window.ViewLearning = (function () {
       durationMs: n.durationBeats * msPerBeat,
       // Carried through so the HUD (finger guide, measure counter) and the
       // visualizer's finger labels can read them off the timeline entry.
-      finger: n.finger || null,
+      // In single-hand mode, prefer fingerSolo (computed with that hand
+      // playing ALONE — see import_song.py) over finger (computed for the
+      // two hands together, which can assume a stretch or a note held by
+      // the other hand that's simply impossible to reach solo). Falls
+      // back to the two-hand finger when a note has no solo fingering
+      // (pianoplayer doesn't always assign one, or the song predates this
+      // field entirely) rather than showing nothing.
+      finger: (Store.hand !== "both" && n.fingerSolo != null) ? n.fingerSolo : (n.finger || null),
       hand: normalizeHand(n.hand),
       beat: n.beat,
     }));
