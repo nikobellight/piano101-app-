@@ -1,4 +1,4 @@
-// v1.0
+// v1.1
 // view-sections.js — SPA version of the old sections.js. Same circles,
 // stars, Revision and Continue buttons. Differences:
 //  - scores come from Store.completed instead of being decoded from a URL
@@ -6,9 +6,22 @@
 //  - navigation is a hash route change, not a full page load
 //  - mount(songId) can be called many times, so everything is rebuilt
 //    from scratch on each entry (stars must reflect a score just earned)
+//
+// v1.1: a song's own keyboardMode ("solo"/"linked", set at import time by
+// import_song.py) is now actually READ — Store.keyboardMode used to stay
+// on whatever the player had last picked (defaulting to "solo"), so
+// opening a song that needs the full 48-95 duo range silently played
+// wrong/missing notes with no explanation, looking like a bug. Now it's
+// synced automatically on load, and a visible badge
+// (#sections-keyboard-badge) explains why before the player hits Practice
+// and gets confused.
 
 window.ViewSections = (function () {
   const PASS_THRESHOLD = 80;
+
+  // Song JSON says "linked"; Store/KEYBOARD_RANGES says "duo" — same
+  // thing, different vocabulary from two points in the project's history.
+  const SONG_TO_STORE_KEYBOARD_MODE = { solo: "solo", linked: "duo" };
 
   let song = null;
   let wiredTabs = false;
@@ -125,6 +138,13 @@ window.ViewSections = (function () {
     document.getElementById("sections-song-title").textContent = "Loading…";
     song = await Store.loadSong(songId);
     document.getElementById("sections-song-title").textContent = song.title;
+
+    // Match the app's active keyboard range to what this song actually
+    // needs — see v1.1 note above. Falls back to "solo" for any song
+    // missing the field (the two original hand-made songs predate it).
+    Store.keyboardMode = SONG_TO_STORE_KEYBOARD_MODE[song.keyboardMode] || "solo";
+    const badge = document.getElementById("sections-keyboard-badge");
+    badge.hidden = song.keyboardMode !== "linked";
 
     render();
   }

@@ -383,13 +383,15 @@ class FallingNotesVisualizer {
         ctx.strokeText(String(n.finger), x + w / 2, yTop + noteHeight / 2);
         ctx.fillStyle = "#ffffff";
         ctx.fillText(String(n.finger), x + w / 2, yTop + noteHeight / 2);
-      } else if (n.finger && noteHeight > 26) {
-        // Finger number, well before it's played — this is the moment it
-        // actually matters (glancing ahead while the note is still
-        // falling or waiting on the line), so it's now noticeably bigger
-        // and bolder than before.
+      } else if (n.finger) {
+        // Previously hidden entirely below noteHeight > 26 — a fast/short
+        // note (16th notes, dense passages) lost its finger number right
+        // when it mattered most (before it's played). Now the font just
+        // scales down with the note instead of disappearing, floored at
+        // a size still legible for a single digit.
+        const fontSize = Math.max(11, Math.min(19, noteHeight * 0.7));
         ctx.fillStyle = "#ffffff";
-        ctx.font = "800 19px Manrope, sans-serif";
+        ctx.font = `800 ${fontSize}px Manrope, sans-serif`;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillText(String(n.finger), x + w / 2, yTop + noteHeight / 2);

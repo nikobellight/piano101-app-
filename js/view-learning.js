@@ -1,3 +1,10 @@
+// v3.8
+// view-learning.js
+// v3.8: safety-net sync of Store.keyboardMode from the song's own
+// keyboardMode field on mount — mirrors view-sections.js v1.1, in case
+// this view is reached directly (deep link, browser back/forward)
+// without passing through Sections first.
+//
 // v3.7
 // view-learning.js
 // v3.7: ROOT CAUSE of both the white-flash and the rejected-correct-note
@@ -1574,6 +1581,14 @@ window.ViewLearning = (function () {
 
     state.song = await Store.loadSong(Store.songId);
     document.getElementById("learning-song-title").textContent = state.song.title;
+
+    // Safety net for landing here directly (deep link, browser back/
+    // forward) without passing through Sections' mount(), which is where
+    // this normally gets synced from the song's own data.
+    const SONG_TO_STORE_KEYBOARD_MODE = { solo: "solo", linked: "duo" };
+    if (state.song.keyboardMode) {
+      Store.keyboardMode = SONG_TO_STORE_KEYBOARD_MODE[state.song.keyboardMode] || "solo";
+    }
 
     const sectionLabel =
       Store.sectionId === "all"
