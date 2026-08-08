@@ -232,7 +232,7 @@
         <div class="panel">
           <h2 class="panel-title">
             Library
-            <a href="#/browse">Browse</a>
+            <a href="#/browse" class="browse-link">Browse</a>
           </h2>
           <div id="library-preview"></div>
 
@@ -269,7 +269,6 @@
           <button class="hand-tab" data-difficulty="Beginner">Beginner</button>
           <button class="hand-tab" data-difficulty="Intermediate">Intermediate</button>
           <button class="hand-tab" data-difficulty="Advanced">Advanced</button>
-          <button class="hand-tab" data-difficulty="Auto-imported">Auto-imported</button>
         </div>
       </div>
 
@@ -285,6 +284,9 @@
         <a class="back-link" href="#/">&larr; Back to dashboard</a>
       </div>
       <h1 id="sections-song-title">Loading…</h1>
+      <div id="sections-keyboard-badge" class="keyboard-requirement-badge" hidden>
+        ⚠ This song needs 2 linked keyboards (wide range)
+      </div>
 
       <div id="hand-tabs" class="hand-tabs">
         <button class="hand-tab active" data-hand="right">🫱 Right</button>
