@@ -1,3 +1,8 @@
+<!-- Piano 101 — index.html — v3.2 -->
+<!-- v3.2: new #/browse route (js/view-browse.js) — the "Browse" library
+     link on the dashboard did nothing before (href="#/"), and "Import a
+     sound" is still an unwired placeholder button. Requires
+     js/view-browse.js and js/router.js v1.1+. -->
 <!-- Piano 101 — index.html — v3.1 -->
 <!-- v3.1: added a small "Accomp." label next to the accompaniment toggle
      (css/app.css v3.1's .accompaniment-label) so the dot+On/Off reads
@@ -227,7 +232,7 @@
         <div class="panel">
           <h2 class="panel-title">
             Library
-            <a href="#/">Browse</a>
+            <a href="#/browse">Browse</a>
           </h2>
           <div id="library-preview"></div>
 
@@ -240,6 +245,36 @@
           </button>
         </div>
       </section>
+    </main>
+  </section>
+
+  <!-- ============================= BROWSE =============================== -->
+  <section id="view-browse" class="view">
+    <main class="sections-page">
+      <div class="sections-topbar">
+        <a class="back-link" href="#/">&larr; Back to dashboard</a>
+      </div>
+      <h1>Library</h1>
+
+      <div class="browse-controls">
+        <input
+          type="text"
+          id="browse-search"
+          class="browse-search"
+          placeholder="Search songs…"
+          autocomplete="off"
+        />
+        <div id="browse-difficulty-tabs" class="hand-tabs">
+          <button class="hand-tab active" data-difficulty="all">All</button>
+          <button class="hand-tab" data-difficulty="Beginner">Beginner</button>
+          <button class="hand-tab" data-difficulty="Intermediate">Intermediate</button>
+          <button class="hand-tab" data-difficulty="Advanced">Advanced</button>
+          <button class="hand-tab" data-difficulty="Auto-imported">Auto-imported</button>
+        </div>
+      </div>
+
+      <div id="browse-count" class="browse-count"></div>
+      <div id="browse-list" class="browse-list"></div>
     </main>
   </section>
 
@@ -405,6 +440,7 @@
   <script src="js/store.js"></script>
   <script src="js/ble-shared.js"></script>
   <script src="js/view-dashboard.js"></script>
+  <script src="js/view-browse.js"></script>
   <script src="js/view-sections.js"></script>
   <script src="js/view-learning.js"></script>
   <script src="js/router.js"></script>
