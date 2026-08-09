@@ -1,3 +1,10 @@
+// v1.3
+// view-dashboard.js
+// v1.3: the "Library" preview's 3 songs are now sorted alphabetically
+// before slicing — songs.json is in insertion order, so this preview
+// used to always show the same 3 earliest-imported songs regardless of
+// what else was in the library.
+//
 // v1.2
 // view-dashboard.js
 // v1.2: fixed the profile switch never getting its active/amber state
@@ -87,7 +94,11 @@ window.ViewDashboard = (function () {
   function renderLibraryPreview(songs) {
     const container = document.getElementById("library-preview");
     container.innerHTML = "";
-    for (const song of songs.slice(0, 3)) {
+    // Same reasoning as view-browse.js: songs.json is in insertion
+    // order, not alphabetical — sorting first means this 3-song preview
+    // isn't always just "whichever 3 happened to be imported earliest".
+    const sorted = [...songs].sort((a, b) => a.title.localeCompare(b.title));
+    for (const song of sorted.slice(0, 3)) {
       const row = document.createElement("a");
       row.className = "song-row";
       row.href = `#/song/${encodeURIComponent(song.id)}`;
