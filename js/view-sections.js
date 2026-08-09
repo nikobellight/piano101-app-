@@ -1,4 +1,4 @@
-// v1.1
+// v1.2
 // view-sections.js — SPA version of the old sections.js. Same circles,
 // stars, Revision and Continue buttons. Differences:
 //  - scores come from Store.completed instead of being decoded from a URL
@@ -7,14 +7,25 @@
 //  - mount(songId) can be called many times, so everything is rebuilt
 //    from scratch on each entry (stars must reflect a score just earned)
 //
-// v1.1: a song's own keyboardMode ("solo"/"linked", set at import time by
-// import_song.py) is now actually READ — Store.keyboardMode used to stay
-// on whatever the player had last picked (defaulting to "solo"), so
-// opening a song that needs the full 48-95 duo range silently played
-// wrong/missing notes with no explanation, looking like a bug. Now it's
-// synced automatically on load, and a visible badge
-// (#sections-keyboard-badge) explains why before the player hits Practice
-// and gets confused.
+// v1.2: two things asked for together, both touching this file —
+//   1. Section locking — a phrase is now only clickable once the
+//      previous one has been passed (>= PASS_THRESHOLD). Previously
+//      every circle was always clickable regardless of progress, which
+//      made the "Continue" suggestion the only thing hinting at an
+//      intended order.
+//   2. Intermediate revision circles — for every pair of CONSECUTIVE
+//      phrases that are BOTH passed, an extra "Revision" circle appears
+//      combining just those two (in addition to the existing whole-song
+//      Revision, which still covers everything). Built as a synthetic
+//      section object pushed onto the cached song's own .sections array
+//      (Store.loadSong() caches by reference, so Learning's later
+//      Store.loadSong(Store.songId) call sees it too) — requires the
+//      song to use beatStart/beatEnd (every import_song.py-generated
+//      song does; the two original hand-made ones don't, so they simply
+//      never grow revision circles, same as before this version).
+//   Also: progress is now loaded FROM Supabase (Store.loadProgressFor)
+//   instead of always starting empty — see store.js v1.4 and the new
+//   js/supabase-client.js.
 
 window.ViewSections = (function () {
   const PASS_THRESHOLD = 80;
@@ -46,14 +57,26 @@ window.ViewSections = (function () {
     return el;
   }
 
-  function buildCircle({ className, title, subtitle, pct, onClick }) {
+  function buildCircle({ className, title, subtitle, pct, locked, onClick }) {
     const wrap = document.createElement("div");
     wrap.className = "section-circle-wrap";
 
     const btn = document.createElement("button");
-    btn.className = `section-circle ${className || ""}`.trim();
-    btn.textContent = title;
-    btn.addEventListener("click", onClick);
+    btn.className = `section-circle ${className || ""} ${locked ? "locked" : ""}`.trim();
+    if (locked) {
+      const lockIcon = document.createElement("span");
+      lockIcon.className = "lock-icon";
+      lockIcon.textContent = "🔒";
+      btn.appendChild(lockIcon);
+    } else {
+      btn.textContent = title;
+    }
+    if (locked) {
+      btn.disabled = true;
+      btn.title = "Pass the previous phrase first";
+    } else {
+      btn.addEventListener("click", onClick);
+    }
     wrap.appendChild(btn);
 
     if (subtitle) {
@@ -63,43 +86,107 @@ window.ViewSections = (function () {
       wrap.appendChild(label);
     }
 
-    if (pct != null) wrap.appendChild(renderStars(pct));
+    if (pct != null && !locked) wrap.appendChild(renderStars(pct));
 
     return wrap;
   }
 
   function goToLearning(sectionId) {
     Store.sectionId = sectionId;
+    Store.previewOnly = false;
     Router.go(`#/song/${encodeURIComponent(Store.songId)}/${encodeURIComponent(sectionId)}`);
+  }
+
+  function playWholeSongPreview() {
+    Store.sectionId = "all";
+    Store.previewOnly = true;
+    Router.go(`#/song/${encodeURIComponent(Store.songId)}/all`);
+  }
+
+  // Builds (and caches on `song.sections`, so Learning can find it by id
+  // the same way as any real section) a synthetic section spanning two
+  // consecutive real ones. Returns null if either lacks beatStart/beatEnd
+  // (the two hand-made original songs predate that field) — no revision
+  // circle is grown for those rather than risk a broken beat window.
+  function buildMidRevisionSection(secA, secB) {
+    if (secA.beatStart == null || secB.beatEnd == null) return null;
+    const id = `midrev-${secA.id}-${secB.id}`;
+    let existing = song.sections.find((s) => s.id === id);
+    if (existing) return existing;
+    const synthetic = {
+      id,
+      label: `${secA.label} + ${secB.label}`,
+      beatStart: secA.beatStart,
+      beatEnd: secB.beatEnd,
+      isSynthetic: true, // harmless marker; nothing currently reads it
+    };
+    song.sections.push(synthetic);
+    return synthetic;
   }
 
   function render() {
     const grid = document.getElementById("section-grid");
     grid.innerHTML = "";
 
-    song.sections.forEach((sec) => {
+    // Real phrases first — only these participate in locking and in
+    // pairing up for intermediate revisions. song.sections may already
+    // contain synthetic midrev-* entries from a previous render() in
+    // this same session; keep working from the real ones only.
+    const realSections = song.sections.filter((s) => !s.isSynthetic);
+
+    const firstUnpassedIndex = realSections.findIndex((s) => !Store.isPassed(s.id));
+
+    realSections.forEach((sec, i) => {
       const pct = Store.completed[sec.id] || 0;
+      const locked = firstUnpassedIndex !== -1 && i > firstUnpassedIndex;
       grid.appendChild(
         buildCircle({
           title: `${sec.noteIndexStart + 1}-${sec.noteIndexEnd + 1}`,
           subtitle: sec.label,
           pct,
+          locked,
           onClick: () => goToLearning(sec.id),
         })
       );
+
+      // One "Revision" circle per adjacent pair that's both passed —
+      // shown right after the pair, before moving on to the next phrase.
+      if (i > 0) {
+        const prev = realSections[i - 1];
+        if (Store.isPassed(prev.id) && Store.isPassed(sec.id)) {
+          const mid = buildMidRevisionSection(prev, sec);
+          if (mid) {
+            grid.appendChild(
+              buildCircle({
+                className: "mid-revision",
+                title: "Revision",
+                subtitle: mid.label,
+                pct: null,
+                locked: false,
+                onClick: () => goToLearning(mid.id),
+              })
+            );
+          }
+        }
+      }
     });
 
+    // "Revision" (whole song) is meant for reviewing what's already been
+    // earned, same philosophy as the mid-revision circles above — locked
+    // until every real phrase is passed, not available from the start.
+    const allPassed = realSections.length > 0 && firstUnpassedIndex === -1;
     grid.appendChild(
       buildCircle({
         className: "revision",
         title: "Revision",
         subtitle: "Whole song",
         pct: null,
+        locked: !allPassed,
         onClick: () => goToLearning("all"),
       })
     );
 
-    const nextSection = song.sections.find((sec) => (Store.completed[sec.id] || 0) < 100);
+    const nextSection = realSections.find((sec) => (Store.completed[sec.id] || 0) < 100);
     if (nextSection) {
       grid.appendChild(
         buildCircle({
@@ -107,6 +194,7 @@ window.ViewSections = (function () {
           title: "Continue",
           subtitle: nextSection.label,
           pct: null,
+          locked: false,
           onClick: () => goToLearning(nextSection.id),
         })
       );
@@ -130,10 +218,19 @@ window.ViewSections = (function () {
     });
   }
 
+  let wiredPlayButton = false;
+
+  function wirePlayWholeSongButton() {
+    if (wiredPlayButton) return;
+    wiredPlayButton = true;
+    document.getElementById("play-whole-song-btn").addEventListener("click", playWholeSongPreview);
+  }
+
   async function mount(songId) {
     Store.songId = songId;
     wireHandTabs();
     syncHandTabs();
+    wirePlayWholeSongButton();
 
     document.getElementById("sections-song-title").textContent = "Loading…";
     song = await Store.loadSong(songId);
@@ -145,6 +242,12 @@ window.ViewSections = (function () {
     Store.keyboardMode = SONG_TO_STORE_KEYBOARD_MODE[song.keyboardMode] || "solo";
     const badge = document.getElementById("sections-keyboard-badge");
     badge.hidden = song.keyboardMode !== "linked";
+
+    // Real progress for the active profile, from Supabase — replaces
+    // whatever Store.completed held from a previous song. Resolves even
+    // if Supabase is unreachable (SupabasePiano101 swallows its own
+    // errors and returns {}), so this never blocks the page.
+    await Store.loadProgressFor(songId);
 
     render();
   }
