@@ -1,9 +1,14 @@
-// v1.0
+// v1.1
 // view-browse.js — Full library view behind the dashboard's "Browse"
 // link, which previously pointed nowhere (href="#/"). Lists every song
 // in data/songs.json (search by title, filter by difficulty), each
 // linking straight into Sections like the dashboard's 3-song preview
 // already does.
+//
+// v1.1: sorted alphabetically by title on load — songs.json is in
+// insertion order (whenever each song happened to be imported/added),
+// not alphabetical, so newly added songs used to just appear wherever
+// they'd been appended to the file instead of where you'd look for them.
 //
 // Deliberately does NOT show "already played" / per-song score — that
 // needs persisted progress (Supabase), which isn't wired in yet. Today's
@@ -85,6 +90,11 @@ window.ViewBrowse = (function () {
     try {
       const res = await fetch("data/songs.json");
       allSongs = await res.json();
+      // songs.json is in insertion order (whenever each song was
+      // imported/added), not alphabetical — sorting here means a song
+      // like "Love is Blue" shows up between "Liebestraum" and "Maple
+      // Leaf Rag" instead of wherever it happened to be appended.
+      allSongs.sort((a, b) => a.title.localeCompare(b.title));
       render();
     } catch (err) {
       list.innerHTML = `<div class="empty">Library unavailable right now.</div>`;
