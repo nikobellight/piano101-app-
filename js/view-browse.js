@@ -1,22 +1,26 @@
-// v1.1
+// v1.2
 // view-browse.js — Full library view behind the dashboard's "Browse"
 // link, which previously pointed nowhere (href="#/"). Lists every song
 // in data/songs.json (search by title, filter by difficulty), each
 // linking straight into Sections like the dashboard's 3-song preview
 // already does.
 //
+// v1.2: each row now shows a progress bar — passed sections (score >=
+// PASS_THRESHOLD) out of that song's sectionCount (added to
+// data/songs.json), for the currently active profile. Progress is
+// fetched in ONE request via SupabasePiano101.loadAllProgress(), in
+// parallel with songs.json, so Browse doesn't do 64 fetches just to
+// draw bars. Reuses the .progress-track/.progress-fill classes already
+// in style.css (same ones the dashboard's Recently Played list uses).
+//
 // v1.1: sorted alphabetically by title on load — songs.json is in
 // insertion order (whenever each song happened to be imported/added),
 // not alphabetical, so newly added songs used to just appear wherever
 // they'd been appended to the file instead of where you'd look for them.
-//
-// Deliberately does NOT show "already played" / per-song score — that
-// needs persisted progress (Supabase), which isn't wired in yet. Today's
-// progress only lives for the current session, passed between pages via
-// a URL param, not stored anywhere it could be read back here.
 
 window.ViewBrowse = (function () {
   let allSongs = [];
+  let progressBySong = {}; // { [songId]: passedSectionCount }, from Supabase
   let searchTerm = "";
   let activeDifficulty = "all";
   let wiredControls = false;
@@ -44,6 +48,10 @@ window.ViewBrowse = (function () {
     }
 
     for (const song of filtered) {
+      const passed = progressBySong[song.id] || 0;
+      const total = song.sectionCount || 0;
+      const pct = total > 0 ? Math.round((passed / total) * 100) : 0;
+
       const row = document.createElement("a");
       row.className = "song-row";
       row.href = `#/song/${encodeURIComponent(song.id)}`;
@@ -53,8 +61,13 @@ window.ViewBrowse = (function () {
         <span class="song-dot" style="background:${song.notesColor}; color:${song.notesColor}"></span>
         <div class="song-info">
           <div class="song-name">${song.title}</div>
-          <div class="song-meta">${song.difficulty}</div>
+          <div class="song-meta">${song.difficulty}${total > 0 ? ` · ${passed}/${total} sections` : ""}</div>
         </div>
+        ${total > 0 ? `
+        <div class="progress-track">
+          <div class="progress-fill" style="width:${pct}%; background:${song.notesColor}"></div>
+        </div>
+        ` : ""}
       `;
       list.appendChild(row);
     }
@@ -88,8 +101,12 @@ window.ViewBrowse = (function () {
     list.innerHTML = `<div class="empty">Loading…</div>`;
 
     try {
-      const res = await fetch("data/songs.json");
-      allSongs = await res.json();
+      const [songsRes, progress] = await Promise.all([
+        fetch("data/songs.json"),
+        window.SupabasePiano101.loadAllProgress(Store.profileId),
+      ]);
+      allSongs = await songsRes.json();
+      progressBySong = progress;
       // songs.json is in insertion order (whenever each song was
       // imported/added), not alphabetical — sorting here means a song
       // like "Love is Blue" shows up between "Liebestraum" and "Maple
