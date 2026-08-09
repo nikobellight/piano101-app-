@@ -1,8 +1,16 @@
-// v1.0
+// v1.1
 // supabase-client.js — Cross-session progress persistence (piano101_
 // prefixed tables — this project is shared with unrelated apps like
 // "alerts"). No SDK: direct fetch() against PostgREST, since the app has
 // no build step to pull in @supabase/supabase-js from npm.
+//
+// v1.1: adds loadAllProgress(), used by Browse to show a per-song
+// progress bar across the whole library in ONE request instead of 64
+// (one per song). Synthetic mid-revision rows (section_id starting with
+// "midrev-", created by view-sections.js for consecutive passed
+// phrases) are excluded from the passed-count — they aren't real
+// sections and would make a song's progress exceed its own
+// data/songs.json sectionCount.
 //
 // New-format API keys (sb_publishable_...) go ONLY in the `apikey`
 // header — sending them in `Authorization: Bearer` too, like the old
@@ -89,5 +97,31 @@ window.SupabasePiano101 = (function () {
     }
   }
 
-  return { loadProgress, saveProgress };
+  // Returns { [songId]: passedSectionCount } across the WHOLE library for
+  // one profile, in a single request — used by Browse so it doesn't have
+  // to fetch progress song-by-song (64 requests) just to draw a progress
+  // bar. Only counts real sections (best_score >= PASS_THRESHOLD, id not
+  // starting with "midrev-"); Browse then divides by each song's
+  // data/songs.json `sectionCount` to get a percentage. Returns {} on any
+  // failure, same fallback philosophy as loadProgress/saveProgress.
+  async function loadAllProgress(profileId) {
+    try {
+      const rows = await request(
+        `piano101_progress?profile_id=eq.${encodeURIComponent(profileId)}` +
+        `&best_score=gte.${window.PASS_THRESHOLD}` +
+        `&select=song_id,section_id`
+      );
+      const out = {};
+      for (const row of rows) {
+        if (row.section_id.startsWith("midrev-")) continue;
+        out[row.song_id] = (out[row.song_id] || 0) + 1;
+      }
+      return out;
+    } catch (err) {
+      console.warn("[Piano101] loadAllProgress failed, Browse shows no progress:", err);
+      return {};
+    }
+  }
+
+  return { loadProgress, saveProgress, loadAllProgress };
 })();
