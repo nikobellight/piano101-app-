@@ -1,3 +1,7 @@
+<!-- Piano 101 — index.html — v3.3 -->
+<!-- v3.3: loads js/supabase-client.js (new file) before store.js —
+     cross-session progress persistence. Requires store.js v1.4+ and
+     view-sections.js v1.2+. -->
 <!-- Piano 101 — index.html — v3.2 -->
 <!-- v3.2: new #/browse route (js/view-browse.js) — the "Browse" library
      link on the dashboard did nothing before (href="#/"), and "Import a
@@ -288,6 +292,10 @@
         ⚠ This song needs 2 linked keyboards (wide range)
       </div>
 
+      <button id="play-whole-song-btn" class="play-whole-song-btn">
+        ▶ Listen to the whole song
+      </button>
+
       <div id="hand-tabs" class="hand-tabs">
         <button class="hand-tab active" data-hand="right">🫱 Right</button>
         <button class="hand-tab" data-hand="both">🤲 Both</button>
@@ -439,6 +447,7 @@
   <script src="js/visualizer.js"></script>
 
   <!-- SPA plumbing -->
+  <script src="js/supabase-client.js"></script>
   <script src="js/store.js"></script>
   <script src="js/ble-shared.js"></script>
   <script src="js/view-dashboard.js"></script>
