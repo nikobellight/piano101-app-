@@ -128,3 +128,30 @@
 .star.filled {
   color: var(--amber);
 }
+
+/* ---------- Locked sections (previous phrase not passed yet) ---------- */
+
+.section-circle.locked {
+  cursor: not-allowed;
+  opacity: 0.45;
+  box-shadow: none;
+}
+
+.section-circle.locked:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.lock-icon {
+  font-size: 22px;
+  line-height: 1;
+}
+
+/* ---------- Intermediate revision circles (combine 2 passed phrases) --- */
+
+.section-circle.mid-revision {
+  background: linear-gradient(160deg, #7a8fd6, #4c5ce0);
+  border-color: transparent;
+  color: #fff;
+  font-size: 13px;
+}
