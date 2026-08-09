@@ -370,5 +370,11 @@
     "title": "Waltz Opus 64 No. 2 in C Minor",
     "difficulty": "Intermediate",
     "notesColor": "#c9a227"
+  },
+  {
+    "id": "sonate-no-14-moonlight-3rd-movement",
+    "title": "Sonate No. 14 Moonlight 3rd Movement",
+    "difficulty": "Advanced",
+    "notesColor": "#c1584b"
   }
 ]
