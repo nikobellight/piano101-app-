@@ -3,384 +3,448 @@
     "id": "ode-to-joy",
     "title": "Ode to Joy",
     "difficulty": "Beginner",
-    "notesColor": "#4f9c8a"
+    "notesColor": "#4f9c8a",
+    "sectionCount": 2
   },
   {
     "id": "ode-to-joy-full",
     "title": "Ode to Joy (Full)",
     "difficulty": "Beginner",
-    "notesColor": "#4f9c8a"
+    "notesColor": "#4f9c8a",
+    "sectionCount": 3
   },
   {
     "id": "12-variations-of-twinkle-twinkle-little-star",
     "title": "12 Variations of Twinkle Twinkle Little Star",
     "difficulty": "Advanced",
-    "notesColor": "#c1584b"
+    "notesColor": "#c1584b",
+    "sectionCount": 101
   },
   {
     "id": "arabesque-l-66-no-1-in-e-major",
     "title": "Arabesque L. 66 No. 1 in E Major",
     "difficulty": "Intermediate",
-    "notesColor": "#c9a227"
+    "notesColor": "#c9a227",
+    "sectionCount": 25
   },
   {
     "id": "ave-maria-d839-schubert-solo-piano-arrg",
     "title": "Ave Maria D839 - Schubert - Solo Piano Arrg.",
     "difficulty": "Intermediate",
-    "notesColor": "#c9a227"
+    "notesColor": "#c9a227",
+    "sectionCount": 9
   },
   {
     "id": "bach-minuet-in-g-major-bwv-anh-114",
     "title": "Bach Minuet in G Major BWV Anh. 114",
     "difficulty": "Beginner",
-    "notesColor": "#4f9c8a"
+    "notesColor": "#4f9c8a",
+    "sectionCount": 3
   },
   {
     "id": "beethoven-symphony-no-5-1st-movement-piano-solo",
     "title": "Beethoven Symphony No. 5 1st movement Piano solo",
     "difficulty": "Advanced",
-    "notesColor": "#c1584b"
+    "notesColor": "#c1584b",
+    "sectionCount": 64
   },
   {
     "id": "bella-ciao-la-casa-de-papel",
     "title": "Bella Ciao - La Casa de Papel",
     "difficulty": "Advanced",
-    "notesColor": "#c1584b"
+    "notesColor": "#c1584b",
+    "sectionCount": 59
   },
   {
     "id": "bella-ciao",
     "title": "Bella Ciao",
     "difficulty": "Advanced",
-    "notesColor": "#c1584b"
+    "notesColor": "#c1584b",
+    "sectionCount": 23
   },
   {
     "id": "canon-in-d-3",
     "title": "Canon in D 3",
     "difficulty": "Beginner",
-    "notesColor": "#4f9c8a"
+    "notesColor": "#4f9c8a",
+    "sectionCount": 7
   },
   {
     "id": "canon-in-d-easy",
     "title": "Canon in D easy",
     "difficulty": "Beginner",
-    "notesColor": "#4f9c8a"
+    "notesColor": "#4f9c8a",
+    "sectionCount": 8
   },
   {
     "id": "canon-in-d",
     "title": "Canon in D",
     "difficulty": "Intermediate",
-    "notesColor": "#c9a227"
+    "notesColor": "#c9a227",
+    "sectionCount": 13
   },
   {
     "id": "carol-of-the-bells-easy-piano",
     "title": "Carol of the Bells easy piano",
     "difficulty": "Beginner",
-    "notesColor": "#4f9c8a"
+    "notesColor": "#4f9c8a",
+    "sectionCount": 4
   },
   {
     "id": "carol-of-the-bells",
     "title": "Carol of the Bells",
     "difficulty": "Advanced",
-    "notesColor": "#c1584b"
+    "notesColor": "#c1584b",
+    "sectionCount": 32
   },
   {
     "id": "chopin-nocturne-op-9-no-1",
     "title": "Chopin - Nocturne Op. 9 No. 1",
     "difficulty": "Intermediate",
-    "notesColor": "#c9a227"
+    "notesColor": "#c9a227",
+    "sectionCount": 23
   },
   {
     "id": "chopin-nocturne-op-9-no-2-e-flat-major",
     "title": "Chopin - Nocturne Op 9 No 2 E Flat Major",
     "difficulty": "Intermediate",
-    "notesColor": "#c9a227"
+    "notesColor": "#c9a227",
+    "sectionCount": 7
   },
   {
     "id": "chopin-spring-waltz",
     "title": "Chopin - Spring Waltz",
     "difficulty": "Intermediate",
-    "notesColor": "#c9a227"
+    "notesColor": "#c9a227",
+    "sectionCount": 11
   },
   {
     "id": "clair-de-lune-claude-debussy",
     "title": "Clair de lune - Claude Debussy",
     "difficulty": "Intermediate",
-    "notesColor": "#c9a227"
+    "notesColor": "#c9a227",
+    "sectionCount": 38
   },
   {
     "id": "clair-de-lune-debussy",
     "title": "Clair de Lune Debussy",
     "difficulty": "Beginner",
-    "notesColor": "#4f9c8a"
+    "notesColor": "#4f9c8a",
+    "sectionCount": 38
   },
   {
     "id": "dance-of-the-sugar-plum-fairy",
     "title": "Dance of the sugar plum fairy",
     "difficulty": "Advanced",
-    "notesColor": "#c1584b"
+    "notesColor": "#c1584b",
+    "sectionCount": 23
   },
   {
     "id": "danse-villageoise-beethoven",
     "title": "DANSE VILLAGEOISE Beethoven",
     "difficulty": "Advanced",
-    "notesColor": "#c1584b"
+    "notesColor": "#c1584b",
+    "sectionCount": 6
   },
   {
     "id": "erik-satie-gymnopedie-no-1",
     "title": "Erik Satie - Gymnopedie No.1",
     "difficulty": "Beginner",
-    "notesColor": "#4f9c8a"
+    "notesColor": "#4f9c8a",
+    "sectionCount": 9
   },
   {
     "id": "flight-of-the-bumblebee",
     "title": "Flight of the Bumblebee",
     "difficulty": "Advanced",
-    "notesColor": "#c1584b"
+    "notesColor": "#c1584b",
+    "sectionCount": 12
   },
   {
     "id": "fur-elise-beethoven-for-beginner-piano",
     "title": "Fur Elise - Beethoven - for beginner piano",
     "difficulty": "Beginner",
-    "notesColor": "#4f9c8a"
+    "notesColor": "#4f9c8a",
+    "sectionCount": 3
   },
   {
     "id": "fur-elise-easy-piano",
     "title": "Fur Elise Easy Piano",
     "difficulty": "Beginner",
-    "notesColor": "#4f9c8a"
+    "notesColor": "#4f9c8a",
+    "sectionCount": 16
   },
   {
     "id": "g-minor-bach-original",
     "title": "G Minor Bach Original",
     "difficulty": "Advanced",
-    "notesColor": "#c1584b"
+    "notesColor": "#c1584b",
+    "sectionCount": 9
   },
   {
     "id": "g-minor-bach",
     "title": "G Minor Bach",
     "difficulty": "Intermediate",
-    "notesColor": "#c9a227"
+    "notesColor": "#c9a227",
+    "sectionCount": 11
   },
   {
     "id": "gnossienne-no-1",
     "title": "Gnossienne No. 1",
     "difficulty": "Intermediate",
-    "notesColor": "#c9a227"
+    "notesColor": "#c9a227",
+    "sectionCount": 86
   },
   {
     "id": "greensleeves-for-piano-easy-and-beautiful",
     "title": "Greensleeves for Piano easy and beautiful",
     "difficulty": "Beginner",
-    "notesColor": "#4f9c8a"
+    "notesColor": "#4f9c8a",
+    "sectionCount": 5
   },
   {
     "id": "gymnopdie-no-1-satie",
     "title": "Gymnopdie No. 1 Satie",
     "difficulty": "Beginner",
-    "notesColor": "#4f9c8a"
+    "notesColor": "#4f9c8a",
+    "sectionCount": 8
   },
   {
     "id": "happy-birthday-to-you-c-major",
     "title": "Happy Birthday To You C Major",
     "difficulty": "Beginner",
-    "notesColor": "#4f9c8a"
+    "notesColor": "#4f9c8a",
+    "sectionCount": 1
   },
   {
     "id": "happy-birthday-to-you-piano",
     "title": "Happy Birthday To You Piano",
     "difficulty": "Beginner",
-    "notesColor": "#4f9c8a"
+    "notesColor": "#4f9c8a",
+    "sectionCount": 3
   },
   {
     "id": "hungarian-dance-no-5-in-g-minor",
     "title": "Hungarian Dance No 5 in G Minor",
     "difficulty": "Advanced",
-    "notesColor": "#c1584b"
+    "notesColor": "#c1584b",
+    "sectionCount": 24
   },
   {
     "id": "hungarian-sonata",
     "title": "Hungarian Sonata",
     "difficulty": "Intermediate",
-    "notesColor": "#c9a227"
+    "notesColor": "#c9a227",
+    "sectionCount": 7
   },
   {
     "id": "j-s-bach-air-on-the-g-string-piano-arrangement",
     "title": "J. S. Bach - Air on the G String Piano arrangement",
     "difficulty": "Beginner",
-    "notesColor": "#4f9c8a"
+    "notesColor": "#4f9c8a",
+    "sectionCount": 6
   },
   {
     "id": "lacrimosa-requiem",
     "title": "Lacrimosa - Requiem",
     "difficulty": "Beginner",
-    "notesColor": "#4f9c8a"
+    "notesColor": "#4f9c8a",
+    "sectionCount": 25
   },
   {
     "id": "liebestraum-no-3-in-a-major",
     "title": "Liebestraum No. 3 in A Major",
     "difficulty": "Advanced",
-    "notesColor": "#c1584b"
+    "notesColor": "#c1584b",
+    "sectionCount": 46
   },
   {
     "id": "maple-leaf-rag-scott-joplin",
     "title": "Maple Leaf Rag Scott Joplin",
     "difficulty": "Advanced",
-    "notesColor": "#c1584b"
+    "notesColor": "#c1584b",
+    "sectionCount": 10
   },
   {
     "id": "mariage-damour",
     "title": "Mariage dAmour",
     "difficulty": "Intermediate",
-    "notesColor": "#c9a227"
+    "notesColor": "#c9a227",
+    "sectionCount": 22
   },
   {
     "id": "minuet-in-g-major-bach",
     "title": "Minuet in G Major Bach",
     "difficulty": "Beginner",
-    "notesColor": "#4f9c8a"
+    "notesColor": "#4f9c8a",
+    "sectionCount": 3
   },
   {
     "id": "mozart-piano-sonata-no-16-allegro",
     "title": "Mozart - Piano Sonata No. 16 - Allegro",
     "difficulty": "Advanced",
-    "notesColor": "#c1584b"
+    "notesColor": "#c1584b",
+    "sectionCount": 28
   },
   {
     "id": "nocturne-in-c-sharp-minor",
     "title": "Nocturne in C sharp Minor",
     "difficulty": "Beginner",
-    "notesColor": "#4f9c8a"
+    "notesColor": "#4f9c8a",
+    "sectionCount": 23
   },
   {
     "id": "nocturne-in-e-flat-major-op-9-no-2-easy",
     "title": "Nocturne in E-flat Major Op. 9 No. 2 Easy",
     "difficulty": "Intermediate",
-    "notesColor": "#c9a227"
+    "notesColor": "#c9a227",
+    "sectionCount": 7
   },
   {
     "id": "nocturne-no-20-in-c-minor",
     "title": "Nocturne No. 20 in C Minor",
     "difficulty": "Beginner",
-    "notesColor": "#4f9c8a"
+    "notesColor": "#4f9c8a",
+    "sectionCount": 20
   },
   {
     "id": "ode-to-joy-easy-variation",
     "title": "Ode to Joy Easy variation",
     "difficulty": "Beginner",
-    "notesColor": "#4f9c8a"
+    "notesColor": "#4f9c8a",
+    "sectionCount": 3
   },
   {
     "id": "passacaglia",
     "title": "Passacaglia",
     "difficulty": "Intermediate",
-    "notesColor": "#c9a227"
+    "notesColor": "#c9a227",
+    "sectionCount": 9
   },
   {
     "id": "passacaglia2",
     "title": "Passacaglia2",
     "difficulty": "Intermediate",
-    "notesColor": "#c9a227"
+    "notesColor": "#c9a227",
+    "sectionCount": 9
   },
   {
     "id": "prelude-i-in-c-major-bwv-846-well-tempered-clavier-first-book",
     "title": "Prelude I in C major BWV 846 - Well Tempered Clavier First Book",
     "difficulty": "Intermediate",
-    "notesColor": "#c9a227"
+    "notesColor": "#c9a227",
+    "sectionCount": 64
   },
   {
     "id": "prelude-no-2-bwv-847-in-c-minor",
     "title": "Prelude No. 2 BWV 847 in C Minor",
     "difficulty": "Advanced",
-    "notesColor": "#c1584b"
+    "notesColor": "#c1584b",
+    "sectionCount": 6
   },
   {
     "id": "prlude-no-4-in-e-minor-op-28-frdric-chopin",
     "title": "Prlude No. 4 in E Minor Op. 28 - Frdric Chopin",
     "difficulty": "Intermediate",
-    "notesColor": "#c9a227"
+    "notesColor": "#c9a227",
+    "sectionCount": 5
   },
   {
     "id": "prlude-opus-28-no-4-in-e-minor-chopin",
     "title": "Prlude Opus 28 No. 4 in E Minor Chopin",
     "difficulty": "Beginner",
-    "notesColor": "#4f9c8a"
+    "notesColor": "#4f9c8a",
+    "sectionCount": 5
   },
   {
     "id": "schubert-serenade-standchen-by-lizst",
     "title": "Schubert Serenade - Standchen - By Lizst",
     "difficulty": "Beginner",
-    "notesColor": "#4f9c8a"
+    "notesColor": "#4f9c8a",
+    "sectionCount": 28
   },
   {
     "id": "sonata-no-16-1st-movement-k-545",
     "title": "Sonata No. 16 1st Movement K. 545",
     "difficulty": "Advanced",
-    "notesColor": "#c1584b"
+    "notesColor": "#c1584b",
+    "sectionCount": 26
   },
   {
     "id": "sonate-no-14-moonlight-1st-movement",
     "title": "Sonate No. 14 Moonlight 1st Movement",
     "difficulty": "Beginner",
-    "notesColor": "#4f9c8a"
+    "notesColor": "#4f9c8a",
+    "sectionCount": 21
   },
   {
     "id": "sonate-no-8-pathetique-2nd-movement",
     "title": "Sonate No. 8 Pathetique 2nd Movement",
     "difficulty": "Intermediate",
-    "notesColor": "#c9a227"
+    "notesColor": "#c9a227",
+    "sectionCount": 10
   },
   {
     "id": "spring-waltz-mariage-damour-chopin",
     "title": "Spring Waltz Mariage dAmour - Chopin",
     "difficulty": "Intermediate",
-    "notesColor": "#c9a227"
+    "notesColor": "#c9a227",
+    "sectionCount": 21
   },
   {
     "id": "swan-lake",
     "title": "Swan Lake",
     "difficulty": "Intermediate",
-    "notesColor": "#c9a227"
+    "notesColor": "#c9a227",
+    "sectionCount": 5
   },
   {
     "id": "the-entertainer-scott-joplin-1902",
     "title": "The Entertainer - Scott Joplin - 1902",
     "difficulty": "Advanced",
-    "notesColor": "#c1584b"
+    "notesColor": "#c1584b",
+    "sectionCount": 11
   },
   {
     "id": "the-entertainer-scott-joplin",
     "title": "The Entertainer - Scott Joplin",
     "difficulty": "Beginner",
-    "notesColor": "#4f9c8a"
+    "notesColor": "#4f9c8a",
+    "sectionCount": 26
   },
   {
     "id": "waltz-in-a-minorchopin",
     "title": "Waltz in A MinorChopin",
     "difficulty": "Intermediate",
-    "notesColor": "#c9a227"
+    "notesColor": "#c9a227",
+    "sectionCount": 18
   },
   {
     "id": "waltz-of-the-flowers",
     "title": "Waltz of the Flowers",
     "difficulty": "Advanced",
-    "notesColor": "#c1584b"
+    "notesColor": "#c1584b",
+    "sectionCount": 30
   },
   {
     "id": "waltz-opus-64-no-2-in-c-minor",
     "title": "Waltz Opus 64 No. 2 in C Minor",
     "difficulty": "Intermediate",
-    "notesColor": "#c9a227"
+    "notesColor": "#c9a227",
+    "sectionCount": 54
   },
   {
     "id": "sonate-no-14-moonlight-3rd-movement",
     "title": "Sonate No. 14 Moonlight 3rd Movement",
     "difficulty": "Advanced",
-    "notesColor": "#c1584b"
+    "notesColor": "#c1584b",
+    "sectionCount": 70
   },
   {
     "id": "love-is-blue",
     "title": "Love is Blue (L'amour est bleu)",
     "difficulty": "Intermediate",
-    "notesColor": "#c9a227"
+    "notesColor": "#c9a227",
+    "sectionCount": 8
   }
 ]
