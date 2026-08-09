@@ -1,3 +1,23 @@
+// v3.10
+// view-learning.js
+// v3.10: timing now actually matters in the score, per Nico's feedback —
+// a correctly-pitched note played after a long hesitation on the frozen
+// hit line was still scoring as "good" because pitch dominated at 75%
+// and timingScoreFromDelta() had a coarse 4-step ladder that flattened
+// out at 0.4 for anything between 350ms and 600ms late. Three changes,
+// all in the timing side of scoring only — pitch logic, chords, LED,
+// duration scoring untouched:
+//  1. timingScoreFromDelta() is now a continuous linear decay (1.0 at
+//     <=150ms, down to 0.1 at >=900ms) instead of 4 fixed steps — every
+//     bit of hesitation now costs something, not just crossing a step.
+//  2. scoreHeldNote()'s per-note weights shift from pitch 0.75/timing
+//     0.15/duration 0.10 to pitch 0.60/timing 0.30/duration 0.10 — pitch
+//     still matters most (a wrong note stays worse than a slow right
+//     one), but timing is no longer drowned out.
+//  3. LATE_MISTAKE_THRESHOLD_MS drops from 900ms to 600ms, so a real
+//     hesitation now also triggers the section-wide LATE_PENALTY, not
+//     just extreme lateness.
+//
 // v3.9
 // view-learning.js
 // v3.9: toTimeline() now prefers a note's fingerSolo over finger when
@@ -487,7 +507,7 @@ window.ViewLearning = (function () {
   // (softer) scoring mistake — see LATE_PENALTY near finalPercent() — on
   // top of its already-low timing sub-score. Without this, a very slow
   // but pitch-perfect run could still pass.
-  const LATE_MISTAKE_THRESHOLD_MS = 900;
+  const LATE_MISTAKE_THRESHOLD_MS = 600;
 
   // Module-wide counter so every toTimeline() call hands out unique ids,
   // even across separate calls (melody vs accompaniment, or a fresh
@@ -1093,12 +1113,19 @@ window.ViewLearning = (function () {
     }
   }
 
+  // Continuous linear decay instead of fixed steps — every bit of
+  // hesitation costs something, not just crossing a step boundary.
+  // Full score up to 150ms off (natural hand/eye margin), decaying
+  // smoothly down to a floor of 0.1 by 900ms off.
   function timingScoreFromDelta(deltaMs) {
     const abs = Math.abs(deltaMs);
-    if (abs <= 180) return 1;
-    if (abs <= 350) return 0.7;
-    if (abs <= 600) return 0.4;
-    return 0.15;
+    const GRACE_MS = 150;
+    const FLOOR_AT_MS = 900;
+    const FLOOR_SCORE = 0.1;
+    if (abs <= GRACE_MS) return 1;
+    if (abs >= FLOOR_AT_MS) return FLOOR_SCORE;
+    const t = (abs - GRACE_MS) / (FLOOR_AT_MS - GRACE_MS);
+    return 1 - t * (1 - FLOOR_SCORE);
   }
 
   function durationScoreFromRatio(ratio) {
@@ -1288,9 +1315,10 @@ window.ViewLearning = (function () {
       ? held.timingScore
       : state.currentTimingScore;
 
-    // Pitch dominates: timing and duration can polish a note's score but
-    // can no longer rescue one that was played wrong.
-    state.noteScores.push(pitchScore * 0.75 + timingScore * 0.15 + durationScore * 0.10);
+    // Pitch still matters most — a wrong note stays worse than a slow
+    // right one — but timing now has real weight (was 0.15) instead of
+    // being drowned out by pitch's old 0.75.
+    state.noteScores.push(pitchScore * 0.60 + timingScore * 0.30 + durationScore * 0.10);
   }
 
   // Any key still down when the section ends still deserves its duration
