@@ -59,13 +59,21 @@
       "id": "phrase-7",
       "label": "Phrase 7",
       "beatStart": 43.50000000000012,
-      "beatEnd": 48.00000000000011,
+      "beatEnd": 44.75000000000012,
       "noteIndexStart": 165,
-      "noteIndexEnd": 176
+      "noteIndexEnd": 168
     },
     {
       "id": "phrase-8",
       "label": "Phrase 8",
+      "beatStart": 44.75000000000012,
+      "beatEnd": 48.00000000000011,
+      "noteIndexStart": 169,
+      "noteIndexEnd": 176
+    },
+    {
+      "id": "phrase-9",
+      "label": "Phrase 9",
       "beatStart": 48.00000000000011,
       "beatEnd": 67.99999999999994,
       "noteIndexStart": 177,
@@ -78,7 +86,7 @@
       "beat": 0.16666666666666666,
       "durationBeats": 0.1667,
       "finger": 2,
-      "fingerSolo": 5,
+      "fingerSolo": 2,
       "hand": "right"
     },
     {
@@ -86,7 +94,7 @@
       "beat": 0.16666666666666666,
       "durationBeats": 0.1667,
       "finger": 4,
-      "fingerSolo": 3,
+      "fingerSolo": 4,
       "hand": "right"
     },
     {
@@ -102,7 +110,7 @@
       "beat": 0.3333333333333333,
       "durationBeats": 0.1667,
       "finger": 5,
-      "fingerSolo": 1,
+      "fingerSolo": 5,
       "hand": "right"
     },
     {
@@ -118,7 +126,7 @@
       "beat": 0.5,
       "durationBeats": 0.1667,
       "finger": 5,
-      "fingerSolo": 1,
+      "fingerSolo": 5,
       "hand": "right"
     },
     {
@@ -126,7 +134,7 @@
       "beat": 0.6666666666666666,
       "durationBeats": 0.1667,
       "finger": 1,
-      "fingerSolo": 5,
+      "fingerSolo": 1,
       "hand": "right"
     },
     {
@@ -134,7 +142,7 @@
       "beat": 0.6666666666666666,
       "durationBeats": 0.1667,
       "finger": 3,
-      "fingerSolo": 2,
+      "fingerSolo": 3,
       "hand": "right"
     },
     {
@@ -142,7 +150,7 @@
       "beat": 0.8333333333333333,
       "durationBeats": 0.1667,
       "finger": 1,
-      "fingerSolo": 5,
+      "fingerSolo": 1,
       "hand": "right"
     },
     {
@@ -158,7 +166,7 @@
       "beat": 1.1666666666666665,
       "durationBeats": 0.1667,
       "finger": 2,
-      "fingerSolo": 5,
+      "fingerSolo": 2,
       "hand": "right"
     },
     {
@@ -166,7 +174,7 @@
       "beat": 1.1666666666666665,
       "durationBeats": 0.1667,
       "finger": 4,
-      "fingerSolo": 3,
+      "fingerSolo": 4,
       "hand": "right"
     },
     {
@@ -182,7 +190,7 @@
       "beat": 1.3333333333333333,
       "durationBeats": 0.1667,
       "finger": 5,
-      "fingerSolo": 1,
+      "fingerSolo": 5,
       "hand": "right"
     },
     {
@@ -198,7 +206,7 @@
       "beat": 1.5,
       "durationBeats": 0.1667,
       "finger": 5,
-      "fingerSolo": 1,
+      "fingerSolo": 5,
       "hand": "right"
     },
     {
@@ -206,7 +214,7 @@
       "beat": 1.6666666666666667,
       "durationBeats": 0.1667,
       "finger": 1,
-      "fingerSolo": 5,
+      "fingerSolo": 1,
       "hand": "right"
     },
     {
@@ -214,7 +222,7 @@
       "beat": 1.6666666666666667,
       "durationBeats": 0.1667,
       "finger": 3,
-      "fingerSolo": 2,
+      "fingerSolo": 3,
       "hand": "right"
     },
     {
@@ -222,7 +230,7 @@
       "beat": 1.8333333333333335,
       "durationBeats": 0.1667,
       "finger": 1,
-      "fingerSolo": 5,
+      "fingerSolo": 1,
       "hand": "right"
     },
     {
@@ -238,7 +246,7 @@
       "beat": 2.1666666666666665,
       "durationBeats": 0.1667,
       "finger": 1,
-      "fingerSolo": 3,
+      "fingerSolo": 1,
       "hand": "right"
     },
     {
@@ -246,7 +254,7 @@
       "beat": 2.1666666666666665,
       "durationBeats": 0.1667,
       "finger": 3,
-      "fingerSolo": 1,
+      "fingerSolo": 3,
       "hand": "right"
     },
     {
@@ -262,7 +270,7 @@
       "beat": 2.333333333333333,
       "durationBeats": 0.1667,
       "finger": 5,
-      "fingerSolo": 1,
+      "fingerSolo": 5,
       "hand": "right"
     },
     {
@@ -270,7 +278,7 @@
       "beat": 2.4999999999999996,
       "durationBeats": 0.1667,
       "finger": 3,
-      "fingerSolo": 2,
+      "fingerSolo": 3,
       "hand": "right"
     },
     {
@@ -278,7 +286,7 @@
       "beat": 2.4999999999999996,
       "durationBeats": 0.1667,
       "finger": 5,
-      "fingerSolo": 1,
+      "fingerSolo": 5,
       "hand": "right"
     },
     {
@@ -286,7 +294,7 @@
       "beat": 2.666666666666666,
       "durationBeats": 0.1667,
       "finger": 1,
-      "fingerSolo": 5,
+      "fingerSolo": 1,
       "hand": "right"
     },
     {
@@ -294,7 +302,7 @@
       "beat": 2.666666666666666,
       "durationBeats": 0.1667,
       "finger": 3,
-      "fingerSolo": 2,
+      "fingerSolo": 3,
       "hand": "right"
     },
     {
@@ -302,7 +310,7 @@
       "beat": 2.8333333333333326,
       "durationBeats": 0.1667,
       "finger": 1,
-      "fingerSolo": 5,
+      "fingerSolo": 1,
       "hand": "right"
     },
     {
@@ -310,7 +318,7 @@
       "beat": 2.8333333333333326,
       "durationBeats": 0.1667,
       "finger": 3,
-      "fingerSolo": 2,
+      "fingerSolo": 3,
       "hand": "right"
     },
     {
@@ -318,7 +326,7 @@
       "beat": 3.1666666666666656,
       "durationBeats": 0.1667,
       "finger": 2,
-      "fingerSolo": 4,
+      "fingerSolo": 2,
       "hand": "right"
     },
     {
@@ -326,7 +334,7 @@
       "beat": 3.1666666666666656,
       "durationBeats": 0.1667,
       "finger": 5,
-      "fingerSolo": 1,
+      "fingerSolo": 5,
       "hand": "right"
     },
     {
@@ -334,7 +342,7 @@
       "beat": 3.333333333333332,
       "durationBeats": 0.1667,
       "finger": 3,
-      "fingerSolo": 2,
+      "fingerSolo": 3,
       "hand": "right"
     },
     {
@@ -342,7 +350,7 @@
       "beat": 3.333333333333332,
       "durationBeats": 0.1667,
       "finger": 5,
-      "fingerSolo": 1,
+      "fingerSolo": 5,
       "hand": "right"
     },
     {
@@ -350,7 +358,7 @@
       "beat": 3.4999999999999987,
       "durationBeats": 0.1667,
       "finger": 4,
-      "fingerSolo": 2,
+      "fingerSolo": 4,
       "hand": "right"
     },
     {
@@ -358,7 +366,7 @@
       "beat": 3.4999999999999987,
       "durationBeats": 0.1667,
       "finger": 5,
-      "fingerSolo": 1,
+      "fingerSolo": 5,
       "hand": "right"
     },
     {
@@ -366,7 +374,7 @@
       "beat": 3.666666666666665,
       "durationBeats": 0.1667,
       "finger": 2,
-      "fingerSolo": 4,
+      "fingerSolo": 2,
       "hand": "right"
     },
     {
@@ -374,7 +382,7 @@
       "beat": 3.666666666666665,
       "durationBeats": 0.1667,
       "finger": 4,
-      "fingerSolo": 2,
+      "fingerSolo": 4,
       "hand": "right"
     },
     {
@@ -382,7 +390,7 @@
       "beat": 3.8333333333333317,
       "durationBeats": 0.1667,
       "finger": 2,
-      "fingerSolo": 4,
+      "fingerSolo": 2,
       "hand": "right"
     },
     {
@@ -390,7 +398,7 @@
       "beat": 3.8333333333333317,
       "durationBeats": 0.1667,
       "finger": 5,
-      "fingerSolo": 1,
+      "fingerSolo": 5,
       "hand": "right"
     },
     {
@@ -398,7 +406,7 @@
       "beat": 4.166666666666665,
       "durationBeats": 0.1667,
       "finger": 1,
-      "fingerSolo": 5,
+      "fingerSolo": 1,
       "hand": "right"
     },
     {
@@ -406,7 +414,7 @@
       "beat": 4.166666666666665,
       "durationBeats": 0.1667,
       "finger": 2,
-      "fingerSolo": 3,
+      "fingerSolo": 2,
       "hand": "right"
     },
     {
@@ -414,7 +422,7 @@
       "beat": 4.333333333333332,
       "durationBeats": 0.1667,
       "finger": 2,
-      "fingerSolo": 3,
+      "fingerSolo": 2,
       "hand": "right"
     },
     {
@@ -422,7 +430,7 @@
       "beat": 4.333333333333332,
       "durationBeats": 0.1667,
       "finger": 5,
-      "fingerSolo": 1,
+      "fingerSolo": 5,
       "hand": "right"
     },
     {
@@ -438,7 +446,7 @@
       "beat": 4.499999999999999,
       "durationBeats": 0.1667,
       "finger": 5,
-      "fingerSolo": 1,
+      "fingerSolo": 5,
       "hand": "right"
     },
     {
@@ -446,7 +454,7 @@
       "beat": 4.666666666666666,
       "durationBeats": 0.1667,
       "finger": 2,
-      "fingerSolo": 5,
+      "fingerSolo": 2,
       "hand": "right"
     },
     {
@@ -454,7 +462,7 @@
       "beat": 4.666666666666666,
       "durationBeats": 0.1667,
       "finger": 5,
-      "fingerSolo": 2,
+      "fingerSolo": 5,
       "hand": "right"
     },
     {
@@ -462,7 +470,7 @@
       "beat": 4.833333333333333,
       "durationBeats": 0.1667,
       "finger": 1,
-      "fingerSolo": 5,
+      "fingerSolo": 1,
       "hand": "right"
     },
     {
@@ -470,7 +478,7 @@
       "beat": 4.833333333333333,
       "durationBeats": 0.1667,
       "finger": 2,
-      "fingerSolo": 3,
+      "fingerSolo": 2,
       "hand": "right"
     },
     {
@@ -478,7 +486,7 @@
       "beat": 5.166666666666667,
       "durationBeats": 0.1667,
       "finger": 1,
-      "fingerSolo": 5,
+      "fingerSolo": 1,
       "hand": "right"
     },
     {
@@ -486,7 +494,7 @@
       "beat": 5.166666666666667,
       "durationBeats": 0.1667,
       "finger": 2,
-      "fingerSolo": 3,
+      "fingerSolo": 2,
       "hand": "right"
     },
     {
@@ -494,7 +502,7 @@
       "beat": 5.333333333333334,
       "durationBeats": 0.1667,
       "finger": 2,
-      "fingerSolo": 4,
+      "fingerSolo": 2,
       "hand": "right"
     },
     {
@@ -502,7 +510,7 @@
       "beat": 5.333333333333334,
       "durationBeats": 0.1667,
       "finger": 5,
-      "fingerSolo": 1,
+      "fingerSolo": 5,
       "hand": "right"
     },
     {
@@ -518,7 +526,7 @@
       "beat": 5.500000000000001,
       "durationBeats": 0.1667,
       "finger": 5,
-      "fingerSolo": 1,
+      "fingerSolo": 5,
       "hand": "right"
     },
     {
@@ -526,7 +534,7 @@
       "beat": 5.666666666666668,
       "durationBeats": 0.1667,
       "finger": 1,
-      "fingerSolo": 5,
+      "fingerSolo": 1,
       "hand": "right"
     },
     {
@@ -534,7 +542,7 @@
       "beat": 5.666666666666668,
       "durationBeats": 0.1667,
       "finger": 4,
-      "fingerSolo": 2,
+      "fingerSolo": 4,
       "hand": "right"
     },
     {
@@ -542,7 +550,7 @@
       "beat": 5.833333333333335,
       "durationBeats": 0.1667,
       "finger": 2,
-      "fingerSolo": 3,
+      "fingerSolo": 2,
       "hand": "right"
     },
     {
@@ -550,7 +558,7 @@
       "beat": 5.833333333333335,
       "durationBeats": 0.1667,
       "finger": 4,
-      "fingerSolo": 2,
+      "fingerSolo": 4,
       "hand": "right"
     },
     {
@@ -558,7 +566,7 @@
       "beat": 6.166666666666669,
       "durationBeats": 0.1667,
       "finger": 1,
-      "fingerSolo": 3,
+      "fingerSolo": 1,
       "hand": "right"
     },
     {
@@ -566,7 +574,7 @@
       "beat": 6.166666666666669,
       "durationBeats": 0.1667,
       "finger": 3,
-      "fingerSolo": 1,
+      "fingerSolo": 3,
       "hand": "right"
     },
     {
@@ -582,7 +590,7 @@
       "beat": 6.333333333333336,
       "durationBeats": 0.1667,
       "finger": 5,
-      "fingerSolo": 1,
+      "fingerSolo": 5,
       "hand": "right"
     },
     {
@@ -590,7 +598,7 @@
       "beat": 6.500000000000003,
       "durationBeats": 0.1667,
       "finger": 3,
-      "fingerSolo": 2,
+      "fingerSolo": 3,
       "hand": "right"
     },
     {
@@ -598,7 +606,7 @@
       "beat": 6.500000000000003,
       "durationBeats": 0.1667,
       "finger": 5,
-      "fingerSolo": 1,
+      "fingerSolo": 5,
       "hand": "right"
     },
     {
@@ -606,7 +614,7 @@
       "beat": 6.66666666666667,
       "durationBeats": 0.1667,
       "finger": 1,
-      "fingerSolo": 5,
+      "fingerSolo": 1,
       "hand": "right"
     },
     {
@@ -614,7 +622,7 @@
       "beat": 6.66666666666667,
       "durationBeats": 0.1667,
       "finger": 3,
-      "fingerSolo": 2,
+      "fingerSolo": 3,
       "hand": "right"
     },
     {
@@ -622,7 +630,7 @@
       "beat": 6.833333333333337,
       "durationBeats": 0.1667,
       "finger": 1,
-      "fingerSolo": 5,
+      "fingerSolo": 1,
       "hand": "right"
     },
     {
@@ -630,7 +638,7 @@
       "beat": 6.833333333333337,
       "durationBeats": 0.1667,
       "finger": 3,
-      "fingerSolo": 2,
+      "fingerSolo": 3,
       "hand": "right"
     },
     {
@@ -638,7 +646,7 @@
       "beat": 7.1666666666666705,
       "durationBeats": 0.1667,
       "finger": 1,
-      "fingerSolo": 5,
+      "fingerSolo": 1,
       "hand": "right"
     },
     {
@@ -662,7 +670,7 @@
       "beat": 7.3333333333333375,
       "durationBeats": 0.1667,
       "finger": 5,
-      "fingerSolo": 1,
+      "fingerSolo": 5,
       "hand": "right"
     },
     {
@@ -678,7 +686,7 @@
       "beat": 7.500000000000004,
       "durationBeats": 0.1667,
       "finger": 5,
-      "fingerSolo": 1,
+      "fingerSolo": 5,
       "hand": "right"
     },
     {
@@ -686,7 +694,7 @@
       "beat": 7.666666666666671,
       "durationBeats": 0.1667,
       "finger": 1,
-      "fingerSolo": 5,
+      "fingerSolo": 1,
       "hand": "right"
     },
     {
@@ -694,7 +702,7 @@
       "beat": 7.666666666666671,
       "durationBeats": 0.1667,
       "finger": 3,
-      "fingerSolo": 2,
+      "fingerSolo": 3,
       "hand": "right"
     },
     {
@@ -702,7 +710,7 @@
       "beat": 7.833333333333338,
       "durationBeats": 0.1667,
       "finger": 1,
-      "fingerSolo": 5,
+      "fingerSolo": 1,
       "hand": "right"
     },
     {
@@ -718,7 +726,7 @@
       "beat": 8.000000000000005,
       "durationBeats": 1.5,
       "finger": 5,
-      "fingerSolo": 1,
+      "fingerSolo": 5,
       "hand": "right"
     },
     {
@@ -726,7 +734,7 @@
       "beat": 9.500000000000005,
       "durationBeats": 0.25,
       "finger": 2,
-      "fingerSolo": 4,
+      "fingerSolo": 2,
       "hand": "right"
     },
     {
@@ -742,7 +750,7 @@
       "beat": 10.000000000000005,
       "durationBeats": 1.75,
       "finger": 5,
-      "fingerSolo": 1,
+      "fingerSolo": 5,
       "hand": "right"
     },
     {
@@ -758,7 +766,7 @@
       "beat": 12.000000000000005,
       "durationBeats": 1.0,
       "finger": 1,
-      "fingerSolo": 3,
+      "fingerSolo": 1,
       "hand": "right"
     },
     {
@@ -766,7 +774,7 @@
       "beat": 14.000000000000005,
       "durationBeats": 0.75,
       "finger": 4,
-      "fingerSolo": 2,
+      "fingerSolo": 4,
       "hand": "right"
     },
     {
@@ -774,7 +782,7 @@
       "beat": 14.750000000000005,
       "durationBeats": 0.125,
       "finger": 5,
-      "fingerSolo": 1,
+      "fingerSolo": 5,
       "hand": "right"
     },
     {
@@ -782,7 +790,7 @@
       "beat": 14.875000000000005,
       "durationBeats": 0.125,
       "finger": 4,
-      "fingerSolo": 2,
+      "fingerSolo": 4,
       "hand": "right"
     },
     {
@@ -798,7 +806,7 @@
       "beat": 15.250000000000005,
       "durationBeats": 0.25,
       "finger": 2,
-      "fingerSolo": 4,
+      "fingerSolo": 2,
       "hand": "right"
     },
     {
@@ -806,7 +814,7 @@
       "beat": 15.500000000000005,
       "durationBeats": 0.25,
       "finger": 1,
-      "fingerSolo": 5,
+      "fingerSolo": 1,
       "hand": "right"
     },
     {
@@ -814,7 +822,7 @@
       "beat": 15.750000000000005,
       "durationBeats": 0.25,
       "finger": 2,
-      "fingerSolo": 4,
+      "fingerSolo": 2,
       "hand": "right"
     },
     {
@@ -830,7 +838,7 @@
       "beat": 17.500000000000007,
       "durationBeats": 0.5,
       "finger": 5,
-      "fingerSolo": 1,
+      "fingerSolo": 5,
       "hand": "right"
     },
     {
@@ -838,7 +846,7 @@
       "beat": 18.000000000000007,
       "durationBeats": 0.75,
       "finger": 5,
-      "fingerSolo": 1,
+      "fingerSolo": 5,
       "hand": "right"
     },
     {
@@ -846,7 +854,7 @@
       "beat": 18.750000000000007,
       "durationBeats": 0.125,
       "finger": 4,
-      "fingerSolo": 2,
+      "fingerSolo": 4,
       "hand": "right"
     },
     {
@@ -862,7 +870,7 @@
       "beat": 19.000000000000007,
       "durationBeats": 0.25,
       "finger": 2,
-      "fingerSolo": 4,
+      "fingerSolo": 2,
       "hand": "right"
     },
     {
@@ -870,7 +878,7 @@
       "beat": 19.250000000000007,
       "durationBeats": 0.25,
       "finger": 1,
-      "fingerSolo": 5,
+      "fingerSolo": 1,
       "hand": "right"
     },
     {
@@ -878,7 +886,7 @@
       "beat": 19.500000000000007,
       "durationBeats": 0.25,
       "finger": 4,
-      "fingerSolo": 2,
+      "fingerSolo": 4,
       "hand": "right"
     },
     {
@@ -886,7 +894,7 @@
       "beat": 19.750000000000007,
       "durationBeats": 0.25,
       "finger": 5,
-      "fingerSolo": 1,
+      "fingerSolo": 5,
       "hand": "right"
     },
     {
@@ -1106,10 +1114,10 @@
       "hand": "right"
     },
     {
-      "note": 72,
+      "note": 69,
       "beat": 29.666666666666778,
-      "durationBeats": 0,
-      "finger": null,
+      "durationBeats": 0.1667,
+      "finger": 3,
       "fingerSolo": null,
       "hand": "right"
     },
@@ -1122,10 +1130,10 @@
       "hand": "right"
     },
     {
-      "note": 69,
+      "note": 72,
       "beat": 29.666666666666778,
-      "durationBeats": 0.1667,
-      "finger": 3,
+      "durationBeats": 0,
+      "finger": null,
       "fingerSolo": null,
       "hand": "right"
     },
@@ -1410,18 +1418,18 @@
       "hand": "right"
     },
     {
-      "note": 74,
-      "beat": 44.00000000000012,
-      "durationBeats": 0,
-      "finger": null,
-      "fingerSolo": null,
-      "hand": "right"
-    },
-    {
       "note": 72,
       "beat": 44.00000000000012,
       "durationBeats": 0.75,
       "finger": 4,
+      "fingerSolo": null,
+      "hand": "right"
+    },
+    {
+      "note": 74,
+      "beat": 44.00000000000012,
+      "durationBeats": 0,
+      "finger": null,
       "fingerSolo": null,
       "hand": "right"
     },
