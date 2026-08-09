@@ -1,4 +1,4 @@
-// v1.2
+// v1.3
 // view-sections.js — SPA version of the old sections.js. Same circles,
 // stars, Revision and Continue buttons. Differences:
 //  - scores come from Store.completed instead of being decoded from a URL
@@ -6,6 +6,20 @@
 //  - navigation is a hash route change, not a full page load
 //  - mount(songId) can be called many times, so everything is rebuilt
 //    from scratch on each entry (stars must reflect a score just earned)
+//
+// v1.3: adds a "cumulative revision" circle — grows by one phrase every
+// time another is passed, always spanning phrase 1 through the last one
+// passed IN A ROW (which, thanks to existing section locking, is always
+// every phrase passed so far — locking never lets you pass one out of
+// order). Sits between the adjacent-pair mid-revisions (still unchanged,
+// exactly 2 phrases) and the whole-song Revision (still unchanged,
+// requires 100%) — a "review everything I've learned so far" option that
+// slots in once there are at least 3 phrases passed in a row, so it
+// doesn't just duplicate the pair revision at 2. Hidden again once every
+// phrase is passed, since the whole-song Revision covers the exact same
+// ground at that point. Same synthetic-section-on-song.sections caching
+// technique as buildMidRevisionSection, just spanning a growing prefix
+// instead of a fixed pair.
 //
 // v1.2: two things asked for together, both touching this file —
 //   1. Section locking — a phrase is now only clickable once the
@@ -124,6 +138,30 @@ window.ViewSections = (function () {
     return synthetic;
   }
 
+  // Spans phrase 1 through the last one passed in a row (realSections is
+  // 0-indexed, passedCount is a count — so the last involved phrase is
+  // realSections[passedCount - 1]). Same caching-by-id trick as
+  // buildMidRevisionSection so Learning can look it up by id later, and
+  // so re-render()ing mid-session (a score just earned) doesn't grow
+  // duplicate synthetic entries on song.sections.
+  function buildCumulativeRevisionSection(realSections, passedCount) {
+    const first = realSections[0];
+    const last = realSections[passedCount - 1];
+    if (first.beatStart == null || last.beatEnd == null) return null;
+    const id = `cumrev-${first.id}-${last.id}`;
+    let existing = song.sections.find((s) => s.id === id);
+    if (existing) return existing;
+    const synthetic = {
+      id,
+      label: `Phrases 1-${passedCount}`,
+      beatStart: first.beatStart,
+      beatEnd: last.beatEnd,
+      isSynthetic: true,
+    };
+    song.sections.push(synthetic);
+    return synthetic;
+  }
+
   function render() {
     const grid = document.getElementById("section-grid");
     grid.innerHTML = "";
@@ -170,6 +208,30 @@ window.ViewSections = (function () {
         }
       }
     });
+
+    // "Review everything so far" — grows by one phrase each time another
+    // is passed in a row. Sits between the adjacent-pair revisions above
+    // (which stay fixed at exactly 2 phrases) and the whole-song
+    // Revision below (which still needs 100%). Only shown from 3 phrases
+    // passed in a row (2 is already covered by the pair revision above),
+    // and hidden again once every phrase is passed — the whole-song
+    // Revision takes over at that point, same ground, no need for both.
+    const passedCount = firstUnpassedIndex === -1 ? realSections.length : firstUnpassedIndex;
+    if (passedCount >= 3 && firstUnpassedIndex !== -1) {
+      const cumulative = buildCumulativeRevisionSection(realSections, passedCount);
+      if (cumulative) {
+        grid.appendChild(
+          buildCircle({
+            className: "mid-revision",
+            title: "Revision",
+            subtitle: cumulative.label,
+            pct: null,
+            locked: false,
+            onClick: () => goToLearning(cumulative.id),
+          })
+        );
+      }
+    }
 
     // "Revision" (whole song) is meant for reviewing what's already been
     // earned, same philosophy as the mid-revision circles above — locked
