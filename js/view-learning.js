@@ -1584,6 +1584,12 @@ window.ViewLearning = (function () {
     document.getElementById("loop-btn").classList.toggle("active", state.loopEnabled);
     document.getElementById("loop-btn").setAttribute("aria-pressed", String(state.loopEnabled));
     syncHandPanels();
+    // Preview-only entry (Sections' "Listen to the whole song" button) —
+    // a pure listen-along, so Practice has no place here at all. Hidden
+    // rather than disabled: a disabled-but-visible button would still
+    // invite the "why can't I click this" question this feature exists
+    // to avoid in the first place.
+    document.getElementById("practice-btn").classList.toggle("hidden", Store.previewOnly);
     // The keyboard-mode switch and song title/subtitle/measure now live
     // in the persistent app shell — only relevant while actually in the
     // Learning view, so hidden the rest of the time.
