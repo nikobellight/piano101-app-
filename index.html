@@ -1,3 +1,8 @@
+<!-- Piano 101 — index.html — v3.4 -->
+<!-- v3.4: "See all" (Recently played) now points to #/browse instead of
+     a dead "#/" link — no dedicated recently-played page exists yet, so
+     this is a stopgap, not a real fix (that panel still shows fake demo
+     data regardless of where the link goes). -->
 <!-- Piano 101 — index.html — v3.3 -->
 <!-- v3.3: loads js/supabase-client.js (new file) before store.js —
      cross-session progress persistence. Requires store.js v1.4+ and
@@ -228,7 +233,7 @@
         <div class="panel">
           <h2 class="panel-title">
             Recently played
-            <a href="#/">See all</a>
+            <a href="#/browse">See all</a>
           </h2>
           <div id="recent-list"></div>
         </div>
