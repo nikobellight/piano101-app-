@@ -1,4 +1,12 @@
-/* v3.4 */
+/* v3.5 */
+/* v3.5: added the missing generic .hidden { display: none; } rule.
+   view-learning.js v3.9+ toggles a bare "hidden" class on #practice-btn
+   to hide Start Practice in preview-only mode, but only SCOPED rules
+   existed before (.hand-dock.hidden, .keyboard-mode-switch.hidden,
+   etc.) — none of them matched #practice-btn.hidden, so the class was
+   applied but nothing actually hid the button. */
+.hidden { display: none; }
+
 /* v3.4: .play-whole-song-btn — Sections page's new "Listen to the whole
    song" button, always unlocked, top of the page. Distinct from
    .section-circle.revision (locked until fully passed) — this one is a
