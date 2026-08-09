@@ -1,4 +1,9 @@
-/* v3.3 */
+/* v3.4 */
+/* v3.4: .play-whole-song-btn — Sections page's new "Listen to the whole
+   song" button, always unlocked, top of the page. Distinct from
+   .section-circle.revision (locked until fully passed) — this one is a
+   pure preview, never leads to Start Practice (see view-learning.js's
+   Store.previewOnly handling). */
 /* v3.3: bigger/bolder "Browse" link (.browse-link) so it reads as a real
    entry point, not a small text link like "See all". New
    .keyboard-requirement-badge for the Sections page, shown when a song's
@@ -762,4 +767,30 @@
   color: var(--coral);
   font-family: var(--font-mono);
   font-size: 13px;
+}
+
+/* ---------- "Listen to the whole song" (Sections page, always unlocked) */
+
+.play-whole-song-btn {
+  display: block;
+  width: 100%;
+  max-width: 420px;
+  margin: 4px 0 24px;
+  padding: 14px 22px;
+  border: none;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--teal), #3ea895);
+  color: #06231d;
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 800;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.15s ease;
+  box-shadow: 0 10px 24px -12px rgba(87, 203, 179, 0.5);
+}
+
+.play-whole-song-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 28px -12px rgba(87, 203, 179, 0.6);
 }
