@@ -115,8 +115,13 @@ window.ViewDashboard = (function () {
     }
   }
 
+  // Store/Supabase use text ids (piano101_profiles.id); the dashboard's
+  // buttons use the numeric 1/2/3 that was already there before Supabase.
+  const PROFILE_ID_TO_STORE_ID = { 1: "nicolas", 2: "mia", 3: "tenzin" };
+
   function setActiveProfile(id) {
     DEMO_STATE.activeProfile = id;
+    Store.profileId = PROFILE_ID_TO_STORE_ID[id] || "nicolas";
     document.querySelectorAll(".profile-btn").forEach((btn) => {
       btn.classList.toggle("active", Number(btn.dataset.profile) === id);
     });
