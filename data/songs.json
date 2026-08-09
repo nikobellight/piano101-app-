@@ -376,5 +376,11 @@
     "title": "Sonate No. 14 Moonlight 3rd Movement",
     "difficulty": "Advanced",
     "notesColor": "#c1584b"
+  },
+  {
+    "id": "love-is-blue",
+    "title": "Love is Blue (L'amour est bleu)",
+    "difficulty": "Intermediate",
+    "notesColor": "#c9a227"
   }
 ]
