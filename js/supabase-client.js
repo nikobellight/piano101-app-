@@ -1,8 +1,16 @@
-// v1.1
+// v1.2
 // supabase-client.js — Cross-session progress persistence (piano101_
 // prefixed tables — this project is shared with unrelated apps like
 // "alerts"). No SDK: direct fetch() against PostgREST, since the app has
 // no build step to pull in @supabase/supabase-js from npm.
+//
+// v1.2: adds saveSession() + loadDashboardStats(), replacing the
+// Dashboard's old hardcoded DEMO_STATE (hours practiced, daily average,
+// songs in progress, recently played) with real numbers. piano101_
+// progress never tracked actual TIME spent — only best scores — so
+// there was no way to compute "hours practiced" from it even once
+// section scoring was wired in. piano101_sessions (new table, one row
+// per finished practice attempt) fills that specific gap.
 //
 // v1.1: adds loadAllProgress(), used by Browse to show a per-song
 // progress bar across the whole library in ONE request instead of 64
@@ -123,5 +131,66 @@ window.SupabasePiano101 = (function () {
     }
   }
 
-  return { loadProgress, saveProgress, loadAllProgress };
+  // Fire-and-forget: logs one finished practice attempt (pass or fail,
+  // any tempo — it's real time spent practicing either way) so the
+  // Dashboard can later compute real hours/day-average from it. Never
+  // awaited by the caller, same philosophy as saveProgress.
+  async function saveSession(profileId, songId, sectionId, durationSeconds) {
+    try {
+      await request("piano101_sessions", {
+        method: "POST",
+        body: JSON.stringify({
+          profile_id: profileId,
+          song_id: songId,
+          section_id: sectionId,
+          duration_seconds: durationSeconds,
+        }),
+      });
+    } catch (err) {
+      console.warn("[Piano101] saveSession failed, dashboard stats stay stale:", err);
+    }
+  }
+
+  // Everything the Dashboard needs for one profile, in 2 parallel
+  // requests: total practiced time + daily average (from
+  // piano101_sessions), and which songs to list under "Recently played"
+  // (from piano101_progress's last_played_at, deduped to one entry per
+  // song — PostgREST has no GROUP BY here, so the dedup happens in JS).
+  // "Songs in progress" is just the count of distinct songs touched at
+  // all, same list. Returns all-zero/empty on any failure, so the
+  // Dashboard has something sane to render rather than nothing.
+  async function loadDashboardStats(profileId) {
+    try {
+      const [sessions, progress] = await Promise.all([
+        request(`piano101_sessions?profile_id=eq.${encodeURIComponent(profileId)}&select=duration_seconds,played_at`),
+        request(`piano101_progress?profile_id=eq.${encodeURIComponent(profileId)}&select=song_id,last_played_at`),
+      ]);
+
+      const totalSeconds = sessions.reduce((sum, s) => sum + s.duration_seconds, 0);
+      const distinctDays = new Set(sessions.map((s) => (s.played_at || "").slice(0, 10))).size;
+
+      const lastPlayedBySong = {};
+      for (const row of progress) {
+        const prev = lastPlayedBySong[row.song_id];
+        if (!prev || row.last_played_at > prev) {
+          lastPlayedBySong[row.song_id] = row.last_played_at;
+        }
+      }
+      const recentSongIds = Object.entries(lastPlayedBySong)
+        .sort((a, b) => (a[1] < b[1] ? 1 : -1))
+        .map(([songId, lastPlayedAt]) => ({ songId, lastPlayedAt }));
+
+      return {
+        hoursPracticed: totalSeconds / 3600,
+        avgMinutesPerDay: distinctDays > 0 ? totalSeconds / 60 / distinctDays : 0,
+        songsInProgressCount: recentSongIds.length,
+        recentSongIds,
+      };
+    } catch (err) {
+      console.warn("[Piano101] loadDashboardStats failed, dashboard shows zeros:", err);
+      return { hoursPracticed: 0, avgMinutesPerDay: 0, songsInProgressCount: 0, recentSongIds: [] };
+    }
+  }
+
+  return { loadProgress, saveProgress, loadAllProgress, saveSession, loadDashboardStats };
 })();
