@@ -1,7 +1,13 @@
-// v1.4
+// v1.5
 // store.js — Shared in-memory state for the SPA, replacing what used to be
 // passed between pages as URL query params (?song=&section=&hand=&completed=).
 // Because the page is never reloaded, this object simply survives navigation.
+//
+// v1.5: adds recordSession(), called by the Learning view at the end of
+// every finished practice attempt — separate from recordScore() because
+// it tracks something Store.completed never did: actual TIME spent.
+// Fire-and-forget, same as recordScore()'s Supabase write; the Dashboard
+// reads this back via SupabasePiano101.loadDashboardStats().
 //
 // v1.4: adds profileId (persistent-storage-ready — see supabase-client.js)
 // and hooks recordScore() to also persist via Supabase, in addition to
@@ -101,5 +107,13 @@ window.Store = {
     if (improved) {
       window.SupabasePiano101.saveProgress(this.profileId, this.songId, sectionId, pct);
     }
+  },
+
+  // Logs one finished practice attempt's real duration — pass or fail,
+  // any tempo, "all" section included (unlike recordScore, which skips
+  // "all" since whole-song revision never earns a score). Fire-and-forget,
+  // same reasoning as recordScore().
+  recordSession(sectionId, durationSeconds) {
+    window.SupabasePiano101.saveSession(this.profileId, this.songId, sectionId, durationSeconds);
   },
 };
