@@ -1,3 +1,13 @@
+// v3.11
+// view-learning.js
+// v3.11: logs one piano101_sessions row (via Store.recordSession) at the
+// end of every finished practice attempt, with the real wall-clock
+// duration — pass or fail, any tempo. Unlike recordScore, this doesn't
+// gate on tempoCounts(); a slow or failed run is still real practice
+// time. This is the piece the Dashboard's "hours practiced" / daily
+// average was missing — piano101_progress only ever tracked best
+// scores, never how long anything took.
+//
 // v3.10
 // view-learning.js
 // v3.10: timing now actually matters in the score, per Nico's feedback —
@@ -551,6 +561,7 @@ window.ViewLearning = (function () {
     ledTimerId: null,
     practiceBaseMs: 0,
     practiceRealStart: 0,
+    sessionStartRealTime: 0,
     practiceRafId: null,
     loopEnabled: false,
     loopRestartTimer: null,
@@ -904,6 +915,12 @@ window.ViewLearning = (function () {
     if (state.practiceActive) {
       state.practiceBaseMs = -state.visualizer.leadTimeMs;
       state.practiceRealStart = performance.now();
+      // Separate from practiceRealStart above — that one gets re-based
+      // per note/group for the falling-note physics (see currentPracticeMs
+      // and the release re-basing this file's header comments describe).
+      // sessionStartRealTime stays fixed for the whole attempt, so
+      // showFinalScore() can measure real elapsed wall-clock time.
+      state.sessionStartRealTime = performance.now();
       showCurrentGroup();
       state.practiceRafId = requestAnimationFrame(practiceAnimationLoop);
     } else {
@@ -1380,6 +1397,15 @@ window.ViewLearning = (function () {
     // is written to progress, and the Sections view's stars won't move.
     if (counts) {
       Store.recordScore(Store.sectionId, pct);
+    }
+
+    // Unlike recordScore above, session time is logged regardless of
+    // tempo or pass/fail — a slow practice run or a failed attempt is
+    // still real time spent practicing, and should count toward the
+    // Dashboard's "hours practiced" / daily average.
+    const durationSeconds = Math.round((performance.now() - state.sessionStartRealTime) / 1000);
+    if (durationSeconds > 0) {
+      Store.recordSession(Store.sectionId, durationSeconds);
     }
 
     // Loop: skip the full celebration modal (it would interrupt every
