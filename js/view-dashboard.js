@@ -1,3 +1,15 @@
+// v1.4
+// view-dashboard.js
+// v1.4: DEMO_STATE is gone — "Hours practiced", "Daily average", "Songs
+// in progress" and "Recently played" now come from real Supabase data
+// (SupabasePiano101.loadDashboardStats + loadAllProgress, both already
+// used elsewhere: Browse uses loadAllProgress for its own progress bars,
+// and view-learning.js now writes the piano101_sessions rows that
+// loadDashboardStats reads). Switching profiles re-fetches everything
+// for the newly active profile rather than swapping between two
+// hardcoded objects. On any Supabase failure the stats show 0/empty —
+// same fallback philosophy as Browse and Sections, never a crash.
+//
 // v1.3
 // view-dashboard.js
 // v1.3: the "Library" preview's 3 songs are now sorted alphabetically
@@ -28,63 +40,62 @@
 // once here rather than on every navigation.
 
 window.ViewDashboard = (function () {
-  const DEMO_STATE = {
-    activeProfile: 1,
-    profiles: {
-      1: {
-        name: "Nicolas",
-        hoursPracticed: 12.5,
-        avgMinutesPerDay: 22,
-        recentSongs: [
-          { name: "Ode to Joy", when: "Today", progress: 80, color: "#4f9c8a" },
-          { name: "Für Elise (excerpt)", when: "Yesterday", progress: 45, color: "#c9a227" },
-        ],
-      },
-      2: {
-        name: "Mia",
-        hoursPracticed: 3.2,
-        avgMinutesPerDay: 9,
-        recentSongs: [
-          { name: "Ode to Joy", when: "3 days ago", progress: 20, color: "#4f9c8a" },
-        ],
-      },
-      3: {
-        name: "Tenzin",
-        hoursPracticed: 0,
-        avgMinutesPerDay: 0,
-        recentSongs: [],
-      },
-    },
-  };
+  // Store/Supabase use text ids (piano101_profiles.id); the dashboard's
+  // buttons use the numeric 1/2/3 that was already there before Supabase.
+  const PROFILE_ID_TO_STORE_ID = { 1: "nicolas", 2: "mia", 3: "tenzin" };
+  const PROFILE_NAMES = { 1: "Nicolas", 2: "Mia", 3: "Tenzin" };
 
+  let activeProfile = 1;
+  let allSongs = []; // cached songs.json, fetched once in mount()
   let dashboardInitialized = false;
+  let statsRequestToken = 0; // guards against a slow fetch from a
+                              // previously-active profile landing after
+                              // a faster switch to a different one
 
-  function renderStats(profile) {
-    document.getElementById("stat-hours").textContent = profile.hoursPracticed.toFixed(1);
-    document.getElementById("stat-avg").textContent = profile.avgMinutesPerDay;
-    document.getElementById("stat-songs").textContent = profile.recentSongs.length;
+  function formatRelativeDate(isoString) {
+    const then = new Date(isoString);
+    const diffDays = Math.floor((Date.now() - then.getTime()) / (1000 * 60 * 60 * 24));
+    if (diffDays <= 0) return "Today";
+    if (diffDays === 1) return "Yesterday";
+    return `${diffDays} days ago`;
   }
 
-  function renderRecentSongs(profile) {
+  function renderStats(stats) {
+    document.getElementById("stat-hours").textContent = stats.hoursPracticed.toFixed(1);
+    document.getElementById("stat-avg").textContent = Math.round(stats.avgMinutesPerDay);
+    document.getElementById("stat-songs").textContent = stats.songsInProgressCount;
+  }
+
+  function renderRecentSongs(stats, progressBySong) {
     const container = document.getElementById("recent-list");
     container.innerHTML = "";
 
-    if (profile.recentSongs.length === 0) {
+    if (stats.recentSongIds.length === 0) {
       container.innerHTML = `<div class="empty">No songs played yet. Head to the library to get started.</div>`;
       return;
     }
 
-    for (const song of profile.recentSongs) {
-      const row = document.createElement("div");
+    for (const { songId, lastPlayedAt } of stats.recentSongIds.slice(0, 5)) {
+      const song = allSongs.find((s) => s.id === songId);
+      if (!song) continue; // song removed from the library since it was played
+
+      const passed = progressBySong[songId] || 0;
+      const total = song.sectionCount || 0;
+      const pct = total > 0 ? Math.round((passed / total) * 100) : 0;
+
+      const row = document.createElement("a");
       row.className = "song-row";
+      row.href = `#/song/${encodeURIComponent(songId)}`;
+      row.style.textDecoration = "none";
+      row.style.color = "inherit";
       row.innerHTML = `
-        <span class="song-dot" style="background:${song.color}; color:${song.color}"></span>
+        <span class="song-dot" style="background:${song.notesColor}; color:${song.notesColor}"></span>
         <div class="song-info">
-          <div class="song-name">${song.name}</div>
-          <div class="song-meta">${song.when}</div>
+          <div class="song-name">${song.title}</div>
+          <div class="song-meta">${formatRelativeDate(lastPlayedAt)}</div>
         </div>
         <div class="progress-track">
-          <div class="progress-fill" style="width:${song.progress}%; background:${song.color}"></div>
+          <div class="progress-fill" style="width:${pct}%; background:${song.notesColor}"></div>
         </div>
       `;
       container.appendChild(row);
@@ -115,21 +126,40 @@ window.ViewDashboard = (function () {
     }
   }
 
-  // Store/Supabase use text ids (piano101_profiles.id); the dashboard's
-  // buttons use the numeric 1/2/3 that was already there before Supabase.
-  const PROFILE_ID_TO_STORE_ID = { 1: "nicolas", 2: "mia", 3: "tenzin" };
+  // Fetches and renders everything Supabase-backed for the currently
+  // active profile — stats, and the recently-played list's progress
+  // bars. Guarded by statsRequestToken so a slow request from a profile
+  // the person has since switched away from can't overwrite what's on
+  // screen with stale data.
+  async function loadAndRenderStats() {
+    const profileId = PROFILE_ID_TO_STORE_ID[activeProfile];
+    const myToken = ++statsRequestToken;
+
+    document.getElementById("stat-hours").textContent = "–";
+    document.getElementById("stat-avg").textContent = "–";
+    document.getElementById("stat-songs").textContent = "–";
+    document.getElementById("recent-list").innerHTML = "";
+
+    const [stats, progressBySong] = await Promise.all([
+      window.SupabasePiano101.loadDashboardStats(profileId),
+      window.SupabasePiano101.loadAllProgress(profileId),
+    ]);
+
+    if (myToken !== statsRequestToken) return; // superseded by a newer switch
+
+    renderStats(stats);
+    renderRecentSongs(stats, progressBySong);
+  }
 
   function setActiveProfile(id) {
-    DEMO_STATE.activeProfile = id;
+    activeProfile = id;
     Store.profileId = PROFILE_ID_TO_STORE_ID[id] || "nicolas";
     document.querySelectorAll(".profile-btn").forEach((btn) => {
       btn.classList.toggle("active", Number(btn.dataset.profile) === id);
     });
-    const profile = DEMO_STATE.profiles[id];
     const greeting = document.querySelector("#view-dashboard .greeting");
-    if (greeting) greeting.textContent = `Hi ${profile.name} 👋`;
-    renderStats(profile);
-    renderRecentSongs(profile);
+    if (greeting) greeting.textContent = `Hi ${PROFILE_NAMES[id] || "there"} 👋`;
+    loadAndRenderStats();
   }
 
   function spawnMarqueeNotes() {
@@ -158,21 +188,27 @@ window.ViewDashboard = (function () {
   document.querySelectorAll(".profile-btn").forEach((btn) => {
     btn.addEventListener("click", () => setActiveProfile(Number(btn.dataset.profile)));
   });
-  setActiveProfile(DEMO_STATE.activeProfile);
+  setActiveProfile(activeProfile);
 
   async function mount() {
-    if (dashboardInitialized) return;
-    dashboardInitialized = true;
-
     spawnMarqueeNotes();
 
-    try {
-      const res = await fetch("data/songs.json");
-      renderLibraryPreview(await res.json());
-    } catch (err) {
-      document.getElementById("library-preview").innerHTML =
-        `<div class="empty">Library unavailable right now.</div>`;
+    if (!dashboardInitialized) {
+      dashboardInitialized = true;
+      try {
+        const res = await fetch("data/songs.json");
+        allSongs = await res.json();
+        renderLibraryPreview(allSongs);
+      } catch (err) {
+        document.getElementById("library-preview").innerHTML =
+          `<div class="empty">Library unavailable right now.</div>`;
+      }
     }
+
+    // Re-fetch stats every time the Dashboard is (re-)entered, not just
+    // once — a section passed in Learning, then navigating back here,
+    // should show the update rather than a stale first-mount snapshot.
+    loadAndRenderStats();
   }
 
   function unmount() {
