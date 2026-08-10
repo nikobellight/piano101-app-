@@ -1,5 +1,5 @@
 {
-  "_version": "v1.3",
+  "_version": "v1.4",
   "id": "love-is-blue",
   "title": "Love is Blue (L'amour est bleu)",
   "difficulty": "Intermediate",
@@ -13,68 +13,84 @@
       "beatStart": 0.0,
       "beatEnd": 4.5,
       "noteIndexStart": 0,
-      "noteIndexEnd": 7
+      "noteIndexEnd": 9
     },
     {
       "id": "phrase-2",
       "label": "Phrase 2",
       "beatStart": 4.5,
       "beatEnd": 8.0,
-      "noteIndexStart": 8,
-      "noteIndexEnd": 10
+      "noteIndexStart": 10,
+      "noteIndexEnd": 12
     },
     {
       "id": "phrase-3",
       "label": "Phrase 3",
       "beatStart": 8.0,
       "beatEnd": 40.0,
-      "noteIndexStart": 11,
-      "noteIndexEnd": 87
+      "noteIndexStart": 13,
+      "noteIndexEnd": 92
     },
     {
       "id": "phrase-4",
       "label": "Phrase 4",
       "beatStart": 40.0,
       "beatEnd": 72.0,
-      "noteIndexStart": 88,
-      "noteIndexEnd": 170
+      "noteIndexStart": 93,
+      "noteIndexEnd": 175
     },
     {
       "id": "phrase-5",
       "label": "Phrase 5",
       "beatStart": 72.0,
       "beatEnd": 104.0,
-      "noteIndexStart": 171,
-      "noteIndexEnd": 201
+      "noteIndexStart": 176,
+      "noteIndexEnd": 206
     },
     {
       "id": "phrase-6",
       "label": "Phrase 6",
       "beatStart": 104.0,
       "beatEnd": 136.99999999999994,
-      "noteIndexStart": 202,
-      "noteIndexEnd": 274
+      "noteIndexStart": 207,
+      "noteIndexEnd": 279
     },
     {
       "id": "phrase-7",
       "label": "Phrase 7",
       "beatStart": 136.99999999999994,
       "beatEnd": 169.99999999999994,
-      "noteIndexStart": 275,
-      "noteIndexEnd": 353
+      "noteIndexStart": 280,
+      "noteIndexEnd": 358
     },
     {
       "id": "phrase-8",
       "label": "Phrase 8",
       "beatStart": 169.99999999999994,
       "beatEnd": 195.99999999999994,
-      "noteIndexStart": 354,
-      "noteIndexEnd": 426
+      "noteIndexStart": 359,
+      "noteIndexEnd": 431
     }
   ],
   "notes": [
     {
-      "note": 55,
+      "note": 79,
+      "beat": 0.0,
+      "durationBeats": 0.5,
+      "hand": "right",
+      "finger": 5,
+      "fingerSolo": 5
+    },
+    {
+      "note": 83,
+      "beat": 0.0,
+      "durationBeats": 0.5,
+      "hand": "right",
+      "finger": 3,
+      "fingerSolo": 3
+    },
+    {
+      "note": 88,
       "beat": 0.0,
       "durationBeats": 0.5,
       "hand": "right",
@@ -424,6 +440,14 @@
       "fingerSolo": 2
     },
     {
+      "note": 57,
+      "beat": 20.5,
+      "durationBeats": 0.5,
+      "hand": "right",
+      "finger": 3,
+      "fingerSolo": 3
+    },
+    {
       "note": 64,
       "beat": 20.5,
       "durationBeats": 0.5,
@@ -702,6 +726,14 @@
       "fingerSolo": 1
     },
     {
+      "note": 59,
+      "beat": 36.0,
+      "durationBeats": 0.5,
+      "hand": "right",
+      "finger": 5,
+      "fingerSolo": 5
+    },
+    {
       "note": 63,
       "beat": 36.0,
       "durationBeats": 0.5,
@@ -727,6 +759,14 @@
     },
     {
       "note": 57,
+      "beat": 37.0,
+      "durationBeats": 1.0,
+      "hand": "right",
+      "finger": 1,
+      "fingerSolo": 1
+    },
+    {
+      "note": 59,
       "beat": 37.0,
       "durationBeats": 1.0,
       "hand": "right",
@@ -3356,23 +3396,7 @@
   ],
   "notesLeft": [
     {
-      "note": 79,
-      "beat": 0.0,
-      "durationBeats": 0.5,
-      "hand": "left",
-      "finger": 5,
-      "fingerSolo": 5
-    },
-    {
-      "note": 83,
-      "beat": 0.0,
-      "durationBeats": 0.5,
-      "hand": "left",
-      "finger": 3,
-      "fingerSolo": 3
-    },
-    {
-      "note": 88,
+      "note": 55,
       "beat": 0.0,
       "durationBeats": 0.5,
       "hand": "left",
@@ -3610,14 +3634,6 @@
       "hand": "left",
       "finger": 5,
       "fingerSolo": 5
-    },
-    {
-      "note": 57,
-      "beat": 20.5,
-      "durationBeats": 0.5,
-      "hand": "left",
-      "finger": 3,
-      "fingerSolo": 3
     },
     {
       "note": 50,
@@ -3860,28 +3876,12 @@
       "fingerSolo": 2
     },
     {
-      "note": 59,
-      "beat": 36.0,
-      "durationBeats": 0.5,
-      "hand": "left",
-      "finger": 5,
-      "fingerSolo": 5
-    },
-    {
       "note": 54,
       "beat": 36.5,
       "durationBeats": 0.5,
       "hand": "left",
       "finger": 3,
       "fingerSolo": 3
-    },
-    {
-      "note": 59,
-      "beat": 37.0,
-      "durationBeats": 1.0,
-      "hand": "left",
-      "finger": 1,
-      "fingerSolo": 1
     },
     {
       "note": 52,
