@@ -1,5 +1,5 @@
 {
-  "_version": "v1.4",
+  "_version": "v1.5",
   "id": "love-is-blue",
   "title": "Love is Blue (L'amour est bleu)",
   "difficulty": "Intermediate",
@@ -74,23 +74,7 @@
   ],
   "notes": [
     {
-      "note": 79,
-      "beat": 0.0,
-      "durationBeats": 0.5,
-      "hand": "right",
-      "finger": 5,
-      "fingerSolo": 5
-    },
-    {
-      "note": 83,
-      "beat": 0.0,
-      "durationBeats": 0.5,
-      "hand": "right",
-      "finger": 3,
-      "fingerSolo": 3
-    },
-    {
-      "note": 88,
+      "note": 55,
       "beat": 0.0,
       "durationBeats": 0.5,
       "hand": "right",
@@ -3396,7 +3380,23 @@
   ],
   "notesLeft": [
     {
-      "note": 55,
+      "note": 79,
+      "beat": 0.0,
+      "durationBeats": 0.5,
+      "hand": "left",
+      "finger": 5,
+      "fingerSolo": 5
+    },
+    {
+      "note": 83,
+      "beat": 0.0,
+      "durationBeats": 0.5,
+      "hand": "left",
+      "finger": 3,
+      "fingerSolo": 3
+    },
+    {
+      "note": 88,
       "beat": 0.0,
       "durationBeats": 0.5,
       "hand": "left",
