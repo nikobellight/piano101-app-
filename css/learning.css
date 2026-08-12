@@ -1,5 +1,9 @@
-/* v4.5 */
+/* v4.6 */
 /* learning.css — BASE + Sections + Wait Mode + BLE.
+   v4.6: .wrong-mark — a bright red ✕ overlaid on a wrongly-struck key,
+   on top of the existing red glow. The glow alone was ambiguous on a
+   key whose own note colour is also red (C). Shape, not colour, so it
+   reads the same on every key.
    v4.5: replaced the dedicated .ble-panel with .learning-topbar (shared
    ble-widget styles now live in style.css, used by every page). */
 
@@ -157,6 +161,29 @@
 .key.active.key-black {
   background: var(--glow, var(--amber));
   box-shadow: 0 0 18px var(--glow, var(--amber));
+}
+
+.wrong-mark {
+  position: absolute;
+  left: 50%;
+  top: 14px;
+  transform: translateX(-50%);
+  width: 26px;
+  height: 26px;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.wrong-mark svg {
+  width: 100%;
+  height: 100%;
+}
+
+.wrong-mark svg line {
+  stroke: #ff1a1a;
+  stroke-width: 4.5;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 5px rgba(255, 26, 26, 0.9));
 }
 
 /* ---------- Practice panel ---------- */
