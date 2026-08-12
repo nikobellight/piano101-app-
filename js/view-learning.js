@@ -1,3 +1,17 @@
+// v3.14
+// view-learning.js
+// v3.14: two fixes per Nico —
+//  1. The very first note of an exercise no longer gets a timing score
+//     at all (was: judged against practiceRealStart, the instant Start
+//     Practice is clicked — nobody can see the screen, place their
+//     hands, and strike a note in that same instant, so it was
+//     inheriting an artificial "late" almost every time).
+//  2. The wrong-key flash colour changed from red (#ff5555) to a dark
+//     anthracite (#2a2e38, the same shade already used for black keys)
+//     — it was too close in hue to the v3.13 red ✕ overlay, which then
+//     didn't stand out. The ✕ is now the actual signal; the dark flash
+//     is just a neutral "something happened here" background for it.
+//
 // v3.13
 // view-learning.js
 // v3.13: wrong-note presses now also show a red ✕ overlaid on the key
@@ -1247,7 +1261,7 @@ window.ViewLearning = (function () {
       state.currentWrongAttempts++;
       state.totalWrongAttempts++;
       state.audio.playNote(note, 0.3);
-      highlightKey(note, 300, "#ff5555");
+      highlightKey(note, 300, "#2a2e38");
       showWrongMark(note, 300);
       return;
     }
@@ -1290,12 +1304,18 @@ window.ViewLearning = (function () {
     const fallDurationMs = Math.max(0, lead.startMs - state.practiceBaseMs);
     const freezeRealTime = state.practiceRealStart + fallDurationMs;
     const deltaMs = now - freezeRealTime;
-    state.currentTimingScore = timingScoreFromDelta(deltaMs);
+    // The very first note of the exercise has nothing to be "on time"
+    // relative to — freezeRealTime traces back to practiceRealStart,
+    // stamped the instant Start Practice is clicked, and no one can see
+    // the screen, place their hands, and strike a note in that same
+    // instant. Timing only starts meaning something from the 2nd note.
+    const isFirstNote = state.groupPointer === 0;
+    state.currentTimingScore = isFirstNote ? 1 : timingScoreFromDelta(deltaMs);
     // A note struck way after its freeze point counts toward its own,
     // softer penalty (LATE_PENALTY) — separate from wrong-key mistakes —
     // so consistently slow-but-correct playing scores lower without
     // being treated as harshly as a wrong note.
-    if (Math.abs(deltaMs) > LATE_MISTAKE_THRESHOLD_MS) {
+    if (!isFirstNote && Math.abs(deltaMs) > LATE_MISTAKE_THRESHOLD_MS) {
       state.totalLateHits++;
     }
 
