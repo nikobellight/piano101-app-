@@ -1,7 +1,18 @@
-// v1.1
+// v1.2
 // audio.js — Piano sound engine, using real sampled piano notes (Salamander
 // Grand Piano via Tone.js) instead of a raw synth, so it actually sounds
 // like a piano rather than a beep.
+//
+// v1.2: Tone.start() (resumes the shared AudioContext) now runs on every
+// init() call, not just the first. It used to be skipped whenever
+// this.sampler already existed — fine right after the first song, but
+// browsers suspend an inactive AudioContext after a while (tab loses
+// focus, navigating between songs, etc.), and only a fresh user-gesture
+// resume wakes it back up. Skipping that resume on the 2nd+ song is
+// exactly why Play worked once and then silently did nothing until a
+// full page reload — the reload was really just a way to force a brand
+// new (non-suspended) AudioContext. Resuming an already-running context
+// is a harmless no-op, so this costs nothing on the first song.
 //
 // v1.1: added noteAttack/noteRelease for real sustain-while-held (free
 // play with a real or virtual key press). playNote() is kept as-is for
@@ -17,8 +28,8 @@ class PianoAudio {
   // Must be called from a user gesture (e.g. a click on Play) — browsers
   // block audio from starting on page load without one.
   async init() {
-    if (this.sampler) return;
     await Tone.start();
+    if (this.sampler) return;
 
     this.sampler = new Tone.Sampler({
       urls: {
