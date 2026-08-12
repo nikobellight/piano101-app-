@@ -1,3 +1,21 @@
+// v3.13
+// view-learning.js
+// v3.13: wrong-note presses now also show a red ✕ overlaid on the key
+// (showWrongMark, css/learning.css v4.6's .wrong-mark), on top of the
+// existing red glow — per Nico, the glow alone was ambiguous on a key
+// whose own note colour is also red (C in note-colors.js).
+//
+// v3.12
+// view-learning.js
+// v3.12: the physical keyboard's guide LED now lights the instant a note
+// becomes the one being waited for, instead of after a delay timed to
+// the rhythmic gap since the previous note. That delay made sense for a
+// real-time fall, but Wait Mode already freezes the note at the hit
+// line the moment it becomes current — so the delay only ever made the
+// light come on AFTER the note was already due, especially on fast
+// passages (Love is Blue's eighth notes) where the gap was barely a few
+// hundred ms. Per Nico: no time to see the light and press in time.
+//
 // v3.11
 // view-learning.js
 // v3.11: logs one piano101_sessions row (via Store.recordSession) at the
@@ -738,6 +756,25 @@ window.ViewLearning = (function () {
     setTimeout(() => el.classList.remove("active"), Math.max(120, durationMs));
   }
 
+  // A red ✕ overlaid ON the key, separate from highlightKey()'s red glow
+  // — per Nico, the glow alone reads as ambiguous on a key whose OWN
+  // note colour is also red (C is #e5484d in note-colors.js), so a wrong
+  // C could look like nothing happened. The ✕ is a shape, not a colour,
+  // so it stays unmistakable regardless of which key it lands on.
+  function showWrongMark(note, durationMs) {
+    const el = document.querySelector(`#keyboard .key[data-note="${note}"]`);
+    if (!el) return;
+    const mark = document.createElement("div");
+    mark.className = "wrong-mark";
+    mark.innerHTML =
+      '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">' +
+      '<line x1="4" y1="4" x2="20" y2="20" />' +
+      '<line x1="20" y1="4" x2="4" y2="20" />' +
+      "</svg>";
+    el.appendChild(mark);
+    setTimeout(() => mark.remove(), durationMs);
+  }
+
   // -------------------------------------------------------------------
   // Playback
   // -------------------------------------------------------------------
@@ -1066,24 +1103,28 @@ window.ViewLearning = (function () {
   // BLE guide light
   // -------------------------------------------------------------------
 
-  function scheduleExpectedNoteLed() {
+  // Lights the LED(s) for the current group IMMEDIATELY — Wait Mode
+  // already freezes the note at the hit line the instant we start
+  // waiting for it (see currentPracticeMs), so any delay here only ever
+  // makes the physical light come on AFTER the note was already due,
+  // leaving no time to react. The previous version scheduled this after
+  // fallDurationMs (the rhythmic gap since the last note), which made
+  // sense for a real-time fall but not for Wait Mode's indefinite wait.
+  async function scheduleExpectedNoteLed() {
     cancelScheduledLed();
     if (!ble() || !ble().connected) return;
 
     const group = currentGroup();
     if (!group) return;
 
-    const fallDurationMs = Math.max(0, leadEntry(group).startMs - state.practiceBaseMs);
-    state.ledTimerId = setTimeout(async () => {
-      // Sequential, not Promise.all: firing several BLE writes at once
-      // made the keyboard only accept the first one and silently drop
-      // the rest, so only one LED ever lit up. One at a time, but each
-      // using the no-response write (ble.js v1.1) to stay as fast as the
-      // link allows — this is the trade-off that actually works.
-      for (const n of state.currentLedNotes) await ble().sendLedOff(n);
-      state.currentLedNotes = group.map((e) => e.note);
-      for (const n of state.currentLedNotes) await ble().sendLedOn(n);
-    }, fallDurationMs);
+    // Sequential, not Promise.all: firing several BLE writes at once
+    // made the keyboard only accept the first one and silently drop
+    // the rest, so only one LED ever lit up. One at a time, but each
+    // using the no-response write (ble.js v1.1) to stay as fast as the
+    // link allows — this is the trade-off that actually works.
+    for (const n of state.currentLedNotes) await ble().sendLedOff(n);
+    state.currentLedNotes = group.map((e) => e.note);
+    for (const n of state.currentLedNotes) await ble().sendLedOn(n);
   }
 
   function cancelScheduledLed() {
@@ -1207,6 +1248,7 @@ window.ViewLearning = (function () {
       state.totalWrongAttempts++;
       state.audio.playNote(note, 0.3);
       highlightKey(note, 300, "#ff5555");
+      showWrongMark(note, 300);
       return;
     }
 
