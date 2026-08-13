@@ -1,3 +1,20 @@
+// v3.15
+// view-learning.js
+// v3.15: three fixes per Nico, same batch —
+//  1. "Continue" after passing a phrase now jumps straight into the
+//     NEXT phrase's Learning view (nextRealSectionId()), instead of
+//     just going back to the Sections overview and making you click
+//     again to actually start the next one.
+//  2. scheduleExpectedNoteLed() now pauses ~120ms between "off" and
+//     "on" when the incoming note is the same pitch as the one just
+//     finished — firing them back-to-back (as everywhere else) landed
+//     too close together for the physical LED to visibly blink, so a
+//     repeated note looked like the light just stayed on.
+//  3. Normal Play/Listen playback (schedulePlayback) now also flashes
+//     the physical keyboard's LEDs in sync with the falling notes
+//     (flashLed) — previously only the on-screen key lit up; the real
+//     GPP-101 stayed dark outside of Wait Mode.
+//
 // v3.14
 // view-learning.js
 // v3.14: two fixes per Nico —
@@ -770,6 +787,17 @@ window.ViewLearning = (function () {
     setTimeout(() => el.classList.remove("active"), Math.max(120, durationMs));
   }
 
+  // Physical-keyboard equivalent of highlightKey() — used by normal
+  // Play/Listen playback, which previously only ever lit the on-screen
+  // key. Wait Mode's LED handling (scheduleExpectedNoteLed) is separate
+  // and unaffected: that one waits for a press before moving on; this
+  // one just flashes in sync with the timeline, on its own timer.
+  function flashLed(note, durationMs) {
+    if (!ble() || !ble().connected) return;
+    ble().sendLedOn(note);
+    setTimeout(() => ble().sendLedOff(note), Math.max(120, durationMs));
+  }
+
   // A red ✕ overlaid ON the key, separate from highlightKey()'s red glow
   // — per Nico, the glow alone reads as ambiguous on a key whose OWN
   // note colour is also red (C is #e5484d in note-colors.js), so a wrong
@@ -810,6 +838,7 @@ window.ViewLearning = (function () {
         highlightKey(n.note, n.durationMs, colorForNote(n.note));
         updateFingerGuide(n);
         updateMeasureCounter(n);
+        flashLed(n.note, n.durationMs);
       }, delay);
       state.timers.push(timer);
     }
@@ -1131,13 +1160,23 @@ window.ViewLearning = (function () {
     const group = currentGroup();
     if (!group) return;
 
+    const newNotes = group.map((e) => e.note);
+    // A repeated note (same pitch as the group just finished) needs a
+    // deliberate pause between "off" and back "on" — firing them right
+    // after each other (as we do for every other case) lands close
+    // enough together that the physical LED never visibly blinks, so it
+    // just looks like it stayed lit and hides that there were two
+    // separate notes to play.
+    const repeated = newNotes.some((n) => state.currentLedNotes.includes(n));
+
     // Sequential, not Promise.all: firing several BLE writes at once
     // made the keyboard only accept the first one and silently drop
     // the rest, so only one LED ever lit up. One at a time, but each
     // using the no-response write (ble.js v1.1) to stay as fast as the
     // link allows — this is the trade-off that actually works.
     for (const n of state.currentLedNotes) await ble().sendLedOff(n);
-    state.currentLedNotes = group.map((e) => e.note);
+    if (repeated) await new Promise((resolve) => setTimeout(resolve, 120));
+    state.currentLedNotes = newNotes;
     for (const n of state.currentLedNotes) await ble().sendLedOn(n);
   }
 
@@ -1490,6 +1529,20 @@ window.ViewLearning = (function () {
   // Score celebration modal
   // -------------------------------------------------------------------
 
+  // The next REAL phrase after the one just finished (never a synthetic
+  // mid-revision/cumulative-revision/whole-song entry — those don't have
+  // a single well-defined "next"). Real phrases keep their original
+  // song.sections order; synthetic ones are always appended after them
+  // (see view-sections.js), so filtering them out preserves phrase
+  // order correctly. Returns null if we're not currently on a real
+  // phrase, or if the one just passed was already the last.
+  function nextRealSectionId() {
+    const real = state.song.sections.filter((s) => !s.isSynthetic);
+    const idx = real.findIndex((s) => s.id === Store.sectionId);
+    if (idx === -1 || idx + 1 >= real.length) return null;
+    return real[idx + 1].id;
+  }
+
   function openScoreModal(pct, passed, wrongKeys, lateHits, counts) {
     const card = document.querySelector("#score-modal .score-modal-card");
     const mask = document.getElementById("score-gauge-mask");
@@ -1524,8 +1577,16 @@ window.ViewLearning = (function () {
 
     primaryBtn.onclick = () => {
       closeScoreModal();
-      if (celebrate) Router.go(`#/song/${encodeURIComponent(Store.songId)}`);
-      else startPractice();
+      if (celebrate) {
+        const nextId = nextRealSectionId();
+        Router.go(
+          nextId
+            ? `#/song/${encodeURIComponent(Store.songId)}/${encodeURIComponent(nextId)}`
+            : `#/song/${encodeURIComponent(Store.songId)}`
+        );
+      } else {
+        startPractice();
+      }
     };
     secondaryBtn.onclick = () => {
       closeScoreModal();
