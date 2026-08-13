@@ -1,6 +1,17 @@
-// v1.3
+// v1.4
 // view-sections.js — SPA version of the old sections.js. Same circles,
 // stars, Revision and Continue buttons. Differences:
+//
+// v1.4: two fixes —
+//  1. syncHandTabs()/wireHandTabs() now query "#hand-tabs .hand-tab"
+//     instead of the bare ".hand-tab" class, which was also matching
+//     Browse's difficulty filter buttons (same class name, different
+//     page) since the SPA keeps every view in the DOM at once. Every
+//     visit to a song's Sections page was silently clearing whatever
+//     difficulty filter was active on Browse.
+//  2. mount() now forces Store.hand back to "right" if it's ever
+//     anything other than "right" or "both" — a defensive guarantee
+//     that a hand tab is always shown selected, per Nico.
 //  - scores come from Store.completed instead of being decoded from a URL
 //  - the chosen hand is written to Store instead of being put in a query
 //  - navigation is a hash route change, not a full page load
@@ -264,7 +275,7 @@ window.ViewSections = (function () {
   }
 
   function syncHandTabs() {
-    document.querySelectorAll(".hand-tab").forEach((t) => {
+    document.querySelectorAll("#hand-tabs .hand-tab").forEach((t) => {
       t.classList.toggle("active", t.dataset.hand === Store.hand);
     });
   }
@@ -272,7 +283,7 @@ window.ViewSections = (function () {
   function wireHandTabs() {
     if (wiredTabs) return;
     wiredTabs = true;
-    document.querySelectorAll(".hand-tab").forEach((tab) => {
+    document.querySelectorAll("#hand-tabs .hand-tab").forEach((tab) => {
       tab.addEventListener("click", () => {
         Store.hand = tab.dataset.hand;
         syncHandTabs();
@@ -290,6 +301,14 @@ window.ViewSections = (function () {
 
   async function mount(songId) {
     Store.songId = songId;
+
+    // Defensive: guarantee "Right" is always selected, even if Store.hand
+    // somehow ends up holding anything other than the two valid values —
+    // never leave both tabs unhighlighted.
+    if (Store.hand !== "right" && Store.hand !== "both") {
+      Store.hand = "right";
+    }
+
     wireHandTabs();
     syncHandTabs();
     wirePlayWholeSongButton();
