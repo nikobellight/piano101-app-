@@ -1,3 +1,19 @@
+// v3.16
+// view-learning.js
+// v3.16: two fixes per Nico —
+//  1. timingScoreFromDelta() now takes the group's note count and adds
+//     a small, deliberately modest grace bonus for chords (+25ms per
+//     note beyond the first, capped at +100ms) — real fingers can't
+//     land 3-4 keys at the exact same instant, and without this a
+//     clean chord could still read as late from that natural spread
+//     alone. Not enough to make a chord easier to pass than a single
+//     note, just enough to stop it being harder.
+//  2. "Late hits" is now two separate counters — totalEarlyHits and
+//     totalLateHits, split by the sign of deltaMs — instead of one
+//     bucket that mislabelled early notes as "late" in the end-of-
+//     section message. Both still count toward the same LATE_PENALTY
+//     in finalPercent(); only the feedback text changed.
+//
 // v3.15
 // view-learning.js
 // v3.15: three fixes per Nico, same batch —
@@ -604,6 +620,7 @@ window.ViewLearning = (function () {
     noteScores: [],
     currentWrongAttempts: 0,
     totalWrongAttempts: 0,
+    totalEarlyHits: 0,
     totalLateHits: 0,
     currentTimingScore: 0,
     currentLedNotes: [],
@@ -981,6 +998,7 @@ window.ViewLearning = (function () {
     state.noteScores = [];
     state.currentWrongAttempts = 0;
     state.totalWrongAttempts = 0;
+    state.totalEarlyHits = 0;
     state.totalLateHits = 0;
     state.practiceActive = state.groups.length > 0;
 
@@ -1226,11 +1244,18 @@ window.ViewLearning = (function () {
 
   // Continuous linear decay instead of fixed steps — every bit of
   // hesitation costs something, not just crossing a step boundary.
-  // Full score up to 150ms off (natural hand/eye margin), decaying
-  // smoothly down to a floor of 0.1 by 900ms off.
-  function timingScoreFromDelta(deltaMs) {
+  // Full score up to 150ms off (natural hand/eye margin) — plus a small
+  // bonus for chords (+25ms per note beyond the first, capped at
+  // +100ms): real fingers never land on 3-4 keys at the exact same
+  // instant, and without this a clean chord could still read as late
+  // purely from that natural spread. Deliberately modest — this softens
+  // the physical reality of playing a chord, it doesn't make a chord
+  // easier to pass than a single note. Decays smoothly down to a floor
+  // of 0.1 by 900ms off, same as before.
+  function timingScoreFromDelta(deltaMs, noteCount = 1) {
     const abs = Math.abs(deltaMs);
-    const GRACE_MS = 150;
+    const CHORD_GRACE_BONUS = Math.min(100, Math.max(0, noteCount - 1) * 25);
+    const GRACE_MS = 150 + CHORD_GRACE_BONUS;
     const FLOOR_AT_MS = 900;
     const FLOOR_SCORE = 0.1;
     if (abs <= GRACE_MS) return 1;
@@ -1275,7 +1300,9 @@ window.ViewLearning = (function () {
     const mean = state.noteScores.reduce((a, b) => a + b, 0) / total;
     const penalty = Math.max(
       0,
-      1 - MISTAKE_PENALTY * state.totalWrongAttempts - LATE_PENALTY * state.totalLateHits
+      1 -
+        MISTAKE_PENALTY * state.totalWrongAttempts -
+        LATE_PENALTY * (state.totalEarlyHits + state.totalLateHits)
     );
     return Math.round(mean * penalty * 100);
   }
@@ -1349,13 +1376,19 @@ window.ViewLearning = (function () {
     // the screen, place their hands, and strike a note in that same
     // instant. Timing only starts meaning something from the 2nd note.
     const isFirstNote = state.groupPointer === 0;
-    state.currentTimingScore = isFirstNote ? 1 : timingScoreFromDelta(deltaMs);
-    // A note struck way after its freeze point counts toward its own,
-    // softer penalty (LATE_PENALTY) — separate from wrong-key mistakes —
-    // so consistently slow-but-correct playing scores lower without
-    // being treated as harshly as a wrong note.
+    state.currentTimingScore = isFirstNote ? 1 : timingScoreFromDelta(deltaMs, group.length);
+    // A note struck way before or after its freeze point counts toward
+    // its own, softer penalty (LATE_PENALTY, applied to both — see
+    // finalPercent()) — separate from wrong-key mistakes, so
+    // consistently early/late-but-correct playing scores lower without
+    // being treated as harshly as a wrong note. Tracked as two separate
+    // counters (not just one "late" bucket) so the end-of-section
+    // message can say which direction it actually was — before this,
+    // an early note was mislabelled "late" in the feedback, same as a
+    // genuinely late one.
     if (!isFirstNote && Math.abs(deltaMs) > LATE_MISTAKE_THRESHOLD_MS) {
-      state.totalLateHits++;
+      if (deltaMs < 0) state.totalEarlyHits++;
+      else state.totalLateHits++;
     }
 
     // Stamp this group's pitch/timing marks onto every one of its notes
@@ -1486,6 +1519,7 @@ window.ViewLearning = (function () {
     const pct = finalPercent();
     const passed = pct >= PASS_THRESHOLD;
     const wrongKeys = state.totalWrongAttempts;
+    const earlyHits = state.totalEarlyHits;
     const lateHits = state.totalLateHits;
     const counts = tempoCounts();
 
@@ -1522,7 +1556,7 @@ window.ViewLearning = (function () {
       return;
     }
 
-    openScoreModal(pct, passed, wrongKeys, lateHits, counts);
+    openScoreModal(pct, passed, wrongKeys, earlyHits, lateHits, counts);
   }
 
   // -------------------------------------------------------------------
@@ -1543,7 +1577,7 @@ window.ViewLearning = (function () {
     return real[idx + 1].id;
   }
 
-  function openScoreModal(pct, passed, wrongKeys, lateHits, counts) {
+  function openScoreModal(pct, passed, wrongKeys, earlyHits, lateHits, counts) {
     const card = document.querySelector("#score-modal .score-modal-card");
     const mask = document.getElementById("score-gauge-mask");
     const kicker = document.getElementById("score-modal-kicker");
@@ -1566,6 +1600,7 @@ window.ViewLearning = (function () {
 
     const parts = [];
     if (wrongKeys > 0) parts.push(`${wrongKeys} wrong key${wrongKeys > 1 ? "s" : ""}`);
+    if (earlyHits > 0) parts.push(`${earlyHits} early hit${earlyHits > 1 ? "s" : ""}`);
     if (lateHits > 0) parts.push(`${lateHits} late hit${lateHits > 1 ? "s" : ""}`);
     const mistakeText = parts.length === 0 ? "Clean run — no mistakes" : parts.join(", ");
     detailEl.textContent = counts
