@@ -1,8 +1,15 @@
-// v1.2
+// v1.3
 // supabase-client.js — Cross-session progress persistence (piano101_
 // prefixed tables — this project is shared with unrelated apps like
 // "alerts"). No SDK: direct fetch() against PostgREST, since the app has
 // no build step to pull in @supabase/supabase-js from npm.
+//
+// v1.3: fixed request() throwing on a 201-with-empty-body response (any
+// plain POST) — it only ever handled 204, so every saveSession() insert
+// (always a POST) was silently failing its own JSON parse and getting
+// swallowed by the caller's try/catch. This is why "Hours practiced" /
+// "Daily average" never moved even after RLS + grants were confirmed
+// correct — nothing to do with permissions, this was a client bug.
 //
 // v1.2: adds saveSession() + loadDashboardStats(), replacing the
 // Dashboard's old hardcoded DEMO_STATE (hours practiced, daily average,
@@ -46,9 +53,17 @@ window.SupabasePiano101 = (function () {
       const body = await res.text().catch(() => "");
       throw new Error(`Supabase ${res.status}: ${body}`);
     }
-    // 204 No Content (e.g. a PATCH without Prefer: return=representation)
-    if (res.status === 204) return null;
-    return res.json();
+    // PostgREST returns an EMPTY body on more than just 204 — a plain
+    // POST (no Prefer: return=representation, which nothing here sets)
+    // comes back 201 Created with nothing to read. The old `if (status
+    // === 204) return null` missed that case entirely: res.json() on an
+    // empty 201 body throws a JSON parse error, which every caller's
+    // try/catch swallows into a silent console.warn — every single
+    // saveSession() insert (always a POST, no PATCH path) was failing
+    // this way, which is the real reason the Dashboard never updated.
+    const text = await res.text();
+    if (!text) return null;
+    return JSON.parse(text);
   }
 
   // Returns { [sectionId]: bestScore } for one profile+song, or {} on
