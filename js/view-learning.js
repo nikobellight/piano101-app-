@@ -1300,8 +1300,8 @@ window.ViewLearning = (function () {
       state.currentWrongAttempts++;
       state.totalWrongAttempts++;
       state.audio.playNote(note, 0.3);
-      highlightKey(note, 300, "#2a2e38");
-      showWrongMark(note, 300);
+      highlightKey(note, 600, "#2a2e38");
+      showWrongMark(note, 600);
       return;
     }
 
