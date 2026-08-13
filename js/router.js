@@ -1,7 +1,13 @@
-// v1.1
+// v1.2
 // router.js — Minimal hash router. Shows/hides the four view sections and
 // calls mount()/unmount() on the matching view module. No page is ever
 // reloaded, which is what keeps the Bluetooth connection alive.
+//
+// v1.2: a hashchange arriving while a previous navigation was still
+// resolving used to be dropped silently — the page would keep showing
+// the OLD route while the URL already said the NEW one, only fixable by
+// a manual reload. Now queued (pendingRerender) and caught up the
+// instant the current navigation finishes.
 //
 // v1.1: added #/browse (js/view-browse.js) — the dashboard's "Browse"
 // link had nowhere real to go before.
@@ -25,6 +31,7 @@ window.Router = (function () {
 
   let currentName = null;
   let navigating = false;
+  let pendingRerender = false;
 
   function parse(hash) {
     const clean = (hash || "").replace(/^#\/?/, "");
@@ -44,7 +51,15 @@ window.Router = (function () {
   }
 
   async function render() {
-    if (navigating) return;
+    if (navigating) {
+      // A hash changed while a previous navigation was still resolving
+      // (Store.loadSong() fetching, etc.) — dropping it silently used to
+      // leave the page showing the OLD route while the URL already said
+      // the NEW one, fixable only by a manual reload. Remember it and
+      // catch up the instant the current navigation finishes.
+      pendingRerender = true;
+      return;
+    }
     navigating = true;
 
     try {
@@ -79,6 +94,14 @@ window.Router = (function () {
       window.scrollTo(0, 0);
     } finally {
       navigating = false;
+      // window.location.hash is re-read fresh at the top of render(), so
+      // this always catches up to whatever the LATEST hash is — even if
+      // several changes arrived while we were busy, they collapse into
+      // one final render instead of firing once per missed change.
+      if (pendingRerender) {
+        pendingRerender = false;
+        render();
+      }
     }
   }
 
