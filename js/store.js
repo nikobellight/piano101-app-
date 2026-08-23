@@ -1,7 +1,15 @@
-// v1.5
+// v1.6
 // store.js — Shared in-memory state for the SPA, replacing what used to be
 // passed between pages as URL query params (?song=&section=&hand=&completed=).
 // Because the page is never reloaded, this object simply survives navigation.
+//
+// v1.6: progress is now scoped by hand — progressKey()/getScore() added,
+// isPassed() and recordScore() route through them. Before this, "Right"
+// and "Both" shared the exact same Store.completed[sectionId] entry, so
+// passing a phrase in one mode silently marked it passed in the other
+// too, even though they're genuinely different exercises. "right" keeps
+// the unsuffixed key (existing progress keeps working as-is); "both"
+// gets its own ":both"-suffixed key, both in memory and in Supabase.
 //
 // v1.5: adds recordSession(), called by the Learning view at the end of
 // every finished practice attempt — separate from recordScore() because
@@ -58,8 +66,22 @@ window.Store = {
     return window.KEYBOARD_RANGES[this.keyboardMode] || window.KEYBOARD_RANGES.solo;
   },
 
+  // Progress (Store.completed / Supabase piano101_progress) is keyed by
+  // this instead of the raw sectionId — "Right" and "Both" are genuinely
+  // different exercises on the same phrase, so passing one must not
+  // silently mark the other as already done too. "right" keeps the
+  // plain id (no suffix) so progress saved before this existed keeps
+  // working exactly as it did; "both" gets a distinct suffixed key.
+  progressKey(sectionId) {
+    return this.hand === "both" ? `${sectionId}:both` : sectionId;
+  },
+
+  getScore(sectionId) {
+    return this.completed[this.progressKey(sectionId)] || 0;
+  },
+
   isPassed(sectionId) {
-    return (this.completed[sectionId] || 0) >= window.PASS_THRESHOLD;
+    return this.getScore(sectionId) >= window.PASS_THRESHOLD;
   },
 
   // Cache of loaded song JSON, so navigating back and forth between
@@ -98,14 +120,17 @@ window.Store = {
 
   recordScore(sectionId, pct) {
     if (sectionId === "all") return;
-    const improved = pct > (this.completed[sectionId] || 0);
-    this.completed[sectionId] = Math.max(this.completed[sectionId] || 0, pct);
+    const key = this.progressKey(sectionId);
+    const improved = pct > (this.completed[key] || 0);
+    this.completed[key] = Math.max(this.completed[key] || 0, pct);
     // Fire-and-forget: the UI already reflects the score synchronously
     // via this.completed above, regardless of whether the network write
     // succeeds. recordScore() itself stays synchronous on purpose — no
-    // caller needs to await it.
+    // caller needs to await it. `key` (not the raw sectionId) is what
+    // gets persisted, so Right and Both stay separate rows in Supabase
+    // too, not just in memory.
     if (improved) {
-      window.SupabasePiano101.saveProgress(this.profileId, this.songId, sectionId, pct);
+      window.SupabasePiano101.saveProgress(this.profileId, this.songId, key, pct);
     }
   },
 
