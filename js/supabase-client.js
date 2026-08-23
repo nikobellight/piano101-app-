@@ -1,8 +1,16 @@
-// v1.3
+// v1.4
 // supabase-client.js — Cross-session progress persistence (piano101_
 // prefixed tables — this project is shared with unrelated apps like
 // "alerts"). No SDK: direct fetch() against PostgREST, since the app has
 // no build step to pull in @supabase/supabase-js from npm.
+//
+// v1.4: loadAllProgress() now also excludes ":both"-suffixed section_ids
+// (store.js v1.6's progressKey() for "Both hands" progress) from the
+// per-song passed-count it returns — that count is scoped to "Right"
+// progress only, matching sectionCount (which counts each real phrase
+// once, not once per hand mode). Without this, a phrase passed in both
+// hand modes would count twice, letting Browse/Dashboard's percentage
+// exceed the song's own sectionCount.
 //
 // v1.3: fixed request() throwing on a 201-with-empty-body response (any
 // plain POST) — it only ever handled 204, so every saveSession() insert
@@ -137,6 +145,14 @@ window.SupabasePiano101 = (function () {
       const out = {};
       for (const row of rows) {
         if (row.section_id.startsWith("midrev-")) continue;
+        // A "Both hands" pass (section_id ending in ":both", see
+        // store.js's progressKey()) is a separate, real accomplishment
+        // from the "Right" pass of the same phrase — but Browse/
+        // Dashboard's per-song percentage is scoped to "Right" progress
+        // only (matching sectionCount, which counts real phrases once,
+        // not once per hand mode). Counting both would let a song's
+        // passed-count exceed its own sectionCount.
+        if (row.section_id.endsWith(":both")) continue;
         out[row.song_id] = (out[row.song_id] || 0) + 1;
       }
       return out;
