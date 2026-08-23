@@ -83,24 +83,8 @@
       "id": "phrase-10",
       "label": "Phrase 10",
       "beatStart": 189.0,
-      "beatEnd": 198.0,
-      "noteIndexStart": 656,
-      "noteIndexEnd": 684
-    },
-    {
-      "id": "phrase-11",
-      "label": "Phrase 11",
-      "beatStart": 198.0,
-      "beatEnd": 200.0,
-      "noteIndexStart": 685,
-      "noteIndexEnd": 688
-    },
-    {
-      "id": "phrase-12",
-      "label": "Phrase 12",
-      "beatStart": 200.0,
       "beatEnd": 200.5,
-      "noteIndexStart": 689,
+      "noteIndexStart": 656,
       "noteIndexEnd": 689
     }
   ],
@@ -8999,7 +8983,7 @@
       "note": 55,
       "beat": 183.0,
       "durationBeats": 0.5,
-      "finger": 1,
+      "finger": 5,
       "fingerSolo": null,
       "hand": "left"
     },
@@ -9023,7 +9007,7 @@
       "note": 53,
       "beat": 183.5,
       "durationBeats": 0.5,
-      "finger": 2,
+      "finger": 5,
       "fingerSolo": null,
       "hand": "left"
     },
@@ -9031,7 +9015,7 @@
       "note": 53,
       "beat": 183.5,
       "durationBeats": 0.25,
-      "finger": 2,
+      "finger": 1,
       "fingerSolo": null,
       "hand": "left"
     },
@@ -9063,7 +9047,7 @@
       "note": 62,
       "beat": 186.5,
       "durationBeats": 0.5,
-      "finger": 2,
+      "finger": 5,
       "fingerSolo": null,
       "hand": "left"
     },
@@ -9071,7 +9055,7 @@
       "note": 62,
       "beat": 186.5,
       "durationBeats": 0.25,
-      "finger": 2,
+      "finger": 1,
       "fingerSolo": null,
       "hand": "left"
     },
@@ -9087,7 +9071,7 @@
       "note": 62,
       "beat": 187.0,
       "durationBeats": 0.5,
-      "finger": 2,
+      "finger": 5,
       "fingerSolo": null,
       "hand": "left"
     },
@@ -9095,7 +9079,7 @@
       "note": 62,
       "beat": 187.0,
       "durationBeats": 0.25,
-      "finger": 2,
+      "finger": 1,
       "fingerSolo": null,
       "hand": "left"
     },
@@ -9111,7 +9095,7 @@
       "note": 59,
       "beat": 187.5,
       "durationBeats": 0.5,
-      "finger": 4,
+      "finger": 5,
       "fingerSolo": null,
       "hand": "left"
     },
@@ -9119,7 +9103,7 @@
       "note": 59,
       "beat": 187.5,
       "durationBeats": 0.25,
-      "finger": 4,
+      "finger": 1,
       "fingerSolo": null,
       "hand": "left"
     },

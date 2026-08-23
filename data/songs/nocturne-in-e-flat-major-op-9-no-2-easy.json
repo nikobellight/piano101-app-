@@ -141,32 +141,32 @@
       "note": 70,
       "beat": 15.0,
       "durationBeats": 0,
-      "finger": null,
-      "fingerSolo": null,
+      "finger": 1,
+      "fingerSolo": 1,
       "hand": "right"
     },
     {
       "note": 72,
       "beat": 15.0,
       "durationBeats": 0,
-      "finger": 1,
-      "fingerSolo": 1,
+      "finger": 2,
+      "fingerSolo": 2,
       "hand": "right"
     },
     {
       "note": 72,
       "beat": 15.0,
       "durationBeats": 1.0,
-      "finger": 1,
-      "fingerSolo": 1,
+      "finger": 4,
+      "fingerSolo": 4,
       "hand": "right"
     },
     {
       "note": 73,
       "beat": 15.0,
       "durationBeats": 0,
-      "finger": null,
-      "fingerSolo": null,
+      "finger": 5,
+      "fingerSolo": 5,
       "hand": "right"
     },
     {

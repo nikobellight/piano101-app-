@@ -59,21 +59,13 @@
       "id": "phrase-7",
       "label": "Phrase 7",
       "beatStart": 43.50000000000012,
-      "beatEnd": 44.75000000000012,
+      "beatEnd": 48.00000000000011,
       "noteIndexStart": 165,
-      "noteIndexEnd": 168
+      "noteIndexEnd": 176
     },
     {
       "id": "phrase-8",
       "label": "Phrase 8",
-      "beatStart": 44.75000000000012,
-      "beatEnd": 48.00000000000011,
-      "noteIndexStart": 169,
-      "noteIndexEnd": 176
-    },
-    {
-      "id": "phrase-9",
-      "label": "Phrase 9",
       "beatStart": 48.00000000000011,
       "beatEnd": 67.99999999999994,
       "noteIndexStart": 177,

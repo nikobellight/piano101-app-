@@ -51,16 +51,8 @@
       "id": "phrase-6",
       "label": "Phrase 6",
       "beatStart": 154.0,
-      "beatEnd": 186.00000000000003,
-      "noteIndexStart": 536,
-      "noteIndexEnd": 670
-    },
-    {
-      "id": "phrase-7",
-      "label": "Phrase 7",
-      "beatStart": 186.00000000000003,
       "beatEnd": 190.00000000000003,
-      "noteIndexStart": 671,
+      "noteIndexStart": 536,
       "noteIndexEnd": 673
     }
   ],

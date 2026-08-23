@@ -35,37 +35,21 @@
       "id": "phrase-4",
       "label": "Phrase 4",
       "beatStart": 112.0,
-      "beatEnd": 117.0,
+      "beatEnd": 133.0,
       "noteIndexStart": 119,
-      "noteIndexEnd": 121
+      "noteIndexEnd": 130
     },
     {
       "id": "phrase-5",
       "label": "Phrase 5",
-      "beatStart": 117.0,
-      "beatEnd": 133.0,
-      "noteIndexStart": 122,
-      "noteIndexEnd": 130
+      "beatStart": 133.0,
+      "beatEnd": 171.0,
+      "noteIndexStart": 131,
+      "noteIndexEnd": 232
     },
     {
       "id": "phrase-6",
       "label": "Phrase 6",
-      "beatStart": 133.0,
-      "beatEnd": 139.0,
-      "noteIndexStart": 131,
-      "noteIndexEnd": 133
-    },
-    {
-      "id": "phrase-7",
-      "label": "Phrase 7",
-      "beatStart": 139.0,
-      "beatEnd": 171.0,
-      "noteIndexStart": 134,
-      "noteIndexEnd": 232
-    },
-    {
-      "id": "phrase-8",
-      "label": "Phrase 8",
       "beatStart": 171.0,
       "beatEnd": 196.0,
       "noteIndexStart": 233,

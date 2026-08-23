@@ -59,40 +59,16 @@
       "id": "phrase-7",
       "label": "Phrase 7",
       "beatStart": 140.0,
-      "beatEnd": 141.0,
+      "beatEnd": 150.0,
       "noteIndexStart": 771,
-      "noteIndexEnd": 772
+      "noteIndexEnd": 807
     },
     {
       "id": "phrase-8",
       "label": "Phrase 8",
-      "beatStart": 141.0,
-      "beatEnd": 142.0,
-      "noteIndexStart": 773,
-      "noteIndexEnd": 776
-    },
-    {
-      "id": "phrase-9",
-      "label": "Phrase 9",
-      "beatStart": 142.0,
-      "beatEnd": 150.0,
-      "noteIndexStart": 777,
-      "noteIndexEnd": 807
-    },
-    {
-      "id": "phrase-10",
-      "label": "Phrase 10",
       "beatStart": 150.0,
-      "beatEnd": 182.0,
-      "noteIndexStart": 808,
-      "noteIndexEnd": 969
-    },
-    {
-      "id": "phrase-11",
-      "label": "Phrase 11",
-      "beatStart": 182.0,
       "beatEnd": 183.5,
-      "noteIndexStart": 970,
+      "noteIndexStart": 808,
       "noteIndexEnd": 976
     }
   ],
@@ -157,8 +133,8 @@
       "note": 81,
       "beat": 0.75,
       "durationBeats": 0.25,
-      "finger": 1,
-      "fingerSolo": 1,
+      "finger": 5,
+      "fingerSolo": 5,
       "hand": "right"
     },
     {
@@ -181,16 +157,16 @@
       "note": 71,
       "beat": 1.25,
       "durationBeats": 0.25,
-      "finger": 2,
-      "fingerSolo": 2,
+      "finger": 1,
+      "fingerSolo": 1,
       "hand": "right"
     },
     {
       "note": 83,
       "beat": 1.25,
       "durationBeats": 0.25,
-      "finger": 2,
-      "fingerSolo": 2,
+      "finger": 5,
+      "fingerSolo": 5,
       "hand": "right"
     },
     {
@@ -205,8 +181,8 @@
       "note": 79,
       "beat": 1.5,
       "durationBeats": 0.5,
-      "finger": 1,
-      "fingerSolo": 1,
+      "finger": 5,
+      "fingerSolo": 5,
       "hand": "right"
     },
     {
@@ -12023,8 +11999,8 @@
       "note": 55,
       "beat": 123.0,
       "durationBeats": 1.0,
-      "finger": 5,
-      "fingerSolo": 5,
+      "finger": 4,
+      "fingerSolo": 4,
       "hand": "left"
     },
     {

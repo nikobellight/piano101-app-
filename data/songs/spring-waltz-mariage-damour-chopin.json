@@ -1693,24 +1693,24 @@
       "note": 87,
       "beat": 72.5,
       "durationBeats": 0,
-      "finger": null,
-      "fingerSolo": null,
+      "finger": 1,
+      "fingerSolo": 1,
       "hand": "right"
     },
     {
       "note": 89,
       "beat": 72.5,
       "durationBeats": 0,
-      "finger": 4,
-      "fingerSolo": 4,
+      "finger": 3,
+      "fingerSolo": 3,
       "hand": "right"
     },
     {
       "note": 89,
       "beat": 72.5,
       "durationBeats": 0.25,
-      "finger": 4,
-      "fingerSolo": 4,
+      "finger": 5,
+      "fingerSolo": 5,
       "hand": "right"
     },
     {
@@ -2973,24 +2973,24 @@
       "note": 89,
       "beat": 126.5,
       "durationBeats": 0,
-      "finger": 4,
-      "fingerSolo": 4,
+      "finger": 1,
+      "fingerSolo": 1,
       "hand": "right"
     },
     {
       "note": 89,
       "beat": 126.5,
       "durationBeats": 0.25,
-      "finger": 4,
-      "fingerSolo": 4,
+      "finger": 3,
+      "fingerSolo": 3,
       "hand": "right"
     },
     {
       "note": 91,
       "beat": 126.5,
       "durationBeats": 0,
-      "finger": null,
-      "fingerSolo": null,
+      "finger": 5,
+      "fingerSolo": 5,
       "hand": "right"
     },
     {
@@ -3357,8 +3357,8 @@
       "note": 77,
       "beat": 142.5,
       "durationBeats": 0,
-      "finger": 3,
-      "fingerSolo": 3,
+      "finger": 1,
+      "fingerSolo": 1,
       "hand": "right"
     },
     {
@@ -3373,8 +3373,8 @@
       "note": 79,
       "beat": 142.5,
       "durationBeats": 0,
-      "finger": null,
-      "fingerSolo": null,
+      "finger": 5,
+      "fingerSolo": 5,
       "hand": "right"
     },
     {
@@ -5589,24 +5589,24 @@
       "note": 89,
       "beat": 250.0,
       "durationBeats": 0,
-      "finger": 4,
-      "fingerSolo": 4,
+      "finger": 1,
+      "fingerSolo": 1,
       "hand": "right"
     },
     {
       "note": 89,
       "beat": 250.0,
       "durationBeats": 0.25,
-      "finger": 4,
-      "fingerSolo": 4,
+      "finger": 3,
+      "fingerSolo": 3,
       "hand": "right"
     },
     {
       "note": 91,
       "beat": 250.0,
       "durationBeats": 0,
-      "finger": null,
-      "fingerSolo": null,
+      "finger": 5,
+      "fingerSolo": 5,
       "hand": "right"
     },
     {

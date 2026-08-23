@@ -878,7 +878,7 @@
       "beat": 63.5,
       "durationBeats": 1.5,
       "finger": 1,
-      "fingerSolo": 5,
+      "fingerSolo": 1,
       "hand": "right"
     },
     {
@@ -926,7 +926,7 @@
       "beat": 68.0,
       "durationBeats": 0.5,
       "finger": 2,
-      "fingerSolo": 5,
+      "fingerSolo": 1,
       "hand": "right"
     },
     {

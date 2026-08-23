@@ -51,152 +51,88 @@
       "id": "phrase-6",
       "label": "Phrase 6",
       "beatStart": 88.0,
-      "beatEnd": 89.75,
+      "beatEnd": 91.0,
       "noteIndexStart": 202,
-      "noteIndexEnd": 205
+      "noteIndexEnd": 209
     },
     {
       "id": "phrase-7",
       "label": "Phrase 7",
-      "beatStart": 89.75,
-      "beatEnd": 91.0,
-      "noteIndexStart": 206,
-      "noteIndexEnd": 209
+      "beatStart": 91.0,
+      "beatEnd": 96.00000000000001,
+      "noteIndexStart": 210,
+      "noteIndexEnd": 225
     },
     {
       "id": "phrase-8",
       "label": "Phrase 8",
-      "beatStart": 91.0,
-      "beatEnd": 92.0,
-      "noteIndexStart": 210,
-      "noteIndexEnd": 211
-    },
-    {
-      "id": "phrase-9",
-      "label": "Phrase 9",
-      "beatStart": 92.0,
-      "beatEnd": 92.5,
-      "noteIndexStart": 212,
-      "noteIndexEnd": 213
-    },
-    {
-      "id": "phrase-10",
-      "label": "Phrase 10",
-      "beatStart": 92.5,
-      "beatEnd": 96.00000000000001,
-      "noteIndexStart": 214,
-      "noteIndexEnd": 225
-    },
-    {
-      "id": "phrase-11",
-      "label": "Phrase 11",
       "beatStart": 96.00000000000001,
       "beatEnd": 128.5,
       "noteIndexStart": 226,
       "noteIndexEnd": 375
     },
     {
-      "id": "phrase-12",
-      "label": "Phrase 12",
+      "id": "phrase-9",
+      "label": "Phrase 9",
       "beatStart": 128.5,
       "beatEnd": 136.0,
       "noteIndexStart": 376,
       "noteIndexEnd": 408
     },
     {
-      "id": "phrase-13",
-      "label": "Phrase 13",
+      "id": "phrase-10",
+      "label": "Phrase 10",
       "beatStart": 136.0,
       "beatEnd": 168.0,
       "noteIndexStart": 409,
       "noteIndexEnd": 473
     },
     {
-      "id": "phrase-14",
-      "label": "Phrase 14",
+      "id": "phrase-11",
+      "label": "Phrase 11",
       "beatStart": 168.0,
       "beatEnd": 172.5,
       "noteIndexStart": 474,
       "noteIndexEnd": 481
     },
     {
-      "id": "phrase-15",
-      "label": "Phrase 15",
+      "id": "phrase-12",
+      "label": "Phrase 12",
       "beatStart": 172.5,
       "beatEnd": 180.5,
       "noteIndexStart": 482,
       "noteIndexEnd": 500
     },
     {
-      "id": "phrase-16",
-      "label": "Phrase 16",
+      "id": "phrase-13",
+      "label": "Phrase 13",
       "beatStart": 180.5,
       "beatEnd": 192.0,
       "noteIndexStart": 501,
       "noteIndexEnd": 541
     },
     {
-      "id": "phrase-17",
-      "label": "Phrase 17",
+      "id": "phrase-14",
+      "label": "Phrase 14",
       "beatStart": 192.0,
-      "beatEnd": 193.75,
-      "noteIndexStart": 542,
-      "noteIndexEnd": 545
-    },
-    {
-      "id": "phrase-18",
-      "label": "Phrase 18",
-      "beatStart": 193.75,
       "beatEnd": 195.0,
-      "noteIndexStart": 546,
+      "noteIndexStart": 542,
       "noteIndexEnd": 549
     },
     {
-      "id": "phrase-19",
-      "label": "Phrase 19",
+      "id": "phrase-15",
+      "label": "Phrase 15",
       "beatStart": 195.0,
-      "beatEnd": 196.0,
-      "noteIndexStart": 550,
-      "noteIndexEnd": 551
-    },
-    {
-      "id": "phrase-20",
-      "label": "Phrase 20",
-      "beatStart": 196.0,
-      "beatEnd": 196.5,
-      "noteIndexStart": 552,
-      "noteIndexEnd": 553
-    },
-    {
-      "id": "phrase-21",
-      "label": "Phrase 21",
-      "beatStart": 196.5,
       "beatEnd": 199.99999999999994,
-      "noteIndexStart": 554,
+      "noteIndexStart": 550,
       "noteIndexEnd": 565
     },
     {
-      "id": "phrase-22",
-      "label": "Phrase 22",
+      "id": "phrase-16",
+      "label": "Phrase 16",
       "beatStart": 199.99999999999994,
-      "beatEnd": 200.99999999999994,
-      "noteIndexStart": 566,
-      "noteIndexEnd": 568
-    },
-    {
-      "id": "phrase-23",
-      "label": "Phrase 23",
-      "beatStart": 200.99999999999994,
-      "beatEnd": 201.99999999999994,
-      "noteIndexStart": 569,
-      "noteIndexEnd": 572
-    },
-    {
-      "id": "phrase-24",
-      "label": "Phrase 24",
-      "beatStart": 201.99999999999994,
       "beatEnd": 203.99999999999994,
-      "noteIndexStart": 573,
+      "noteIndexStart": 566,
       "noteIndexEnd": 576
     }
   ],

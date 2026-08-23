@@ -285,16 +285,16 @@
       "note": 69,
       "beat": 21.0,
       "durationBeats": 3.0,
-      "finger": 4,
-      "fingerSolo": 4,
+      "finger": 1,
+      "fingerSolo": 1,
       "hand": "right"
     },
     {
       "note": 71,
       "beat": 21.0,
       "durationBeats": 0,
-      "finger": 5,
-      "fingerSolo": 5,
+      "finger": 3,
+      "fingerSolo": 3,
       "hand": "right"
     },
     {

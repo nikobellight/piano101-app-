@@ -12,18 +12,10 @@
     {
       "id": "phrase-1",
       "label": "Phrase 1",
-      "noteIndexStart": 0,
-      "noteIndexEnd": 7,
       "beatStart": 0,
-      "beatEnd": 7
-    },
-    {
-      "id": "phrase-2",
-      "label": "Phrase 2",
-      "noteIndexStart": 8,
-      "noteIndexEnd": 14,
-      "beatStart": 8,
-      "beatEnd": 14
+      "beatEnd": 14,
+      "noteIndexStart": 0,
+      "noteIndexEnd": 13
     }
   ],
   "notes": [

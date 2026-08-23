@@ -11,85 +11,77 @@
       "id": "phrase-1",
       "label": "Phrase 1",
       "beatStart": 83.0,
-      "beatEnd": 87.0,
+      "beatEnd": 264.0,
       "noteIndexStart": 0,
-      "noteIndexEnd": 4
+      "noteIndexEnd": 9
     },
     {
       "id": "phrase-2",
       "label": "Phrase 2",
-      "beatStart": 87.0,
-      "beatEnd": 264.0,
-      "noteIndexStart": 5,
-      "noteIndexEnd": 9
-    },
-    {
-      "id": "phrase-3",
-      "label": "Phrase 3",
       "beatStart": 264.0,
       "beatEnd": 296.0,
       "noteIndexStart": 10,
       "noteIndexEnd": 137
     },
     {
-      "id": "phrase-4",
-      "label": "Phrase 4",
+      "id": "phrase-3",
+      "label": "Phrase 3",
       "beatStart": 296.0,
       "beatEnd": 328.0,
       "noteIndexStart": 138,
       "noteIndexEnd": 265
     },
     {
-      "id": "phrase-5",
-      "label": "Phrase 5",
+      "id": "phrase-4",
+      "label": "Phrase 4",
       "beatStart": 328.0,
       "beatEnd": 343.5,
       "noteIndexStart": 266,
       "noteIndexEnd": 304
     },
     {
-      "id": "phrase-6",
-      "label": "Phrase 6",
+      "id": "phrase-5",
+      "label": "Phrase 5",
       "beatStart": 343.5,
       "beatEnd": 375.5,
       "noteIndexStart": 305,
       "noteIndexEnd": 394
     },
     {
-      "id": "phrase-7",
-      "label": "Phrase 7",
+      "id": "phrase-6",
+      "label": "Phrase 6",
       "beatStart": 375.5,
       "beatEnd": 407.5,
       "noteIndexStart": 395,
       "noteIndexEnd": 521
     },
     {
-      "id": "phrase-8",
-      "label": "Phrase 8",
+      "id": "phrase-7",
+      "label": "Phrase 7",
       "beatStart": 407.5,
       "beatEnd": 439.5,
       "noteIndexStart": 522,
       "noteIndexEnd": 649
     },
     {
-      "id": "phrase-9",
-      "label": "Phrase 9",
+      "id": "phrase-8",
+      "label": "Phrase 8",
       "beatStart": 439.5,
       "beatEnd": 471.5,
       "noteIndexStart": 650,
       "noteIndexEnd": 777
     },
     {
-      "id": "phrase-10",
-      "label": "Phrase 10",
+      "id": "phrase-9",
+      "label": "Phrase 9",
       "beatStart": 471.5,
       "beatEnd": 503.5,
       "noteIndexStart": 778,
       "noteIndexEnd": 905
     },
     {
-      "id": "phrase-11",
-      "label": "Phrase 11",
+      "id": "phrase-10",
+      "label": "Phrase 10",
       "beatStart": 503.5,
       "beatEnd": 528.0,
       "noteIndexStart": 906,

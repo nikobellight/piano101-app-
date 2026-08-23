@@ -35,16 +35,8 @@
       "id": "phrase-4",
       "label": "Phrase 4",
       "beatStart": 76.99999999999999,
-      "beatEnd": 92.99999999999999,
-      "noteIndexStart": 74,
-      "noteIndexEnd": 81
-    },
-    {
-      "id": "phrase-5",
-      "label": "Phrase 5",
-      "beatStart": 92.99999999999999,
       "beatEnd": 100.99999999999999,
-      "noteIndexStart": 82,
+      "noteIndexStart": 74,
       "noteIndexEnd": 86
     }
   ],
@@ -4831,6 +4823,14 @@
       "note": 54,
       "beat": 94.99999999999999,
       "durationBeats": 2.0,
+      "finger": 4,
+      "fingerSolo": null,
+      "hand": "left"
+    },
+    {
+      "note": 59,
+      "beat": 94.99999999999999,
+      "durationBeats": 2.0,
       "finger": 3,
       "fingerSolo": null,
       "hand": "left"
@@ -4839,15 +4839,7 @@
       "note": 59,
       "beat": 94.99999999999999,
       "durationBeats": 2.0,
-      "finger": 1,
-      "fingerSolo": null,
-      "hand": "left"
-    },
-    {
-      "note": 59,
-      "beat": 94.99999999999999,
-      "durationBeats": 2.0,
-      "finger": 5,
+      "finger": 2,
       "fingerSolo": null,
       "hand": "left"
     },
@@ -4855,7 +4847,7 @@
       "note": 66,
       "beat": 94.99999999999999,
       "durationBeats": 2.0,
-      "finger": 2,
+      "finger": 1,
       "fingerSolo": null,
       "hand": "left"
     },
