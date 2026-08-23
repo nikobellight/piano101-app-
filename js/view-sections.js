@@ -1,6 +1,16 @@
-// v1.4
+// v1.5
 // view-sections.js — SPA version of the old sections.js. Same circles,
 // stars, Revision and Continue buttons. Differences:
+//
+// v1.5: per Nico, the revision system wasn't what he wanted at all —
+// removed the adjacent-pair mid-revisions entirely (1+2 as one circle,
+// 3+4 as a separate one, and so on) and lowered the cumulative
+// revision's threshold from 3 phrases to 2, so IT is now the only
+// revision mechanic below "whole song": pass phrases 1-2 and you get
+// "Revision — Phrases 1-2"; pass 3 and it grows to "Phrases 1-3"; and
+// so on until it's replaced by the existing "Whole song" Revision once
+// everything is passed. buildMidRevisionSection() is gone along with it
+// — nothing else referenced it.
 //
 // v1.4: two fixes —
 //  1. syncHandTabs()/wireHandTabs() now query "#hand-tabs .hand-tab"
@@ -128,33 +138,15 @@ window.ViewSections = (function () {
     Router.go(`#/song/${encodeURIComponent(Store.songId)}/all`);
   }
 
-  // Builds (and caches on `song.sections`, so Learning can find it by id
-  // the same way as any real section) a synthetic section spanning two
-  // consecutive real ones. Returns null if either lacks beatStart/beatEnd
-  // (the two hand-made original songs predate that field) — no revision
-  // circle is grown for those rather than risk a broken beat window.
-  function buildMidRevisionSection(secA, secB) {
-    if (secA.beatStart == null || secB.beatEnd == null) return null;
-    const id = `midrev-${secA.id}-${secB.id}`;
-    let existing = song.sections.find((s) => s.id === id);
-    if (existing) return existing;
-    const synthetic = {
-      id,
-      label: `${secA.label} + ${secB.label}`,
-      beatStart: secA.beatStart,
-      beatEnd: secB.beatEnd,
-      isSynthetic: true, // harmless marker; nothing currently reads it
-    };
-    song.sections.push(synthetic);
-    return synthetic;
-  }
-
   // Spans phrase 1 through the last one passed in a row (realSections is
   // 0-indexed, passedCount is a count — so the last involved phrase is
-  // realSections[passedCount - 1]). Same caching-by-id trick as
-  // buildMidRevisionSection so Learning can look it up by id later, and
-  // so re-render()ing mid-session (a score just earned) doesn't grow
-  // duplicate synthetic entries on song.sections.
+  // realSections[passedCount - 1]). Caches the synthetic section on
+  // song.sections by id (same trick real sections use), so Learning can
+  // find it later and re-render()ing mid-session (a score just earned)
+  // doesn't grow duplicate entries. Returns null if the first or last
+  // involved section lacks beatStart/beatEnd (the two hand-made original
+  // songs predate that field) — no revision circle is grown for those
+  // rather than risk a broken beat window.
   function buildCumulativeRevisionSection(realSections, passedCount) {
     const first = realSections[0];
     const last = realSections[passedCount - 1];
@@ -197,38 +189,18 @@ window.ViewSections = (function () {
           onClick: () => goToLearning(sec.id),
         })
       );
-
-      // One "Revision" circle per adjacent pair that's both passed —
-      // shown right after the pair, before moving on to the next phrase.
-      if (i > 0) {
-        const prev = realSections[i - 1];
-        if (Store.isPassed(prev.id) && Store.isPassed(sec.id)) {
-          const mid = buildMidRevisionSection(prev, sec);
-          if (mid) {
-            grid.appendChild(
-              buildCircle({
-                className: "mid-revision",
-                title: "Revision",
-                subtitle: mid.label,
-                pct: null,
-                locked: false,
-                onClick: () => goToLearning(mid.id),
-              })
-            );
-          }
-        }
-      }
     });
 
     // "Review everything so far" — grows by one phrase each time another
-    // is passed in a row. Sits between the adjacent-pair revisions above
-    // (which stay fixed at exactly 2 phrases) and the whole-song
-    // Revision below (which still needs 100%). Only shown from 3 phrases
-    // passed in a row (2 is already covered by the pair revision above),
-    // and hidden again once every phrase is passed — the whole-song
-    // Revision takes over at that point, same ground, no need for both.
+    // is passed in a row: after phrases 1-2, "Phrases 1-2"; after 1-2-3,
+    // "Phrases 1-3"; and so on until the whole song is covered, at which
+    // point the Revision (whole song) circle below takes over instead.
+    // This REPLACES what used to be a separate "Revision" circle per
+    // adjacent pair (1+2, then 2+3, then 3+4, ...) — per Nico, that
+    // wasn't the point at all: a revision should be cumulative from the
+    // start, not a series of disjoint 2-phrase windows.
     const passedCount = firstUnpassedIndex === -1 ? realSections.length : firstUnpassedIndex;
-    if (passedCount >= 3 && firstUnpassedIndex !== -1) {
+    if (passedCount >= 2 && firstUnpassedIndex !== -1) {
       const cumulative = buildCumulativeRevisionSection(realSections, passedCount);
       if (cumulative) {
         grid.appendChild(
