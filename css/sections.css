@@ -1,4 +1,7 @@
-/* v1.1 */
+/* v1.2 */
+/* sections.css — v1.2: .revision-picker (the "Choisir une révision"
+   custom-range picker) and .section-circle.selected / .not-selectable
+   for its selection mode. */
 /* sections.css — Styles for the section-select page (song → sections grid),
    shares color tokens/fonts with style.css.
    v1.1: added .sections-topbar (back-link + BLE widget row). */
@@ -154,4 +157,72 @@
   border-color: transparent;
   color: #fff;
   font-size: 13px;
+}
+
+/* ---------- Custom revision picker ---------- */
+
+.revision-picker {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+  min-height: 40px;
+}
+
+.revision-picker:empty {
+  margin-bottom: 0;
+  min-height: 0;
+}
+
+.revision-picker-btn {
+  border: 1px solid var(--line);
+  background: var(--surface-raised);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 700;
+  font-family: var(--font-body);
+  padding: 10px 20px;
+  border-radius: 999px;
+  transition: border-color 0.15s ease, transform 0.12s ease;
+}
+
+.revision-picker-btn:hover {
+  border-color: var(--amber);
+  transform: translateY(-1px);
+}
+
+.revision-picker-btn.primary {
+  background: linear-gradient(160deg, #7a8fd6, #4c5ce0);
+  border-color: transparent;
+  color: #fff;
+}
+
+.revision-picker-btn.secondary {
+  color: var(--muted);
+}
+
+.revision-picker-hint {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* A phrase tapped while choosing a custom revision range */
+.section-circle.selected {
+  outline: 3px solid #7a8fd6;
+  outline-offset: 3px;
+}
+
+/* Passed but not eligible right now (revision picker is open and this
+   phrase hasn't been passed yet) — dimmed like .locked, but distinct:
+   nothing is actually locked, it's just not selectable this moment. */
+.section-circle.not-selectable {
+  cursor: not-allowed;
+  opacity: 0.45;
+  box-shadow: none;
+}
+
+.section-circle.not-selectable:hover {
+  transform: none;
+  box-shadow: none;
 }
