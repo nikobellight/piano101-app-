@@ -1,6 +1,17 @@
-// v1.6
+// v1.7
 // view-sections.js — SPA version of the old sections.js. Same circles,
 // stars, Revision and Continue buttons. Differences:
+//
+// v1.7: custom revision picker, per Nico — a "Choisir une révision"
+// button (renderRevisionPicker, needs index.html v3.5's #revision-picker
+// container and css/sections.css v1.2's styles) turns on a selection
+// mode where tapping passed phrases builds an arbitrary revision range
+// instead of always getting the automatic "everything since the start"
+// one. Since a revision is one continuous beat window under the hood,
+// the picked phrases don't have to be contiguous — the result always
+// spans from the earliest to the latest one tapped, everything between
+// included (buildCustomRevisionSection). Reset on every mount() so a
+// stale selection never carries over between songs or visits.
 //
 // v1.6: the cumulative revision circle now renders right after the last
 // phrase of the passed-in-a-row streak it covers, instead of after the
@@ -80,6 +91,12 @@ window.ViewSections = (function () {
   let song = null;
   let wiredTabs = false;
 
+  // Custom revision picker state — a person taps circles to build an
+  // arbitrary phrase range to review, rather than always getting the
+  // automatic "everything since the start" cumulative revision.
+  let selectionMode = false;
+  let selectedIds = new Set();
+
   function starsForPct(pct) {
     if (pct >= 100) return 3;
     if (pct >= PASS_THRESHOLD) return 2;
@@ -100,12 +117,12 @@ window.ViewSections = (function () {
     return el;
   }
 
-  function buildCircle({ className, title, subtitle, pct, locked, onClick }) {
+  function buildCircle({ className, title, subtitle, pct, locked, selected, notSelectable, onClick }) {
     const wrap = document.createElement("div");
     wrap.className = "section-circle-wrap";
 
     const btn = document.createElement("button");
-    btn.className = `section-circle ${className || ""} ${locked ? "locked" : ""}`.trim();
+    btn.className = `section-circle ${className || ""} ${locked ? "locked" : ""} ${selected ? "selected" : ""} ${notSelectable ? "not-selectable" : ""}`.trim();
     if (locked) {
       const lockIcon = document.createElement("span");
       lockIcon.className = "lock-icon";
@@ -114,9 +131,9 @@ window.ViewSections = (function () {
     } else {
       btn.textContent = title;
     }
-    if (locked) {
+    if (locked || notSelectable) {
       btn.disabled = true;
-      btn.title = "Pass the previous phrase first";
+      btn.title = locked ? "Pass the previous phrase first" : "Not eligible for this revision";
     } else {
       btn.addEventListener("click", onClick);
     }
@@ -173,6 +190,95 @@ window.ViewSections = (function () {
     return synthetic;
   }
 
+  // Same caching-by-id technique as buildCumulativeRevisionSection, but
+  // for a person-picked range instead of always starting at phrase 1.
+  // startIdx/endIdx are REAL-SECTION indices (0-based), not ids — the
+  // caller (renderRevisionPicker) resolves selectedIds down to a
+  // contiguous index range first, since a revision is always continuous
+  // beat-wise: picking phrases 3 and 7 without 4-6 still reviews 3
+  // through 7 in full, there's no way to "skip" the middle.
+  function buildCustomRevisionSection(realSections, startIdx, endIdx) {
+    const first = realSections[startIdx];
+    const last = realSections[endIdx];
+    if (first.beatStart == null || last.beatEnd == null) return null;
+    const id = `customrev-${first.id}-${last.id}`;
+    let existing = song.sections.find((s) => s.id === id);
+    if (existing) return existing;
+    const synthetic = {
+      id,
+      label: startIdx === endIdx ? first.label : `${first.label} – ${last.label}`,
+      beatStart: first.beatStart,
+      beatEnd: last.beatEnd,
+      isSynthetic: true,
+    };
+    song.sections.push(synthetic);
+    return synthetic;
+  }
+
+  // The "Choisir une révision" control bar above the phrase grid — one
+  // button when idle, "Cancel" + a hint + "Démarrer" once picking.
+  // Selected phrases don't have to be contiguous to tap, but the
+  // resulting revision always is: it spans from the EARLIEST to the
+  // LATEST selected phrase's index, everything in between included,
+  // since a revision is a single continuous beat window under the
+  // hood — there's no way to "skip" the middle of a song.
+  function renderRevisionPicker(realSections, passedCount, firstUnpassedIndex) {
+    const container = document.getElementById("revision-picker");
+    container.innerHTML = "";
+
+    const canOffer = passedCount >= 2 && firstUnpassedIndex !== -1;
+
+    if (!selectionMode) {
+      if (!canOffer) return;
+      const startBtn = document.createElement("button");
+      startBtn.className = "revision-picker-btn";
+      startBtn.textContent = "Choisir une révision";
+      startBtn.addEventListener("click", () => {
+        selectionMode = true;
+        selectedIds = new Set();
+        render();
+      });
+      container.appendChild(startBtn);
+      return;
+    }
+
+    const cancelBtn = document.createElement("button");
+    cancelBtn.className = "revision-picker-btn secondary";
+    cancelBtn.textContent = "Annuler";
+    cancelBtn.addEventListener("click", () => {
+      selectionMode = false;
+      selectedIds = new Set();
+      render();
+    });
+    container.appendChild(cancelBtn);
+
+    const hint = document.createElement("span");
+    hint.className = "revision-picker-hint";
+    hint.textContent =
+      selectedIds.size >= 2
+        ? `${selectedIds.size} phrases sélectionnées`
+        : "Sélectionne au moins 2 phrases";
+    container.appendChild(hint);
+
+    if (selectedIds.size >= 2) {
+      const goBtn = document.createElement("button");
+      goBtn.className = "revision-picker-btn primary";
+      goBtn.textContent = "Démarrer la révision";
+      goBtn.addEventListener("click", () => {
+        const indices = realSections
+          .map((s, i) => (selectedIds.has(s.id) ? i : -1))
+          .filter((i) => i !== -1);
+        const startIdx = Math.min(...indices);
+        const endIdx = Math.max(...indices);
+        const custom = buildCustomRevisionSection(realSections, startIdx, endIdx);
+        selectionMode = false;
+        selectedIds = new Set();
+        if (custom) goToLearning(custom.id);
+      });
+      container.appendChild(goBtn);
+    }
+  }
+
   function render() {
     const grid = document.getElementById("section-grid");
     grid.innerHTML = "";
@@ -193,13 +299,29 @@ window.ViewSections = (function () {
     realSections.forEach((sec, i) => {
       const pct = Store.completed[sec.id] || 0;
       const locked = firstUnpassedIndex !== -1 && i > firstUnpassedIndex;
+      const passed = Store.isPassed(sec.id);
+      // While choosing a custom revision, only passed phrases can be
+      // added to the range — tapping one toggles it instead of jumping
+      // into Learning. A passed phrase keeps its normal click behavior
+      // the rest of the time.
+      const notSelectable = selectionMode && !passed;
+      const onCircleClick = selectionMode
+        ? () => {
+            if (!passed) return;
+            if (selectedIds.has(sec.id)) selectedIds.delete(sec.id);
+            else selectedIds.add(sec.id);
+            render();
+          }
+        : () => goToLearning(sec.id);
       grid.appendChild(
         buildCircle({
           title: `${sec.noteIndexStart + 1}-${sec.noteIndexEnd + 1}`,
           subtitle: sec.label,
           pct,
-          locked,
-          onClick: () => goToLearning(sec.id),
+          locked: locked && !selectionMode, // selectionMode uses notSelectable instead
+          selected: selectionMode && selectedIds.has(sec.id),
+          notSelectable,
+          onClick: onCircleClick,
         })
       );
 
@@ -212,9 +334,10 @@ window.ViewSections = (function () {
       // phrase each time another is passed: after 1-2, "Phrases 1-2";
       // after 1-2-3, "Phrases 1-3"; and so on until the whole song is
       // covered, at which point the Revision (whole song) circle below
-      // takes over instead.
+      // takes over instead. Hidden while picking a custom revision —
+      // one revision-building UI on screen at a time.
       const isLastOfStreak = i === passedCount - 1;
-      if (isLastOfStreak && passedCount >= 2 && firstUnpassedIndex !== -1) {
+      if (!selectionMode && isLastOfStreak && passedCount >= 2 && firstUnpassedIndex !== -1) {
         const cumulative = buildCumulativeRevisionSection(realSections, passedCount);
         if (cumulative) {
           grid.appendChild(
@@ -231,9 +354,13 @@ window.ViewSections = (function () {
       }
     });
 
+    renderRevisionPicker(realSections, passedCount, firstUnpassedIndex);
+
     // "Revision" (whole song) is meant for reviewing what's already been
     // earned, same philosophy as the mid-revision circles above — locked
     // until every real phrase is passed, not available from the start.
+    // Dimmed (not truly locked) while picking a custom revision, so
+    // there's exactly one revision-building flow active at a time.
     const allPassed = realSections.length > 0 && firstUnpassedIndex === -1;
     grid.appendChild(
       buildCircle({
@@ -241,12 +368,15 @@ window.ViewSections = (function () {
         title: "Revision",
         subtitle: "Whole song",
         pct: null,
-        locked: !allPassed,
-        onClick: () => goToLearning("all"),
+        locked: !allPassed && !selectionMode,
+        notSelectable: selectionMode,
+        onClick: selectionMode ? () => {} : () => goToLearning("all"),
       })
     );
 
-    const nextSection = realSections.find((sec) => (Store.completed[sec.id] || 0) < 100);
+    const nextSection = selectionMode
+      ? null
+      : realSections.find((sec) => (Store.completed[sec.id] || 0) < 100);
     if (nextSection) {
       grid.appendChild(
         buildCircle({
@@ -288,6 +418,12 @@ window.ViewSections = (function () {
 
   async function mount(songId) {
     Store.songId = songId;
+
+    // Reset the revision picker every time this page is entered — a
+    // stale selection from a previous visit (or a different song
+    // entirely) shouldn't linger.
+    selectionMode = false;
+    selectedIds = new Set();
 
     // Defensive: guarantee "Right" is always selected, even if Store.hand
     // somehow ends up holding anything other than the two valid values —
