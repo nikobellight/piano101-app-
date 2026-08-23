@@ -1,6 +1,14 @@
-// v1.5
+// v1.6
 // view-sections.js — SPA version of the old sections.js. Same circles,
 // stars, Revision and Continue buttons. Differences:
+//
+// v1.6: the cumulative revision circle now renders right after the last
+// phrase of the passed-in-a-row streak it covers, instead of after the
+// entire phrase grid. On a long song (Clair de Lune's 28 phrases), a
+// circle tacked on at the very end was easy to miss entirely — nothing
+// connected it visually to the 2-3 phrases it actually reviewed. Same
+// growth behavior as before (Phrases 1-2, then 1-3, then 1-4...), just
+// placed where it's actually next to what it's reviewing.
 //
 // v1.5: per Nico, the revision system wasn't what he wanted at all —
 // removed the adjacent-pair mid-revisions entirely (1+2 as one circle,
@@ -177,6 +185,11 @@ window.ViewSections = (function () {
 
     const firstUnpassedIndex = realSections.findIndex((s) => !Store.isPassed(s.id));
 
+    // How many real phrases are passed in a row from the start — always
+    // a plain prefix count, since locking already prevents passing one
+    // out of order (see `locked` below).
+    const passedCount = firstUnpassedIndex === -1 ? realSections.length : firstUnpassedIndex;
+
     realSections.forEach((sec, i) => {
       const pct = Store.completed[sec.id] || 0;
       const locked = firstUnpassedIndex !== -1 && i > firstUnpassedIndex;
@@ -189,32 +202,34 @@ window.ViewSections = (function () {
           onClick: () => goToLearning(sec.id),
         })
       );
-    });
 
-    // "Review everything so far" — grows by one phrase each time another
-    // is passed in a row: after phrases 1-2, "Phrases 1-2"; after 1-2-3,
-    // "Phrases 1-3"; and so on until the whole song is covered, at which
-    // point the Revision (whole song) circle below takes over instead.
-    // This REPLACES what used to be a separate "Revision" circle per
-    // adjacent pair (1+2, then 2+3, then 3+4, ...) — per Nico, that
-    // wasn't the point at all: a revision should be cumulative from the
-    // start, not a series of disjoint 2-phrase windows.
-    const passedCount = firstUnpassedIndex === -1 ? realSections.length : firstUnpassedIndex;
-    if (passedCount >= 2 && firstUnpassedIndex !== -1) {
-      const cumulative = buildCumulativeRevisionSection(realSections, passedCount);
-      if (cumulative) {
-        grid.appendChild(
-          buildCircle({
-            className: "mid-revision",
-            title: "Revision",
-            subtitle: cumulative.label,
-            pct: null,
-            locked: false,
-            onClick: () => goToLearning(cumulative.id),
-          })
-        );
+      // "Review everything so far" goes RIGHT HERE — immediately after
+      // the last phrase of the current passed-in-a-row streak — not
+      // after the whole grid. On a long song (Clair de Lune's 28
+      // phrases), a circle tacked on at the very end reads as
+      // disconnected from the 2-3 phrases it actually covers; sitting
+      // right next to them makes the connection obvious. Grows by one
+      // phrase each time another is passed: after 1-2, "Phrases 1-2";
+      // after 1-2-3, "Phrases 1-3"; and so on until the whole song is
+      // covered, at which point the Revision (whole song) circle below
+      // takes over instead.
+      const isLastOfStreak = i === passedCount - 1;
+      if (isLastOfStreak && passedCount >= 2 && firstUnpassedIndex !== -1) {
+        const cumulative = buildCumulativeRevisionSection(realSections, passedCount);
+        if (cumulative) {
+          grid.appendChild(
+            buildCircle({
+              className: "mid-revision",
+              title: "Revision",
+              subtitle: cumulative.label,
+              pct: null,
+              locked: false,
+              onClick: () => goToLearning(cumulative.id),
+            })
+          );
+        }
       }
-    }
+    });
 
     // "Revision" (whole song) is meant for reviewing what's already been
     // earned, same philosophy as the mid-revision circles above — locked
