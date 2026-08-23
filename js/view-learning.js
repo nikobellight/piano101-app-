@@ -1,3 +1,12 @@
+// v3.17
+// view-learning.js
+// v3.17: mistake/timing penalties in finalPercent() are now HALVED
+// specifically during a revision (whole song, or the cumulative
+// "everything so far" one) — a revision covers many more notes than a
+// single phrase and doesn't lock anything downstream, so the same
+// per-mistake penalty was disproportionately harsh once multiplied
+// across that many notes. Normal phrases are untouched.
+//
 // v3.16
 // view-learning.js
 // v3.16: two fixes per Nico —
@@ -1294,15 +1303,29 @@ window.ViewLearning = (function () {
   // like a loop rather than a pause.
   const LOOP_RESTART_DELAY_MS = 900;
 
+  // A revision (whole song, or the cumulative "everything so far" one
+  // from view-sections.js) covers many more notes than a single phrase
+  // and doesn't gate anything downstream — no next phrase is locked
+  // behind it. The same per-mistake penalty that keeps a single phrase
+  // honest becomes disproportionately harsh once it's multiplied across
+  // a whole revision's worth of notes, per Nico. "midrev-" is included
+  // for any old data still using it, even though view-sections.js no
+  // longer creates new ones.
+  function isRevisionSection() {
+    const id = Store.sectionId;
+    return id === "all" || id.startsWith("cumrev-") || id.startsWith("midrev-");
+  }
+
   function finalPercent() {
     const total = state.noteScores.length;
     if (total === 0) return 0;
     const mean = state.noteScores.reduce((a, b) => a + b, 0) / total;
+    const revisionFactor = isRevisionSection() ? 0.5 : 1;
     const penalty = Math.max(
       0,
       1 -
-        MISTAKE_PENALTY * state.totalWrongAttempts -
-        LATE_PENALTY * (state.totalEarlyHits + state.totalLateHits)
+        MISTAKE_PENALTY * revisionFactor * state.totalWrongAttempts -
+        LATE_PENALTY * revisionFactor * (state.totalEarlyHits + state.totalLateHits)
     );
     return Math.round(mean * penalty * 100);
   }
