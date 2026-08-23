@@ -1649,6 +1649,7 @@ window.ViewLearning = (function () {
     const detailEl = document.getElementById("score-modal-detail");
     const primaryBtn = document.getElementById("score-modal-primary");
     const secondaryBtn = document.getElementById("score-modal-secondary");
+    const tertiaryBtn = document.getElementById("score-modal-tertiary");
 
     const celebrate = counts && passed;
     card.classList.toggle("passed", celebrate);
@@ -1674,6 +1675,16 @@ window.ViewLearning = (function () {
     primaryBtn.textContent = counts ? (passed ? "Continue" : "Try again") : "Try again";
     secondaryBtn.textContent = counts ? (passed ? "Practice again" : "Back to sections") : "Back to sections";
 
+    // A 3rd "Back to sections" only exists for the passed case — the
+    // failed/practice-run pair already has it as the secondary button,
+    // no need for a duplicate there. Before this, passing a phrase left
+    // only "Continue" (straight to the next phrase) or "Practice again"
+    // (redo this one) — no way back to the phrase grid without one of
+    // those two, which per Nico made no sense: you should be able to
+    // play through phrases freely and go back to Sections whenever you
+    // choose, not be funneled through Continue every time.
+    tertiaryBtn.classList.toggle("hidden", !celebrate);
+
     primaryBtn.onclick = () => {
       closeScoreModal();
       if (celebrate) {
@@ -1691,6 +1702,10 @@ window.ViewLearning = (function () {
       closeScoreModal();
       if (celebrate) startPractice();
       else Router.go(`#/song/${encodeURIComponent(Store.songId)}`);
+    };
+    tertiaryBtn.onclick = () => {
+      closeScoreModal();
+      Router.go(`#/song/${encodeURIComponent(Store.songId)}`);
     };
 
     // Gauge starts fully masked, then animates down to reveal `pct`'s
