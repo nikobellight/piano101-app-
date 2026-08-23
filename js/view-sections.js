@@ -1,6 +1,11 @@
-// v1.8
+// v1.9
 // view-sections.js — SPA version of the old sections.js. Same circles,
 // stars, Revision and Continue buttons. Differences:
+//
+// v1.9: pct/locking reads now go through Store.getScore()/isPassed()
+// instead of touching Store.completed[sec.id] directly, so they pick up
+// store.js v1.6's hand-scoped progress (see that file's changelog) —
+// "Right" and "Both" no longer share the same completed phrase.
 //
 // v1.8: two fixes to the v1.7 revision picker, per Nico —
 //  1. UI text was accidentally in French ("Choisir une révision" etc.)
@@ -321,7 +326,7 @@ window.ViewSections = (function () {
     const selRange = selectionMode ? selectedRange(realSections) : null;
 
     realSections.forEach((sec, i) => {
-      const pct = Store.completed[sec.id] || 0;
+      const pct = Store.getScore(sec.id);
       const locked = firstUnpassedIndex !== -1 && i > firstUnpassedIndex;
       const passed = Store.isPassed(sec.id);
       // While choosing a custom revision, only passed phrases can be
@@ -400,7 +405,7 @@ window.ViewSections = (function () {
 
     const nextSection = selectionMode
       ? null
-      : realSections.find((sec) => (Store.completed[sec.id] || 0) < 100);
+      : realSections.find((sec) => Store.getScore(sec.id) < 100);
     if (nextSection) {
       grid.appendChild(
         buildCircle({
