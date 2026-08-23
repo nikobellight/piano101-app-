@@ -1,3 +1,12 @@
+// v3.18
+// view-learning.js
+// v3.18: scheduleExpectedNoteLed() lights with a fixed ~400ms of
+// anticipation before the note is due, instead of immediately (v3.12) —
+// per Nico, immediate lighting worked well on fast passages but felt
+// wrong on a slow one: the light came on so far ahead of when you'd
+// naturally play it that it invited pressing too early. A short gap
+// still clamps to ~immediate; only a long gap now actually waits.
+//
 // v3.17
 // view-learning.js
 // v3.17: mistake/timing penalties in finalPercent() are now HALVED
@@ -1180,31 +1189,49 @@ window.ViewLearning = (function () {
   // leaving no time to react. The previous version scheduled this after
   // fallDurationMs (the rhythmic gap since the last note), which made
   // sense for a real-time fall but not for Wait Mode's indefinite wait.
-  async function scheduleExpectedNoteLed() {
+  // Lights the LED for the current group with a fixed ~400ms of
+  // anticipation before the note is actually due, instead of either
+  // extreme tried before: immediately (v3.12 — fine on fast passages,
+  // but on a slow one the light comes on so far ahead of when you'd
+  // naturally play it that it invites pressing too early) or after the
+  // full rhythmic gap since the last note (pre-v3.12 — fine when notes
+  // are far apart, but on a fast passage the light doesn't come on
+  // until the note's already due, leaving no time to react). Capping
+  // the anticipation at a constant, rather than using the raw gap
+  // directly, means a short gap still lights ~immediately (delay
+  // clamps to 0) while a long one waits instead of firing right away.
+  const LED_ANTICIPATION_MS = 400;
+
+  function scheduleExpectedNoteLed() {
     cancelScheduledLed();
     if (!ble() || !ble().connected) return;
 
     const group = currentGroup();
     if (!group) return;
 
-    const newNotes = group.map((e) => e.note);
-    // A repeated note (same pitch as the group just finished) needs a
-    // deliberate pause between "off" and back "on" — firing them right
-    // after each other (as we do for every other case) lands close
-    // enough together that the physical LED never visibly blinks, so it
-    // just looks like it stayed lit and hides that there were two
-    // separate notes to play.
-    const repeated = newNotes.some((n) => state.currentLedNotes.includes(n));
+    const fallDurationMs = Math.max(0, leadEntry(group).startMs - state.practiceBaseMs);
+    const delay = Math.max(0, fallDurationMs - LED_ANTICIPATION_MS);
 
-    // Sequential, not Promise.all: firing several BLE writes at once
-    // made the keyboard only accept the first one and silently drop
-    // the rest, so only one LED ever lit up. One at a time, but each
-    // using the no-response write (ble.js v1.1) to stay as fast as the
-    // link allows — this is the trade-off that actually works.
-    for (const n of state.currentLedNotes) await ble().sendLedOff(n);
-    if (repeated) await new Promise((resolve) => setTimeout(resolve, 120));
-    state.currentLedNotes = newNotes;
-    for (const n of state.currentLedNotes) await ble().sendLedOn(n);
+    state.ledTimerId = setTimeout(async () => {
+      const newNotes = group.map((e) => e.note);
+      // A repeated note (same pitch as the group just finished) needs a
+      // deliberate pause between "off" and back "on" — firing them right
+      // after each other (as we do for every other case) lands close
+      // enough together that the physical LED never visibly blinks, so it
+      // just looks like it stayed lit and hides that there were two
+      // separate notes to play.
+      const repeated = newNotes.some((n) => state.currentLedNotes.includes(n));
+
+      // Sequential, not Promise.all: firing several BLE writes at once
+      // made the keyboard only accept the first one and silently drop
+      // the rest, so only one LED ever lit up. One at a time, but each
+      // using the no-response write (ble.js v1.1) to stay as fast as the
+      // link allows — this is the trade-off that actually works.
+      for (const n of state.currentLedNotes) await ble().sendLedOff(n);
+      if (repeated) await new Promise((resolve) => setTimeout(resolve, 120));
+      state.currentLedNotes = newNotes;
+      for (const n of state.currentLedNotes) await ble().sendLedOn(n);
+    }, delay);
   }
 
   function cancelScheduledLed() {
