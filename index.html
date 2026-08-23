@@ -1,3 +1,10 @@
+<!-- Piano 101 — index.html — v3.6 -->
+<!-- v3.6: adds #score-modal-tertiary — a 3rd "Back to sections" button
+     shown alongside Continue/Practice again after PASSING a phrase.
+     Previously "Back to sections" only existed for the failed-attempt
+     pair of buttons, so there was no way back to the phrase grid
+     without either jumping straight to the next phrase (Continue) or
+     redoing the current one (Practice again). -->
 <!-- Piano 101 — index.html — v3.5 -->
 <!-- v3.5: adds #revision-picker between the hand-tabs and the phrase
      grid on the Sections page — js/view-sections.js populates it with
@@ -439,6 +446,7 @@
             <span></span><span></span><span></span><span></span><span></span>
           </div>
           <div class="score-modal-actions">
+            <button id="score-modal-tertiary" class="transport-btn secondary hidden">Back to sections</button>
             <button id="score-modal-secondary" class="transport-btn secondary">Back to sections</button>
             <button id="score-modal-primary" class="transport-btn primary">Practice again</button>
           </div>
