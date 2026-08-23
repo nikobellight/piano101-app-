@@ -1,4 +1,8 @@
-<!-- Piano 101 — index.html — v3.4 -->
+<!-- Piano 101 — index.html — v3.5 -->
+<!-- v3.5: adds #revision-picker between the hand-tabs and the phrase
+     grid on the Sections page — js/view-sections.js populates it with
+     a "Choisir une révision" button (custom phrase-range revision,
+     picked by tapping circles) once at least 2 phrases are passed. -->
 <!-- v3.4: "See all" (Recently played) now points to #/browse instead of
      a dead "#/" link — no dedicated recently-played page exists yet, so
      this is a stopgap, not a real fix (that panel still shows fake demo
@@ -305,6 +309,8 @@
         <button class="hand-tab active" data-hand="right">🫱 Right</button>
         <button class="hand-tab" data-hand="both">🤲 Both</button>
       </div>
+
+      <div id="revision-picker" class="revision-picker"></div>
 
       <div id="section-grid" class="section-grid"></div>
     </main>
