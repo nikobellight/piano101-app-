@@ -1,8 +1,17 @@
-// v1.7
+// v1.8
 // view-sections.js — SPA version of the old sections.js. Same circles,
 // stars, Revision and Continue buttons. Differences:
 //
-// v1.7: custom revision picker, per Nico — a "Choisir une révision"
+// v1.8: two fixes to the v1.7 revision picker, per Nico —
+//  1. UI text was accidentally in French ("Choisir une révision" etc.)
+//     while the rest of the site is English — translated throughout.
+//  2. Tapping phrase 1 then phrase 4 now immediately highlights
+//     1-2-3-4 as a whole (selectedRange()), not just the two phrases
+//     actually tapped — makes it obvious up front that the revision
+//     will cover the full span, since it always has to (a revision is
+//     one continuous beat window, there's no skipping the middle).
+//
+// v1.7: custom revision picker, per Nico — a "Choose a revision"
 // button (renderRevisionPicker, needs index.html v3.5's #revision-picker
 // container and css/sections.css v1.2's styles) turns on a selection
 // mode where tapping passed phrases builds an arbitrary revision range
@@ -215,13 +224,23 @@ window.ViewSections = (function () {
     return synthetic;
   }
 
-  // The "Choisir une révision" control bar above the phrase grid — one
-  // button when idle, "Cancel" + a hint + "Démarrer" once picking.
-  // Selected phrases don't have to be contiguous to tap, but the
-  // resulting revision always is: it spans from the EARLIEST to the
-  // LATEST selected phrase's index, everything in between included,
-  // since a revision is a single continuous beat window under the
-  // hood — there's no way to "skip" the middle of a song.
+  // Selected phrases don't have to be adjacent to tap, but the
+  // resulting revision always is — it spans from the EARLIEST to the
+  // LATEST tapped phrase's index, everything in between included, since
+  // a revision is a single continuous beat window under the hood: there
+  // is no way to "skip" the middle of a song. Returns null if nothing
+  // is selected yet.
+  function selectedRange(realSections) {
+    if (selectedIds.size === 0) return null;
+    const indices = realSections
+      .map((s, i) => (selectedIds.has(s.id) ? i : -1))
+      .filter((i) => i !== -1);
+    if (indices.length === 0) return null;
+    return { startIdx: Math.min(...indices), endIdx: Math.max(...indices) };
+  }
+
+  // The "Choose a revision" control bar above the phrase grid — one
+  // button when idle, "Cancel" + a hint + "Start revision" once picking.
   function renderRevisionPicker(realSections, passedCount, firstUnpassedIndex) {
     const container = document.getElementById("revision-picker");
     container.innerHTML = "";
@@ -232,7 +251,7 @@ window.ViewSections = (function () {
       if (!canOffer) return;
       const startBtn = document.createElement("button");
       startBtn.className = "revision-picker-btn";
-      startBtn.textContent = "Choisir une révision";
+      startBtn.textContent = "Choose a revision";
       startBtn.addEventListener("click", () => {
         selectionMode = true;
         selectedIds = new Set();
@@ -244,7 +263,7 @@ window.ViewSections = (function () {
 
     const cancelBtn = document.createElement("button");
     cancelBtn.className = "revision-picker-btn secondary";
-    cancelBtn.textContent = "Annuler";
+    cancelBtn.textContent = "Cancel";
     cancelBtn.addEventListener("click", () => {
       selectionMode = false;
       selectedIds = new Set();
@@ -252,25 +271,24 @@ window.ViewSections = (function () {
     });
     container.appendChild(cancelBtn);
 
+    // The hint (and the button below) go by the RANGE size, not the raw
+    // tap count — tapping phrase 1 then phrase 4 selects 1-2-3-4 (4
+    // phrases), even though only 2 were actually tapped.
+    const range = selectedRange(realSections);
+    const rangeSize = range ? range.endIdx - range.startIdx + 1 : 0;
+
     const hint = document.createElement("span");
     hint.className = "revision-picker-hint";
     hint.textContent =
-      selectedIds.size >= 2
-        ? `${selectedIds.size} phrases sélectionnées`
-        : "Sélectionne au moins 2 phrases";
+      rangeSize >= 2 ? `${rangeSize} phrases selected` : "Select at least 2 phrases";
     container.appendChild(hint);
 
-    if (selectedIds.size >= 2) {
+    if (rangeSize >= 2) {
       const goBtn = document.createElement("button");
       goBtn.className = "revision-picker-btn primary";
-      goBtn.textContent = "Démarrer la révision";
+      goBtn.textContent = "Start revision";
       goBtn.addEventListener("click", () => {
-        const indices = realSections
-          .map((s, i) => (selectedIds.has(s.id) ? i : -1))
-          .filter((i) => i !== -1);
-        const startIdx = Math.min(...indices);
-        const endIdx = Math.max(...indices);
-        const custom = buildCustomRevisionSection(realSections, startIdx, endIdx);
+        const custom = buildCustomRevisionSection(realSections, range.startIdx, range.endIdx);
         selectionMode = false;
         selectedIds = new Set();
         if (custom) goToLearning(custom.id);
@@ -296,6 +314,12 @@ window.ViewSections = (function () {
     // out of order (see `locked` below).
     const passedCount = firstUnpassedIndex === -1 ? realSections.length : firstUnpassedIndex;
 
+    // Computed once per render: which phrases fall inside the tapped
+    // range, so the whole span lights up as "selected" — tapping phrase
+    // 1 then phrase 4 highlights 1-2-3-4 immediately, making it obvious
+    // the revision will cover all four, not just the two actually tapped.
+    const selRange = selectionMode ? selectedRange(realSections) : null;
+
     realSections.forEach((sec, i) => {
       const pct = Store.completed[sec.id] || 0;
       const locked = firstUnpassedIndex !== -1 && i > firstUnpassedIndex;
@@ -319,7 +343,7 @@ window.ViewSections = (function () {
           subtitle: sec.label,
           pct,
           locked: locked && !selectionMode, // selectionMode uses notSelectable instead
-          selected: selectionMode && selectedIds.has(sec.id),
+          selected: selectionMode && selRange && i >= selRange.startIdx && i <= selRange.endIdx,
           notSelectable,
           onClick: onCircleClick,
         })
